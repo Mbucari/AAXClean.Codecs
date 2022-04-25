@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AAXClean.AudioFilters
+namespace AAXClean.Codecs
 {
     public class SilenceEntry
     {

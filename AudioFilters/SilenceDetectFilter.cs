@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AAXClean.AudioFilters;
+using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Threading.Tasks;
 
-namespace AAXClean.AudioFilters
+namespace AAXClean.Codecs.AudioFilters
 {
 	internal unsafe class SilenceDetectFilter : AudioFilterBase
 	{

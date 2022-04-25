@@ -1,11 +1,12 @@
-﻿using NAudio.Lame;
+﻿using AAXClean.AudioFilters;
+using NAudio.Lame;
 using NAudio.Wave;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace AAXClean.AudioFilters
+namespace AAXClean.Codecs.AudioFilters
 {
 	internal class AacToMp3Filter : AudioFilterBase
 	{

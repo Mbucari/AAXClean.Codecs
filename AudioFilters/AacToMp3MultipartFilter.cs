@@ -1,8 +1,8 @@
-﻿using AAXClean.Codecs;
+﻿using AAXClean.AudioFilters;
 using NAudio.Lame;
 using System;
 
-namespace AAXClean.AudioFilters
+namespace AAXClean.Codecs.AudioFilters
 {
 	internal sealed class AacToMp3MultipartFilter : MultipartFilterBase
 	{

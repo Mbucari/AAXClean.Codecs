@@ -3,7 +3,7 @@ using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace AAXClean.AudioFilters
+namespace AAXClean.Codecs.AudioFilters
 {
 	internal sealed unsafe class FfmpegAacDecoder : IDisposable
 	{
