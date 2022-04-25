@@ -4,16 +4,25 @@ using System.Runtime.InteropServices;
 
 namespace AAXClean.AudioFilters
 {
-	internal sealed unsafe class FfmpegAacDecoder : AacDecoder
+	internal sealed unsafe class FfmpegAacDecoder : IDisposable
 	{
+		internal const int BITS_PER_SAMPLE = 16;
+
+		private const int AAC_FRAME_SIZE = 1024 * BITS_PER_SAMPLE / 8;
 		private NativeAac AacDecoder { get; }
 		private int decSz => AAC_FRAME_SIZE * Channels;
+		public int Channels { get; }
+		public int SampleRate { get; }
 
-		public FfmpegAacDecoder(byte[] asc) : base(asc)
+		private static readonly int[] asc_samplerates = { 96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350 };
+
+		public FfmpegAacDecoder(byte[] asc)
 		{
+			SampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
+			Channels = (asc[1] >> 3) & 7;
 			AacDecoder = NativeAac.Open(asc, asc.Length);
 		}
-		public override Span<byte> DecodeBytes(Span<byte> aacFrame)
+		public Span<byte> DecodeBytes(Span<byte> aacFrame)
 		{
 			int error, inputSize = aacFrame.Length;
 
@@ -35,7 +44,7 @@ namespace AAXClean.AudioFilters
 			return decoded;
 		}
 
-		public override Span<short> DecodeShort(Span<byte> aacFrame)
+		public Span<short> DecodeShort(Span<byte> aacFrame)
 		{
 			int error, inputSize = aacFrame.Length;
 
@@ -57,7 +66,7 @@ namespace AAXClean.AudioFilters
 			return decoded;
 		}
 
-		public override void Dispose()
+		public void Dispose()
 		{
 			AacDecoder?.Close();
 		}

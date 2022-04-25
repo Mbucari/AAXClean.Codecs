@@ -4,7 +4,7 @@ using System;
 
 namespace AAXClean.AudioFilters
 {
-	internal sealed class AacToMp3MultipartFilter : MultipartFilter
+	internal sealed class AacToMp3MultipartFilter : MultipartFilterBase
 	{
 		protected override Action<NewSplitCallback> NewFileCallback { get; }
 		private byte[] ASC { get; }
