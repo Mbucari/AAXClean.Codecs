@@ -10,7 +10,6 @@ namespace AAXClean.AudioFilters
 {
 	internal unsafe class SilenceDetectFilter : AudioFilterBase
 	{
-
 		public List<SilenceEntry> Silences { get; }
 
 		private const int VECTOR_COUNT = 8;
@@ -22,11 +21,10 @@ namespace AAXClean.AudioFilters
 		private readonly Vector128<short> maxAmplitudes;
 		private readonly Vector128<short> minAmplitudes;
 		private readonly Vector128<short> zeros = Vector128<short>.Zero;
-		private readonly Vector128<short> ones = Vector128<short>.AllBitsSet;
-
 
 		private readonly long numSamples;
-		public SilenceDetectFilter(double db, TimeSpan minDuration, byte[] audioSpecificConfig, ushort sampleSize)
+
+		public unsafe SilenceDetectFilter(double db, TimeSpan minDuration, byte[] audioSpecificConfig, ushort sampleSize)
 		{
 			if (BITS_PER_SAMPLE != sampleSize)
 				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
@@ -62,10 +60,11 @@ namespace AAXClean.AudioFilters
 			encoderLoopTask = new Task(SilenceCheckLoop);
 			encoderLoopTask.Start();
 		}
+
 		/// <summary>
 		/// HIGHLY optimized loop to detect silence in audio stream.
 		/// </summary>
-		private void SilenceCheckLoop()
+		private unsafe void SilenceCheckLoop()
 		{
 			long currentSample = 0;
 			long lastSilenceStart = 0;
