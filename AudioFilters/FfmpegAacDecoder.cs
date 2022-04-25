@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -10,7 +11,7 @@ namespace AAXClean.AudioFilters
 
 		private const int AAC_FRAME_SIZE = 1024 * BITS_PER_SAMPLE / 8;
 		private NativeAac AacDecoder { get; }
-		private int decSz => AAC_FRAME_SIZE * Channels;
+		internal int DecodeSize => AAC_FRAME_SIZE * Channels;
 		public int Channels { get; }
 		public int SampleRate { get; }
 
@@ -22,18 +23,20 @@ namespace AAXClean.AudioFilters
 			Channels = (asc[1] >> 3) & 7;
 			AacDecoder = NativeAac.Open(asc, asc.Length);
 		}
-		public Span<byte> DecodeBytes(Span<byte> aacFrame)
+
+		public MemoryHandle DecodeRaw(Span<byte> aacFrame)
 		{
 			int error, inputSize = aacFrame.Length;
 
-			Span<byte> decoded = new byte[decSz];
+			Memory<byte> decoded = new byte[DecodeSize];
+
+			MemoryHandle handle = decoded.Pin();
 
 			fixed (byte* buff = aacFrame)
 			{
-				fixed (byte* outBuff = decoded)
-				{
-					error = AacDecoder.DecodeFrame(buff, inputSize, outBuff, decSz);
-				}
+				byte* outBuff = (byte*)handle.Pointer;
+
+				error = AacDecoder.DecodeFrame(buff, inputSize, outBuff, DecodeSize);
 			}
 
 			if (error != 0)
@@ -41,21 +44,21 @@ namespace AAXClean.AudioFilters
 				throw new Exception($"Error decoding AAC frame. Code {error:X}");
 			}
 
-			return decoded;
+			return handle;
 		}
-
-		public Span<short> DecodeShort(Span<byte> aacFrame)
+		public Memory<byte> Decode(Span<byte> aacFrame)
 		{
 			int error, inputSize = aacFrame.Length;
 
-			Span<short> decoded = new short[decSz / sizeof(short)];
+			Memory<byte> decoded = new byte[DecodeSize];
+
+			using var handle = decoded.Pin();
 
 			fixed (byte* buff = aacFrame)
 			{
-				fixed (short* outBuff = decoded)
-				{
-					error = AacDecoder.DecodeFrame(buff, inputSize, outBuff, decSz);
-				}
+				byte* outBuff = (byte*)handle.Pointer;
+
+				error = AacDecoder.DecodeFrame(buff, inputSize, outBuff, DecodeSize);
 			}
 
 			if (error != 0)
@@ -83,7 +86,7 @@ namespace AAXClean.AudioFilters
 			}
 		}
 
-		private  abstract class NativeAac
+		private abstract class NativeAac
 		{
 			private DecoderHandle Handle;
 			private static readonly int bitness = IntPtr.Size * 8;
@@ -97,9 +100,9 @@ namespace AAXClean.AudioFilters
 					try
 					{
 						if (bitness == 64)
-							File.WriteAllBytes(libName, AAXClean.Codecs.Properties.Resources.ffmpegx64);
+							File.WriteAllBytes(libName, Codecs.Properties.Resources.ffmpegx64);
 						else
-							File.WriteAllBytes(libName, AAXClean.Codecs.Properties.Resources.ffmpegx86);
+							File.WriteAllBytes(libName, Codecs.Properties.Resources.ffmpegx86);
 					}
 					catch (Exception ex)
 					{
@@ -109,7 +112,7 @@ namespace AAXClean.AudioFilters
 			}
 
 			public static NativeAac Open(byte[] ASC, int ASCSize)
-            {
+			{
 				NativeAac aac = bitness == 32 ? new NativeAac32() : new NativeAac64();
 
 				aac.Handle = aac.OpenHandle(ASC, ASCSize);
@@ -124,28 +127,20 @@ namespace AAXClean.AudioFilters
 				return aac;
 			}
 			public void Close()
-            {
+			{
 				Close(Handle);
 				Handle.Dispose();
-            }
+			}
 
 			public int DecodeFrame(byte* pCompressedAudio, int cbInBufferSize, byte* pDecodedAudio, int cbOutBufferSize)
-            {
-				return DecodeFrame(Handle, pCompressedAudio, cbInBufferSize, pDecodedAudio, cbOutBufferSize);
-			}
-			public int DecodeFrame(byte* pCompressedAudio, int cbInBufferSize, short* pDecodedAudio, int cbOutBufferSize)
-            {
-				return DecodeFrame(Handle, pCompressedAudio, cbInBufferSize, pDecodedAudio, cbOutBufferSize);
-			}
+				=> DecodeFrame(Handle, pCompressedAudio, cbInBufferSize, pDecodedAudio, cbOutBufferSize);
 
 			protected abstract DecoderHandle OpenHandle(byte[] ASC, int ASCSize);
 			protected abstract void Close(DecoderHandle self);
 			protected abstract int DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, byte* pDecodedAudio, int cbOutBufferSize);
-			protected abstract int DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, short* pDecodedAudio, int cbOutBufferSize);
-
 		}
 
-        private class NativeAac32 : NativeAac
+		private class NativeAac32 : NativeAac
 		{
 			private const string libName = "ffmpegaac_x32.dll";
 
@@ -157,8 +152,6 @@ namespace AAXClean.AudioFilters
 
 			[DllImport(libName, CallingConvention = CallingConvention.StdCall)]
 			private static extern int aacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, byte* pDecodedAudio, int cbOutBufferSize);
-			[DllImport(libName, CallingConvention = CallingConvention.StdCall)]
-			private static extern int aacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, short* pDecodedAudio, int cbOutBufferSize);
 
 			protected override DecoderHandle OpenHandle(byte[] ASC, int ASCSize)
 				=> aacDecoder_Open(ASC, ASCSize);
@@ -168,13 +161,10 @@ namespace AAXClean.AudioFilters
 
 			protected override int DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, byte* pDecodedAudio, int cbOutBufferSize)
 				=> aacDecoder_DecodeFrame(self, pCompressedAudio, cbInBufferSize, pDecodedAudio, cbOutBufferSize);
-
-			protected override int DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, short* pDecodedAudio, int cbOutBufferSize)
-				=> aacDecoder_DecodeFrame(self, pCompressedAudio, cbInBufferSize, pDecodedAudio, cbOutBufferSize);
 		}
+
 		private class NativeAac64 : NativeAac
 		{
-
 			private const string libName = "ffmpegaac_x64.dll";
 
 			[DllImport(libName, CallingConvention = CallingConvention.StdCall)]
@@ -185,19 +175,14 @@ namespace AAXClean.AudioFilters
 
 			[DllImport(libName, CallingConvention = CallingConvention.StdCall)]
 			private static extern int aacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, byte* pDecodedAudio, int cbOutBufferSize);
-			[DllImport(libName, CallingConvention = CallingConvention.StdCall)]
-			private static extern int aacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, short* pDecodedAudio, int cbOutBufferSize);
 
 			protected override DecoderHandle OpenHandle(byte[] ASC, int ASCSize)
 				=> aacDecoder_Open(ASC, ASCSize);
 
 			protected override void Close(DecoderHandle self)
-				=>	aacDecoder_Close(self);
+				=> aacDecoder_Close(self);
 
 			protected override int DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, byte* pDecodedAudio, int cbOutBufferSize)
-				=> aacDecoder_DecodeFrame(self, pCompressedAudio, cbInBufferSize, pDecodedAudio, cbOutBufferSize);
-
-			protected override int DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, short* pDecodedAudio, int cbOutBufferSize)
 				=> aacDecoder_DecodeFrame(self, pCompressedAudio, cbInBufferSize, pDecodedAudio, cbOutBufferSize);
 		}
 	}

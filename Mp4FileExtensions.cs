@@ -26,7 +26,6 @@ namespace AAXClean.Codecs
 				mp4File.AudioSampleSize);
 
 			mp4File.FilterAudio(sil);
-			sil.Close();
 
 			return sil.Silences;
 		}

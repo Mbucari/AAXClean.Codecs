@@ -11,7 +11,7 @@ namespace AAXClean.AudioFilters
 	{
 		private const int MAX_BUFFER_SZ = 4 * 1024 * 1024;
 		private readonly FfmpegAacDecoder decoder;
-		private readonly BlockingCollection<byte[]> waveFrameQueue;
+		private readonly BlockingCollection<Memory<byte>> waveFrameQueue;
 		private readonly LameMP3FileWriter lameMp3Encoder;
 		private readonly Task encoderLoopTask;
 		private readonly WaveFormat waveFormat;
@@ -52,7 +52,7 @@ namespace AAXClean.AudioFilters
 
 			int waveFrameSize = 1024 /* Decoded AAC frame size*/ * waveFormat.BlockAlign;
 			int maxCachedFrames = MAX_BUFFER_SZ / waveFrameSize;
-			waveFrameQueue = new BlockingCollection<byte[]>(maxCachedFrames);
+			waveFrameQueue = new BlockingCollection<Memory<byte>>(maxCachedFrames);
 
 			encoderLoopTask = new Task(EncoderLoop);
 			encoderLoopTask.Start();
@@ -78,17 +78,18 @@ namespace AAXClean.AudioFilters
 
 		private void EncoderLoop()
 		{
-			while (waveFrameQueue.TryTake(out byte[] waveFrame, -1))
+			while (waveFrameQueue.TryTake(out Memory<byte> waveFrame, -1))
 			{
-				lameMp3Encoder.Write(waveFrame);
+				lameMp3Encoder.Write(waveFrame.Span);
 			}
+
 			lameMp3Encoder.Flush();
 			lameMp3Encoder.Close();
 		}
 
 		public override bool FilterFrame(uint chunkIndex, uint frameIndex, Span<byte> aacFrame)
 		{
-			waveFrameQueue.Add(decoder.DecodeBytes(aacFrame).ToArray());
+			waveFrameQueue.Add(decoder.Decode(aacFrame));
 			return true;
 		}
 
@@ -102,12 +103,18 @@ namespace AAXClean.AudioFilters
 
 		protected override void Dispose(bool disposing)
 		{
-			if (!_disposed && disposing)
+			if (!_disposed)
 			{
-				decoder?.Dispose();
-			}
+				base.Dispose(disposing);
 
-			base.Dispose(disposing);
+				if (disposing)
+				{
+					decoder?.Dispose();
+					encoderLoopTask?.Dispose();
+					waveFrameQueue?.Dispose();
+					lameMp3Encoder?.Dispose();
+				}
+			}
 		}
 
 		private class WaveFormat : NAudio.Wave.WaveFormat

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.Intrinsics;
@@ -9,31 +10,21 @@ namespace AAXClean.AudioFilters
 {
 	internal unsafe class SilenceDetectFilter : AudioFilterBase
 	{
-		private class WaveFrame
-        {
-			public uint FrameIndex { get; }
-			public short[] Samples { get; }
 
-			public WaveFrame(uint frameIndex, short[] frame)
-            {
-				FrameIndex = frameIndex;
-				Samples = frame;
-			}
-		}
 		public List<SilenceEntry> Silences { get; }
 
 		private const int VECTOR_COUNT = 8;
 		private const int BITS_PER_SAMPLE = 16;
 		private readonly FfmpegAacDecoder decoder;
-		private readonly BlockingCollection<WaveFrame> waveFrameQueue;
+		private readonly BlockingCollection<MemoryHandle> waveFrameQueue;
 		private readonly Task encoderLoopTask;
 
 		private readonly Vector128<short> maxAmplitudes;
 		private readonly Vector128<short> minAmplitudes;
 		private readonly Vector128<short> zeros;
 
-		
-	private readonly long numSamples;
+
+		private readonly long numSamples;
 		public SilenceDetectFilter(double db, TimeSpan minDuration, byte[] audioSpecificConfig, ushort sampleSize)
 		{
 			if (BITS_PER_SAMPLE != sampleSize)
@@ -72,7 +63,7 @@ namespace AAXClean.AudioFilters
 				zeros = Sse2.LoadVector128(ss);
 			}
 
-			waveFrameQueue = new BlockingCollection<WaveFrame>(200);
+			waveFrameQueue = new BlockingCollection<MemoryHandle>(200);
 			encoderLoopTask = new Task(SilenceCheckLoop);
 			encoderLoopTask.Start();
 		}
@@ -82,38 +73,64 @@ namespace AAXClean.AudioFilters
 			long currentSample = 0;
 			long lastStart = 0;
 			long numConsecutive = 0;
-			 
+
 			void CheckAndAddSilence()
-            {
+			{
 				if (numConsecutive > numSamples)
 				{
 					var start = TimeSpan.FromSeconds((double)lastStart / decoder.Channels / decoder.SampleRate);
 					var end = TimeSpan.FromSeconds((double)(lastStart + numConsecutive) / decoder.Channels / decoder.SampleRate);
 					Silences.Add(new SilenceEntry(start, end));
 				}
-			}		
+			}
 
-			while (waveFrameQueue.TryTake(out WaveFrame waveFrame, -1))
+			while (waveFrameQueue.TryTake(out MemoryHandle waveFrame, -1))
 			{
-				fixed (short* samples = waveFrame.Samples)
+				short* samples = (short*)waveFrame.Pointer;
+
+				for (int i = 0; i < decoder.DecodeSize / sizeof(short); i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
 				{
-					for (int i = 0; i < waveFrame.Samples.Length; i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
+					var samps = Sse2.LoadVector128(samples + i);
+					var comparesLess = Sse2.CompareLessThan(samps, maxAmplitudes);
+					var comparesGreater = Sse2.CompareGreaterThan(samps, minAmplitudes);
+					var compares = Sse2.And(comparesLess, comparesGreater);
+
+					//loud = 0
+					//silent = -1
+					var allLoud = Sse41.TestC(zeros, compares); //compares are all 0
+
+					//var anyLoud = !Avx.TestC(compares, ones); //compares have at least one 0
+
+					//Most of the audio will be above "silent", so checking for all silence is a bit of a waste
+					//var allSilent = Sse41.TestC(compares, zeros); //compares are all 1
+
+					if (allLoud)
 					{
-						var samps = Sse2.LoadVector128(samples + i);
-						var comparesLess = Sse2.CompareLessThan(samps, maxAmplitudes);
-						var comparesGreater = Sse2.CompareGreaterThan(samps, minAmplitudes);
-						var compares = Sse2.And(comparesLess, comparesGreater);
+						if (numConsecutive != 0)
+						{
+							CheckAndAddSilence();
 
-						//loud = 0
-						//silent = -1
-						var allLoud = Sse41.TestC(zeros, compares); //compares are all 0
+							numConsecutive = 0;
+						}
+						continue;
+					}
 
-						//var anyLoud = !Avx.TestC(compares, ones); //compares have at least one 0
+					/*
+					else if (allSilent)
+					{
+						if (numConsecutive == 0)
+						{
+							lastStart = currentSample;
+						}
+						numConsecutive += VECTOR_COUNT;
+						continue;
+					}
+					*/
 
-						//Most of the audio will be above "silent", so checking for all silence is a bit of a waste
-						//var allSilent = Sse41.TestC(compares, zeros); //compares are all 1
-
-						if (allLoud)
+					for (int j = 0; j < VECTOR_COUNT; j++)
+					{
+						bool Silence = compares.GetElement(j) == -1;
+						if (!Silence)
 						{
 							if (numConsecutive != 0)
 							{
@@ -121,54 +138,27 @@ namespace AAXClean.AudioFilters
 
 								numConsecutive = 0;
 							}
-							continue;
 						}
-
-						/*
-						else if (allSilent)
+						else if (numConsecutive == 0)
 						{
-							if (numConsecutive == 0)
-							{
-								lastStart = currentSample;
-							}
-							numConsecutive += VECTOR_COUNT;
-							continue;
+							lastStart = currentSample + j;
+							numConsecutive++;
 						}
-						*/
-
-
-						for (int j = 0; j < VECTOR_COUNT; j++)
+						else
 						{
-							bool Silence = compares.GetElement(j) == -1;
-							if (!Silence)
-							{
-								if (numConsecutive != 0)
-								{
-									CheckAndAddSilence();
-
-									numConsecutive = 0;
-								}
-							}
-							else if (numConsecutive == 0)
-							{
-								lastStart = currentSample + j;
-								numConsecutive++;
-							}
-							else
-							{
-								numConsecutive++;
-							}
+							numConsecutive++;
 						}
 					}
 				}
+
+				waveFrame.Dispose();
 			}
 
-			CheckAndAddSilence();			
+			CheckAndAddSilence();
 		}
 		public override bool FilterFrame(uint chunkIndex, uint frameIndex, Span<byte> aacSample)
 		{
-			var waveFrame = decoder.DecodeShort(aacSample);
-			waveFrameQueue.Add(new WaveFrame(frameIndex, waveFrame.ToArray()));
+			waveFrameQueue.Add(decoder.DecodeRaw(aacSample));
 			return true;
 		}
 
@@ -180,8 +170,17 @@ namespace AAXClean.AudioFilters
 
 		protected override void Dispose(bool disposing)
 		{
-			decoder?.Dispose();
-			base.Dispose(disposing);
+			if (!_disposed)
+			{
+				base.Dispose(disposing);
+
+				if (disposing)
+				{
+					decoder?.Dispose();
+					waveFrameQueue?.Dispose();
+					encoderLoopTask?.Dispose();
+				}
+			}
 		}
 	}
 }
