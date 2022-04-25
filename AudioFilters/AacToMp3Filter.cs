@@ -17,6 +17,27 @@ namespace AAXClean.AudioFilters
 		private readonly WaveFormat waveFormat;
 		private readonly Stream OutputStream;
 
+		static AacToMp3Filter()
+        {
+			int bitness = IntPtr.Size * 8;
+			string libName = $"libmp3lame.{bitness}.dll";
+
+			if (!File.Exists(libName))
+			{
+				try
+				{
+					if (bitness == 64)
+						File.WriteAllBytes(libName, AAXClean.Codecs.Properties.Resources.libmp3lame_64);
+					else
+						File.WriteAllBytes(libName, AAXClean.Codecs.Properties.Resources.libmp3lame_32);
+				}
+				catch (Exception ex)
+				{
+					throw new DllNotFoundException($"Dould not load {libName}", ex);
+				}
+			}
+		}
+
 		public AacToMp3Filter(Stream mp3Output, byte[] audioSpecificConfig, ushort sampleSize, LameConfig lameConfig)
 		{
 			if (sampleSize != AacDecoder.BITS_PER_SAMPLE)
