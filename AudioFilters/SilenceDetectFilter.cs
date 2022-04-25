@@ -21,7 +21,8 @@ namespace AAXClean.AudioFilters
 
 		private readonly Vector128<short> maxAmplitudes;
 		private readonly Vector128<short> minAmplitudes;
-		private readonly Vector128<short> zeros;
+		private readonly Vector128<short> zeros = Vector128<short>.Zero;
+		private readonly Vector128<short> ones = Vector128<short>.AllBitsSet;
 
 
 		private readonly long numSamples;
@@ -57,32 +58,24 @@ namespace AAXClean.AudioFilters
 				minAmplitudes = Sse2.LoadVector128(s);
 			}
 
-			short[] zeroesArr = new short[VECTOR_COUNT];
-			fixed (short* ss = zeroesArr)
-			{
-				zeros = Sse2.LoadVector128(ss);
-			}
-
 			waveFrameQueue = new BlockingCollection<MemoryHandle>(200);
 			encoderLoopTask = new Task(SilenceCheckLoop);
 			encoderLoopTask.Start();
 		}
-
+		/// <summary>
+		/// HIGHLY optimized loop to detect silence in audio stream.
+		/// </summary>
 		private void SilenceCheckLoop()
 		{
 			long currentSample = 0;
-			long lastStart = 0;
-			long numConsecutive = 0;
+			long lastSilenceStart = 0;
+			long numConsecutiveSilences = 0;
 
-			void CheckAndAddSilence()
-			{
-				if (numConsecutive > numSamples)
-				{
-					var start = TimeSpan.FromSeconds((double)lastStart / decoder.Channels / decoder.SampleRate);
-					var end = TimeSpan.FromSeconds((double)(lastStart + numConsecutive) / decoder.Channels / decoder.SampleRate);
-					Silences.Add(new SilenceEntry(start, end));
-				}
-			}
+			//Buffer for storing Vector128<short>
+			Memory<short> buff128 = new short[VECTOR_COUNT];
+			Span<short> buff128Span = buff128.Span;
+			using var hbuff128 = buff128.Pin();
+			short* pbuff128 = (short*)hbuff128.Pointer;
 
 			while (waveFrameQueue.TryTake(out MemoryHandle waveFrame, -1))
 			{
@@ -101,16 +94,17 @@ namespace AAXClean.AudioFilters
 
 					//var anyLoud = !Avx.TestC(compares, ones); //compares have at least one 0
 
-					//Most of the audio will be above "silent", so checking for all silence is a bit of a waste
-					//var allSilent = Sse41.TestC(compares, zeros); //compares are all 1
+					//Most of the audio will be above "silent", so checking
+					//for all silence may be a bit of a waste
+					//var allSilent = Sse41.TestC(compares, ones); //compares are all -1
 
 					if (allLoud)
 					{
-						if (numConsecutive != 0)
+						if (numConsecutiveSilences != 0)
 						{
-							CheckAndAddSilence();
+							CheckAndAddSilence(lastSilenceStart, numConsecutiveSilences);
 
-							numConsecutive = 0;
+							numConsecutiveSilences = 0;
 						}
 						continue;
 					}
@@ -127,26 +121,28 @@ namespace AAXClean.AudioFilters
 					}
 					*/
 
+					Sse2.Store(pbuff128, compares);
+
 					for (int j = 0; j < VECTOR_COUNT; j++)
 					{
-						bool Silence = compares.GetElement(j) == -1;
+						bool Silence = buff128Span[j] == - 1;
 						if (!Silence)
 						{
-							if (numConsecutive != 0)
+							if (numConsecutiveSilences != 0)
 							{
-								CheckAndAddSilence();
+								CheckAndAddSilence(lastSilenceStart, numConsecutiveSilences);
 
-								numConsecutive = 0;
+								numConsecutiveSilences = 0;
 							}
-						}
-						else if (numConsecutive == 0)
-						{
-							lastStart = currentSample + j;
-							numConsecutive++;
 						}
 						else
 						{
-							numConsecutive++;
+							if (numConsecutiveSilences == 0)
+							{
+								lastSilenceStart = currentSample + j;
+							}
+
+							numConsecutiveSilences++;
 						}
 					}
 				}
@@ -154,8 +150,19 @@ namespace AAXClean.AudioFilters
 				waveFrame.Dispose();
 			}
 
-			CheckAndAddSilence();
+			CheckAndAddSilence(lastSilenceStart, numConsecutiveSilences);
 		}
+
+		private void CheckAndAddSilence(long lastSilenceStart, long numConsecutiveSilences)
+		{
+			if (numConsecutiveSilences > numSamples)
+			{
+				var start = TimeSpan.FromSeconds((double)lastSilenceStart / decoder.Channels / decoder.SampleRate);
+				var end = TimeSpan.FromSeconds((double)(lastSilenceStart + numConsecutiveSilences) / decoder.Channels / decoder.SampleRate);
+				Silences.Add(new SilenceEntry(start, end));
+			}
+		}
+
 		public override bool FilterFrame(uint chunkIndex, uint frameIndex, Span<byte> aacSample)
 		{
 			waveFrameQueue.Add(decoder.DecodeRaw(aacSample));
