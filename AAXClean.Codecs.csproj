@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0-windows7.0</TargetFramework>
-	  <Version>0.1.1</Version>
+    <TargetFramework>net5.0-windows</TargetFramework>
+	  <Version>0.1.2</Version>
 	  <Authors>MrGneissGuy</Authors>
 	  <Company>Just Me, Inc.</Company>
 	  <Description>Filter and convert aac audio from AAXClean</Description>
