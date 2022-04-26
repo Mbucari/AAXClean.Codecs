@@ -1,26 +1,20 @@
-﻿using AAXClean.AudioFilters;
-using AAXClean.Codecs.AudioFilters;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using AAXClean.Codecs.AudioFilters;
 
 namespace AAXClean.Codecs
 {
     public static class Mp4FileExtensions
     {
-        public static IEnumerable<SilenceEntry> DetectSilence(this Mp4File mp4File, double decibels, TimeSpan minDuration)
-        {
-
+		public static IEnumerable<SilenceEntry> DetectSilence(this Mp4File mp4File, double decibels, TimeSpan minDuration)
+		{
 			if (decibels >= 0 || decibels < -90)
 				throw new ArgumentException($"{nameof(decibels)} must fall in [-90,0)");
 			if (minDuration.TotalSeconds * mp4File.TimeScale < 2)
 				throw new ArgumentException($"{nameof(minDuration)} must be no shorter than 2 audio samples.");
 
-
-			var sil = new SilenceDetectFilter(
+			using var sil = new SilenceDetectFilter(
 				decibels,
 				minDuration,
 				mp4File.AscBlob,
@@ -67,11 +61,9 @@ namespace AAXClean.Codecs
 
 		private static NAudio.Lame.LameConfig GetDefaultLameConfig(Mp4File mp4File)
 		{
-			double channelDown = mp4File.AudioChannels == 1 ? 1 : 0.5;
-
 			var lameConfig = new NAudio.Lame.LameConfig
 			{
-				ABRRateKbps = (int)(mp4File.AverageBitrate * channelDown / 1024),
+				ABRRateKbps = (int)Math.Round(mp4File.AverageBitrate / 1024d / mp4File.AudioChannels),
 				Mode = NAudio.Lame.MPEGMode.Mono,
 				VBR = NAudio.Lame.VBRMode.ABR,
 			};

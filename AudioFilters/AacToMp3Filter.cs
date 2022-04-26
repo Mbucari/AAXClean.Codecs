@@ -28,9 +28,9 @@ namespace AAXClean.Codecs.AudioFilters
 				try
 				{
 					if (bitness == 64)
-						File.WriteAllBytes(libName, Codecs.Properties.Resources.libmp3lame_64);
+						File.WriteAllBytes(libName, Properties.Resources.libmp3lame_64);
 					else
-						File.WriteAllBytes(libName, Codecs.Properties.Resources.libmp3lame_32);
+						File.WriteAllBytes(libName, Properties.Resources.libmp3lame_32);
 				}
 				catch (Exception ex)
 				{
