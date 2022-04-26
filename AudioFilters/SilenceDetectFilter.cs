@@ -38,7 +38,6 @@ namespace AAXClean.Codecs.AudioFilters
 			short minAmplitude = (short)-maxAmplitude;
 			numSamples = (long)Math.Round(decoder.SampleRate * minDuration.TotalSeconds * decoder.Channels);
 
-
 			short[] sbytes = new short[VECTOR_COUNT];
 
 			for (int i = 0; i < sbytes.Length; i++)
@@ -83,6 +82,8 @@ namespace AAXClean.Codecs.AudioFilters
 
 				for (int i = 0; i < decoder.DecodeSize / sizeof(short); i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
 				{
+					//2x compares and an AND is ~3% faster than Abs and 1x compare
+					//And for whatever reason, equivalent method with Avx 256-bit vectors is slightly slower.
 					var samps = Sse2.LoadVector128(samples + i);
 					var comparesLess = Sse2.CompareLessThan(samps, maxAmplitudes);
 					var comparesGreater = Sse2.CompareGreaterThan(samps, minAmplitudes);
