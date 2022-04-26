@@ -38,6 +38,7 @@ namespace AAXClean.Codecs.AudioFilters
 			short minAmplitude = (short)-maxAmplitude;
 			numSamples = (long)Math.Round(decoder.SampleRate * minDuration.TotalSeconds * decoder.Channels);
 
+			//Initialize vectors for comparisons
 			short[] sbytes = new short[VECTOR_COUNT];
 
 			for (int i = 0; i < sbytes.Length; i++)
