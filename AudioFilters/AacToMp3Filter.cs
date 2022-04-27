@@ -1,6 +1,5 @@
 ﻿using AAXClean.AudioFilters;
 using NAudio.Lame;
-using NAudio.Wave;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
@@ -39,6 +38,7 @@ namespace AAXClean.Codecs.AudioFilters
 			}
 		}
 
+		internal delegate void SetTagDelegate(string value);
 		public AacToMp3Filter(Stream mp3Output, byte[] audioSpecificConfig, ushort sampleSize, LameConfig lameConfig)
 		{
 			if (sampleSize != FfmpegAacDecoder.BITS_PER_SAMPLE)
@@ -48,8 +48,7 @@ namespace AAXClean.Codecs.AudioFilters
 			decoder = new FfmpegAacDecoder(audioSpecificConfig);
 
 			waveFormat = new WaveFormat(decoder.SampleRate, sampleSize, decoder.Channels);
-
-			lameMp3Encoder = new LameMP3FileWriter(OutputStream, waveFormat, lameConfig);
+			lameMp3Encoder = new LameMP3FileWriterEx(OutputStream, waveFormat, lameConfig);
 
 			int waveFrameSize = 1024 /* Decoded AAC frame size*/ * waveFormat.BlockAlign;
 			int maxCachedFrames = MAX_BUFFER_SZ / waveFrameSize;
@@ -96,39 +95,28 @@ namespace AAXClean.Codecs.AudioFilters
 
 		public override void Close()
 		{
+			if (Closed) return;
 			waveFrameQueue.CompleteAdding();
 			encoderLoopTask.Wait();
 			lameMp3Encoder.Close();
 			OutputStream.Close();
+			Closed = true;
 		}
 
 		protected override void Dispose(bool disposing)
 		{
-			if (!_disposed)
+			if (!Disposed)
 			{
-				base.Dispose(disposing);
-
 				if (disposing)
 				{
+					Close();
 					decoder?.Dispose();
 					encoderLoopTask?.Dispose();
 					waveFrameQueue?.Dispose();
 					lameMp3Encoder?.Dispose();
 				}
+				base.Dispose(disposing);
 			}
-		}
-
-		private class WaveFormat : NAudio.Wave.WaveFormat
-		{
-			public WaveFormat(int sampleRate, int bitsPerSample, int channels)
-			{
-				this.sampleRate = sampleRate;
-				this.channels = (short)channels;
-				this.bitsPerSample = (short)(bitsPerSample);
-				blockAlign = (short)(channels * this.bitsPerSample / 8);
-				averageBytesPerSecond = blockAlign * sampleRate;
-				waveFormatTag = WaveFormatEncoding.Pcm;
-			}
-		}
-	}
+		}	
+	}	
 }

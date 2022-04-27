@@ -173,22 +173,24 @@ namespace AAXClean.Codecs.AudioFilters
 
 		public override void Close()
 		{
+			if (Closed) return;
 			waveFrameQueue.CompleteAdding();
 			encoderLoopTask.Wait();
+			Closed = true;
 		}
 
 		protected override void Dispose(bool disposing)
 		{
-			if (!_disposed)
+			if (!Disposed)
 			{
-				base.Dispose(disposing);
-
 				if (disposing)
 				{
+					Close();
 					decoder?.Dispose();
 					waveFrameQueue?.Dispose();
 					encoderLoopTask?.Dispose();
 				}
+				base.Dispose(disposing);
 			}
 		}
 	}
