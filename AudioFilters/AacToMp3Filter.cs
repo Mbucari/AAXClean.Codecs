@@ -48,7 +48,7 @@ namespace AAXClean.Codecs.AudioFilters
 			decoder = new FfmpegAacDecoder(audioSpecificConfig);
 
 			waveFormat = new WaveFormat(decoder.SampleRate, sampleSize, decoder.Channels);
-			lameMp3Encoder = new LameMP3FileWriterEx(OutputStream, waveFormat, lameConfig);
+			lameMp3Encoder = new LameMP3FileWriter(OutputStream, waveFormat, lameConfig);
 
 			int waveFrameSize = 1024 /* Decoded AAC frame size*/ * waveFormat.BlockAlign;
 			int maxCachedFrames = MAX_BUFFER_SZ / waveFrameSize;
