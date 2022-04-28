@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
-	  <Version>0.1.6</Version>
+	  <Version>0.1.7</Version>
 	  <Authors>MrGneissGuy</Authors>
 	  <Company>Just Me, Inc.</Company>
 	  <Description>Filter and convert aac audio from AAXClean</Description>
