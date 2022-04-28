@@ -16,6 +16,7 @@ namespace AAXClean.Codecs.AudioFilters
 		private const int VECTOR_COUNT = 8;
 		private const int BITS_PER_SAMPLE = 16;
 		private readonly FfmpegAacDecoder decoder;
+		private readonly Action<SilenceDetectCallback> DetectionCallback;
 		private readonly BlockingCollection<MemoryHandle> waveFrameQueue;
 		private readonly Task encoderLoopTask;
 
@@ -25,10 +26,12 @@ namespace AAXClean.Codecs.AudioFilters
 
 		private readonly long numSamples;
 
-		public unsafe SilenceDetectFilter(double db, TimeSpan minDuration, byte[] audioSpecificConfig, ushort sampleSize)
+		public unsafe SilenceDetectFilter(double db, TimeSpan minDuration, byte[] audioSpecificConfig, ushort sampleSize, Action<SilenceDetectCallback> detectionCallback)
 		{
 			if (BITS_PER_SAMPLE != sampleSize)
 				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
+
+			DetectionCallback = detectionCallback;
 
 			decoder = new FfmpegAacDecoder(audioSpecificConfig);
 
@@ -161,7 +164,10 @@ namespace AAXClean.Codecs.AudioFilters
 			{
 				var start = TimeSpan.FromSeconds((double)lastSilenceStart / decoder.Channels / decoder.SampleRate);
 				var end = TimeSpan.FromSeconds((double)(lastSilenceStart + numConsecutiveSilences) / decoder.Channels / decoder.SampleRate);
-				Silences.Add(new SilenceEntry(start, end));
+
+				var silence = new SilenceEntry(start, end);
+				Silences.Add(silence);
+				DetectionCallback?.Invoke(new SilenceDetectCallback(silence));
 			}
 		}
 
