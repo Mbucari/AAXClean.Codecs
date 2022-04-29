@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\AAXClean.Codecs.csproj" />
+    <ProjectReference Include="..\src\AAXClean.Codecs.csproj" />
   </ItemGroup>
 
 </Project>
