@@ -8,9 +8,13 @@ namespace AAXClean.Codecs
 {
     public class SilenceDetectCallback
     {
+        public double SilenceThreshold { get; }
+        public TimeSpan MinDuration { get; }
         public SilenceEntry Silence { get; }
-        internal SilenceDetectCallback(SilenceEntry silence)
+        internal SilenceDetectCallback(double threshold, TimeSpan minDuration, SilenceEntry silence)
         {
+            SilenceThreshold = threshold;
+            MinDuration = minDuration;
             Silence = silence;
         }
     }
