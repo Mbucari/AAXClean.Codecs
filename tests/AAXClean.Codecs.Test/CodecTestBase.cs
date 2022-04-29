@@ -32,7 +32,7 @@ namespace AAXClean.Codecs.Test
         public abstract double SilenceThreshold { get; }
 
         [TestMethod]
-        public void _0_Silence()
+        public void _0_SilenceDetection()
         {
             try
             {
