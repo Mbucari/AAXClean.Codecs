@@ -1,5 +1,4 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using AAXClean;
 using System.IO;
 using System;
 using System.Collections.Generic;
@@ -64,6 +63,7 @@ namespace AAXClean.Codecs.Test
                 Aax.Close();
             }
         }
+
         [TestMethod]
         public void _1_ConvertMp3Single()
         {
@@ -96,6 +96,7 @@ namespace AAXClean.Codecs.Test
                 Aax.Close();
             }
         }
+
         [TestMethod]
         public void _2_ConvertMp3Multiple()
         {
