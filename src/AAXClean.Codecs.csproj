@@ -9,9 +9,9 @@
 		<Summary>An add-on module for AAXClean to filter aac audio. </Summary>
 		<RequireLicenseAcceptance>false</RequireLicenseAcceptance>
 		<Tags>Audible AAC AAXC m4b mp3 audiobook</Tags>
-		<ProjectUrl>https://github.com/Mbucari/AAXClean</ProjectUrl>
-		<PackageProjectUrl>https://github.com/Mbucari/AAXClean</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/Mbucari/AAXClean</RepositoryUrl>
+		<ProjectUrl>https://github.com/Mbucari/AAXClean.Codecs</ProjectUrl>
+		<PackageProjectUrl>https://github.com/Mbucari/AAXClean.Codecs</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/Mbucari/AAXClean.Codecs</RepositoryUrl>
 		<RepositoryType>Git</RepositoryType>
 		<PackageTags>Audible AAC AAXC m4b mp3 audiobook</PackageTags>
 		<NeutralLanguage>en</NeutralLanguage>
