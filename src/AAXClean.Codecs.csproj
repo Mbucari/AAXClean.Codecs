@@ -18,7 +18,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\AAXClean\src\AAXClean.csproj" Condition="'$(Configuration)'=='Debug'" />
-		<PackageReference Include="AAXClean" Version="0.2.8"  Condition="'$(Configuration)'=='Release'" />
+		<PackageReference Include="AAXClean" Version="0.3.0"  Condition="'$(Configuration)'=='Release'" />
 		<PackageReference Include="NAudio.Lame" Version="2.0.1" />
 	</ItemGroup>
   <ItemGroup>
