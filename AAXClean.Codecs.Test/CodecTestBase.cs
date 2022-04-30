@@ -111,7 +111,7 @@ namespace AAXClean.Codecs.Test
 
                 Aax.ConvertToMultiMp3(Aax.GetChapterInfo(), NewSplit, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
 #if !DEBUG
-                Assert.AreEqual(MultiM4bHashes.Count, tempFiles.Count);
+                Assert.AreEqual(MultiMp3Hashes.Count, tempFiles.Count);
 #endif
                 using var sha = SHA1.Create();
                 List<string> hashes = new();
