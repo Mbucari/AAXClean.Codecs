@@ -10,20 +10,18 @@ namespace AAXClean.Codecs.Test
 {
     public static class TestFiles
     {
-        private static List<FileStream> OpenTempFiles { get; } = new List<FileStream>();
-        private static string HP_WebPath { get; } = "https://drive.google.com/uc?export=download&id=1UIc0ouxIspS2RjGstX1Rzvp3QdeidDrR&confirm=t";
-
-        private static string _HP_BookPath { get; } = @"..\..\..\..\..\TestFiles\Harry Potter and the Sorcerer's Stone, Book 1 [B017V4IM1G] - Zero.aax";
-
-        public static string HP_BookPath => FindOrDownload(_HP_BookPath, HP_WebPath);
+        private static readonly List<FileStream> OpenTempFiles = new List<FileStream>();
+        private const string TEST_FILE_DIR = @"..\..\..\..\..\TestFiles";
+        private const string HP_URL = "https://drive.google.com/uc?export=download&id=1UIc0ouxIspS2RjGstX1Rzvp3QdeidDrR&confirm=t";
+        private static readonly string HP_FILENAME = Path.Combine(TEST_FILE_DIR, "HP_Zero.aax");
+        public static string HP_BookPath => FindOrDownload(HP_FILENAME, HP_URL);
 
         private static string FindOrDownload(string path, string url)
         {
             if (!File.Exists(path))
             {
-                var dir = Path.GetDirectoryName(path);
-                if (!Directory.Exists(dir))
-                    Directory.CreateDirectory(dir);
+                if (!Directory.Exists(TEST_FILE_DIR))
+                    Directory.CreateDirectory(TEST_FILE_DIR);
                 using WebClient cli = new();
                 cli.DownloadFile(url, path);
             }
