@@ -7,10 +7,10 @@ namespace AAXClean.Codecs.AudioFilters
 	internal sealed class AacToMp3MultipartFilter : MultipartFilterBase
 	{
 		protected override Action<NewSplitCallback> NewFileCallback { get; }
-		private byte[] ASC { get; }
-		private ushort SampleSize { get; }
-		private LameConfig LameConfig;
 
+        private readonly byte[] ASC;
+		private readonly ushort SampleSize;
+		private LameConfig LameConfig;
 		private AacToMp3Filter AacToMp3Filter;
 
 		public AacToMp3MultipartFilter(ChapterInfo splitChapters, Action<NewSplitCallback> newFileCallback, byte[] audioSpecificConfig, ushort sampleSize, LameConfig lameConfig)

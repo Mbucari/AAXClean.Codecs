@@ -10,7 +10,7 @@ namespace AAXClean.Codecs.AudioFilters
 		internal const int BITS_PER_SAMPLE = 16;
 
 		private const int AAC_FRAME_SIZE = 1024 * BITS_PER_SAMPLE / 8;
-		private NativeAac AacDecoder { get; }
+		private readonly NativeAac AacDecoder;
 		internal int DecodeSize => AAC_FRAME_SIZE * Channels;
 		public int Channels { get; }
 		public int SampleRate { get; }
@@ -46,6 +46,7 @@ namespace AAXClean.Codecs.AudioFilters
 
 			return handle;
 		}
+
 		public Memory<byte> Decode(Span<byte> aacFrame)
 		{
 			int error, inputSize = aacFrame.Length;
@@ -100,9 +101,9 @@ namespace AAXClean.Codecs.AudioFilters
 					try
 					{
 						if (bitness == 64)
-							File.WriteAllBytes(libName, Codecs.Properties.Resources.ffmpegx64);
+							File.WriteAllBytes(libName, Properties.Resources.ffmpegx64);
 						else
-							File.WriteAllBytes(libName, Codecs.Properties.Resources.ffmpegx86);
+							File.WriteAllBytes(libName, Properties.Resources.ffmpegx86);
 					}
 					catch (Exception ex)
 					{

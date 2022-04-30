@@ -38,7 +38,6 @@ namespace AAXClean.Codecs.AudioFilters
 			}
 		}
 
-		internal delegate void SetTagDelegate(string value);
 		public AacToMp3Filter(Stream mp3Output, byte[] audioSpecificConfig, ushort sampleSize, LameConfig lameConfig)
 		{
 			if (sampleSize != FfmpegAacDecoder.BITS_PER_SAMPLE)

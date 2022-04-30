@@ -19,7 +19,7 @@ namespace AAXClean.Codecs.AudioFilters
 		private readonly Action<SilenceDetectCallback> DetectionCallback;
 		private readonly BlockingCollection<MemoryHandle> waveFrameQueue;
 		private readonly Task encoderLoopTask;
-		private readonly TimeSpan MinDuration;
+		private readonly TimeSpan MinimumDuration;
 		private readonly double SilenceThreshold;
 
 		private readonly Vector128<short> maxAmplitudes;
@@ -34,7 +34,7 @@ namespace AAXClean.Codecs.AudioFilters
 				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
 
 			SilenceThreshold = db;
-			MinDuration = minDuration;
+			MinimumDuration = minDuration;
 
 			DetectionCallback = detectionCallback;
 
@@ -44,7 +44,7 @@ namespace AAXClean.Codecs.AudioFilters
 
 			short maxAmplitude = (short)(Math.Pow(10, SilenceThreshold / 20) * short.MaxValue);
 			short minAmplitude = (short)-maxAmplitude;
-			numSamples = (long)Math.Round(decoder.SampleRate * MinDuration.TotalSeconds * decoder.Channels);
+			numSamples = (long)Math.Round(decoder.SampleRate * MinimumDuration.TotalSeconds * decoder.Channels);
 
 			//Initialize vectors for comparisons
 			short[] sbytes = new short[VECTOR_COUNT];
@@ -102,10 +102,6 @@ namespace AAXClean.Codecs.AudioFilters
 					//silent = -1
 					var allLoud = Sse41.TestC(zeros, compares); //compares are all 0
 
-					//var anyLoud = !Avx.TestC(compares, ones); //compares have at least one 0
-
-					//Most of the audio will be above "silent", so checking
-					//for all silence may be a bit of a waste
 					//var allSilent = Sse41.TestC(compares, ones); //compares are all -1
 
 					if (allLoud)
@@ -118,18 +114,6 @@ namespace AAXClean.Codecs.AudioFilters
 						}
 						continue;
 					}
-
-					/*
-					else if (allSilent)
-					{
-						if (numConsecutive == 0)
-						{
-							lastStart = currentSample;
-						}
-						numConsecutive += VECTOR_COUNT;
-						continue;
-					}
-					*/
 
 					Sse2.Store(pbuff128, compares);
 
@@ -172,7 +156,8 @@ namespace AAXClean.Codecs.AudioFilters
 
 				var silence = new SilenceEntry(start, end);
 				Silences.Add(silence);
-				DetectionCallback?.Invoke(new SilenceDetectCallback(SilenceThreshold, MinDuration, silence));
+				if (DetectionCallback != null)
+					DetectionCallback(new SilenceDetectCallback {SilenceThreshold = SilenceThreshold, MinimumDuration = MinimumDuration, Silence = silence });
 			}
 		}
 

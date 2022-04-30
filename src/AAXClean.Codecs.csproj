@@ -1,39 +1,49 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net5.0-windows</TargetFramework>
-	  <Version>0.1.7</Version>
-	  <Authors>MrGneissGuy</Authors>
-	  <Company>Just Me, Inc.</Company>
-	  <Description>Filter and convert aac audio from AAXClean</Description>
-	  <Summary>An add-on module for AAXClean to filter aac audio. </Summary>
-	  <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
-	  <Tags>Audible AAC AAXC m4b mp3 audiobook</Tags>
-	  <ProjectUrl>https://github.com/Mbucari/AAXClean</ProjectUrl>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net5.0-windows</TargetFramework>
+		<Version>0.1.8</Version>
+		<Authors>MrGneissGuy</Authors>
+		<Company>Just Me, Inc.</Company>
+		<Description>Filter and convert aac audio from AAXClean</Description>
+		<Summary>An add-on module for AAXClean to filter aac audio. </Summary>
+		<RequireLicenseAcceptance>false</RequireLicenseAcceptance>
+		<Tags>Audible AAC AAXC m4b mp3 audiobook</Tags>
+		<ProjectUrl>https://github.com/Mbucari/AAXClean</ProjectUrl>
+		<PackageProjectUrl>https://github.com/Mbucari/AAXClean</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/Mbucari/AAXClean</RepositoryUrl>
+		<RepositoryType>Git</RepositoryType>
+		<PackageTags>Audible AAC AAXC m4b mp3 audiobook</PackageTags>
+		<NeutralLanguage>en</NeutralLanguage>
+	</PropertyGroup>
 	
-    <PropertyGroup>
+	<PropertyGroup>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+	
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	  <DebugType>embedded</DebugType>
+	  <DebugSymbols>true</DebugSymbols>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\AAXClean\src\AAXClean.csproj" Condition="'$(Configuration)'=='Debug'" />
-		<PackageReference Include="AAXClean" Version="0.3.0" Condition="'$(Configuration)'=='Release'" />
+		<PackageReference Include="AAXClean" Version="0.3.1" Condition="'$(Configuration)'=='Release'" />
 		<PackageReference Include="NAudio.Lame" Version="2.0.1" />
 	</ItemGroup>
-  <ItemGroup>
-    <Compile Update="Properties\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Update="Properties\Resources.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
 
 </Project>

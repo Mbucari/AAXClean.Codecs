@@ -7,7 +7,7 @@ namespace AAXClean.Codecs
 {
     public static class Mp4FileExtensions
     {
-		public static IEnumerable<SilenceEntry> DetectSilence(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null)
+		public static IReadOnlyList<SilenceEntry> DetectSilence(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null)
 		{
 			if (decibels >= 0 || decibels < -90)
 				throw new ArgumentException($"{nameof(decibels)} must fall in [-90,0)");
