@@ -52,7 +52,7 @@ namespace AAXClean.Codecs.Test
 				}
 
 #if DEBUG
-                StringBuilder sb = new StringBuilder();
+				System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 foreach (var sil in silecnes)
                     sb.AppendLine($"(TimeSpan.FromTicks({sil.SilenceStart.Ticks}), TimeSpan.FromTicks({sil.SilenceEnd.Ticks})),");
 #endif
@@ -97,7 +97,47 @@ namespace AAXClean.Codecs.Test
 		}
 
 		[TestMethod]
-		public void _2_ConvertMp3Multiple()
+		public void _2_ConvertMp3SingleIndirect()
+		{
+			try
+			{
+				FileStream m4bfile = TestFiles.NewTempFile();
+				FileStream mp3File = TestFiles.NewTempFile();
+
+				ConversionResult result = Aax.ConvertToMp4a(m4bfile);
+				Assert.AreEqual(result, ConversionResult.NoErrorsDetected);
+				Aax.Close();
+
+				Mp4File mp4 = new Mp4File(m4bfile.Name);
+
+				result = mp4.ConvertToMp3(mp3File, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
+				Assert.AreEqual(result, ConversionResult.NoErrorsDetected);
+				mp4.Close();
+
+				using SHA1 sha = SHA1.Create();
+
+				FileStream mp4file = File.OpenRead(mp3File.Name);
+				int read;
+				byte[] buff = new byte[4 * 1024 * 1024];
+
+				while ((read = mp4file.Read(buff)) == buff.Length)
+				{
+					sha.TransformBlock(buff, 0, read, null, 0);
+				}
+				mp4file.Close();
+				sha.TransformFinalBlock(buff, 0, read);
+				string fileHash = string.Join("", sha.Hash.Select(b => b.ToString("x2")));
+
+				Assert.AreEqual(SingleMp3Hash, fileHash);
+			}
+			finally
+			{
+				TestFiles.CloseAllFiles();
+			}
+		}
+
+		[TestMethod]
+		public void _3_ConvertMp3Multiple()
 		{
 			try
 			{
@@ -121,7 +161,7 @@ namespace AAXClean.Codecs.Test
 					hashes.Add(string.Join("", sha.Hash.Select(b => b.ToString("x2"))));
 				}
 #if DEBUG
-                var hs = new StringBuilder();
+                var hs = new System.Text.StringBuilder();
 
                 foreach (var h in hashes)
                 {
