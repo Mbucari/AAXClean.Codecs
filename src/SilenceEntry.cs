@@ -15,7 +15,7 @@ namespace AAXClean.Codecs
 		}
 		public override string ToString()
 		{
-			return $"[Start = {SilenceStart:hh\\:mm\\:ss\\:fff}, End = {SilenceEnd:hh\\:mm\\:ss\\:fff}, Duration = {SilenceDuration.TotalSeconds:F3} s]";
+			return $"[Start = {SilenceStart:hh\\:mm\\:ss\\.fff}, End = {SilenceEnd:hh\\:mm\\:ss\\.fff}, Duration = {SilenceDuration.TotalSeconds:F3} s]";
 		}
 	}
 }
