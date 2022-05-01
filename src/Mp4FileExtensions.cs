@@ -1,12 +1,12 @@
-﻿using System;
+﻿using AAXClean.Codecs.AudioFilters;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using AAXClean.Codecs.AudioFilters;
 
 namespace AAXClean.Codecs
 {
-    public static class Mp4FileExtensions
-    {
+	public static class Mp4FileExtensions
+	{
 		public static IReadOnlyList<SilenceEntry> DetectSilence(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null)
 		{
 			if (decibels >= 0 || decibels < -90)
@@ -14,7 +14,7 @@ namespace AAXClean.Codecs
 			if (minDuration.TotalSeconds * mp4File.TimeScale < 2)
 				throw new ArgumentException($"{nameof(minDuration)} must be no shorter than 2 audio samples.");
 
-			using var sil = new SilenceDetectFilter(
+			using SilenceDetectFilter sil = new SilenceDetectFilter(
 				decibels,
 				minDuration,
 				mp4File.AscBlob,
@@ -32,7 +32,7 @@ namespace AAXClean.Codecs
 			lameConfig.ID3 ??= AacToMp3Filter.GetDefaultMp3Tags(mp4File.AppleTags);
 
 			ConversionResult result;
-			using (var audioFilter = new AacToMp3Filter(
+			using (AacToMp3Filter audioFilter = new AacToMp3Filter(
 				outputStream,
 				mp4File.AscBlob,
 				mp4File.AudioSampleSize,
@@ -50,7 +50,7 @@ namespace AAXClean.Codecs
 			lameConfig ??= GetDefaultLameConfig(mp4File);
 			lameConfig.ID3 ??= AacToMp3Filter.GetDefaultMp3Tags(mp4File.AppleTags);
 
-			using var audioFilter = new AacToMp3MultipartFilter(
+			using AacToMp3MultipartFilter audioFilter = new AacToMp3MultipartFilter(
 				userChapters,
 				newFileCallback,
 				mp4File.AscBlob,
@@ -62,7 +62,7 @@ namespace AAXClean.Codecs
 
 		private static NAudio.Lame.LameConfig GetDefaultLameConfig(Mp4File mp4File)
 		{
-			var lameConfig = new NAudio.Lame.LameConfig
+			NAudio.Lame.LameConfig lameConfig = new NAudio.Lame.LameConfig
 			{
 				ABRRateKbps = (int)Math.Round(mp4File.AverageBitrate / 1024d / mp4File.AudioChannels),
 				Mode = NAudio.Lame.MPEGMode.Mono,

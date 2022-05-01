@@ -15,36 +15,32 @@ namespace AAXClean.Codecs.AudioFilters
 
 		private const int VECTOR_COUNT = 8;
 		private const int BITS_PER_SAMPLE = 16;
-		private readonly FfmpegAacDecoder decoder;
+		private readonly FfmpegAacDecoder AacDecoder;
 		private readonly Action<SilenceDetectCallback> DetectionCallback;
-		private readonly BlockingCollection<MemoryHandle> waveFrameQueue;
-		private readonly Task encoderLoopTask;
+		private readonly BlockingCollection<MemoryHandle> WaveFrameQueue;
+		private readonly Task EncoderLoopTask;
 		private readonly TimeSpan MinimumDuration;
 		private readonly double SilenceThreshold;
-
-		private readonly Vector128<short> maxAmplitudes;
-		private readonly Vector128<short> minAmplitudes;
-		private readonly Vector128<short> zeros = Vector128<short>.Zero;
-
-		private readonly long numSamples;
+		private readonly long MinConsecutiveSamples;
+		private readonly Vector128<short> MaxAmplitudes;
+		private readonly Vector128<short> MinAmplitudes;
+		private readonly Vector128<short> Zeros = Vector128<short>.Zero;
 
 		public unsafe SilenceDetectFilter(double db, TimeSpan minDuration, byte[] audioSpecificConfig, ushort sampleSize, Action<SilenceDetectCallback> detectionCallback)
 		{
 			if (BITS_PER_SAMPLE != sampleSize)
 				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
 
+			DetectionCallback = detectionCallback;
+			AacDecoder = new FfmpegAacDecoder(audioSpecificConfig);
+			Silences = new List<SilenceEntry>();
+
 			SilenceThreshold = db;
 			MinimumDuration = minDuration;
 
-			DetectionCallback = detectionCallback;
-
-			decoder = new FfmpegAacDecoder(audioSpecificConfig);
-
-			Silences = new List<SilenceEntry>();
-
 			short maxAmplitude = (short)(Math.Pow(10, SilenceThreshold / 20) * short.MaxValue);
 			short minAmplitude = (short)-maxAmplitude;
-			numSamples = (long)Math.Round(decoder.SampleRate * MinimumDuration.TotalSeconds * decoder.Channels);
+			MinConsecutiveSamples = (long)Math.Round(AacDecoder.SampleRate * MinimumDuration.TotalSeconds * AacDecoder.Channels);
 
 			//Initialize vectors for comparisons
 			short[] sbytes = new short[VECTOR_COUNT];
@@ -54,7 +50,7 @@ namespace AAXClean.Codecs.AudioFilters
 
 			fixed (short* s = sbytes)
 			{
-				maxAmplitudes = Sse2.LoadVector128(s);
+				MaxAmplitudes = Sse2.LoadVector128(s);
 			}
 
 			for (int i = 0; i < sbytes.Length; i++)
@@ -62,12 +58,12 @@ namespace AAXClean.Codecs.AudioFilters
 
 			fixed (short* s = sbytes)
 			{
-				minAmplitudes = Sse2.LoadVector128(s);
+				MinAmplitudes = Sse2.LoadVector128(s);
 			}
 
-			waveFrameQueue = new BlockingCollection<MemoryHandle>(200);
-			encoderLoopTask = new Task(SilenceCheckLoop);
-			encoderLoopTask.Start();
+			WaveFrameQueue = new BlockingCollection<MemoryHandle>(200);
+			EncoderLoopTask = new Task(SilenceCheckLoop);
+			EncoderLoopTask.Start();
 		}
 
 		/// <summary>
@@ -82,25 +78,25 @@ namespace AAXClean.Codecs.AudioFilters
 			//Buffer for storing Vector128<short>
 			Memory<short> buff128 = new short[VECTOR_COUNT];
 			Span<short> buff128Span = buff128.Span;
-			using var hbuff128 = buff128.Pin();
+			using MemoryHandle hbuff128 = buff128.Pin();
 			short* pbuff128 = (short*)hbuff128.Pointer;
 
-			while (waveFrameQueue.TryTake(out MemoryHandle waveFrame, -1))
+			while (WaveFrameQueue.TryTake(out MemoryHandle waveFrame, -1))
 			{
 				short* samples = (short*)waveFrame.Pointer;
 
-				for (int i = 0; i < decoder.DecodeSize / sizeof(short); i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
+				for (int i = 0; i < AacDecoder.DecodeSize / sizeof(short); i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
 				{
 					//2x compares and an AND is ~3% faster than Abs and 1x compare
 					//And for whatever reason, equivalent method with Avx 256-bit vectors is slightly slower.
-					var samps = Sse2.LoadVector128(samples + i);
-					var comparesLess = Sse2.CompareLessThan(samps, maxAmplitudes);
-					var comparesGreater = Sse2.CompareGreaterThan(samps, minAmplitudes);
-					var compares = Sse2.And(comparesLess, comparesGreater);
+					Vector128<short> samps = Sse2.LoadVector128(samples + i);
+					Vector128<short> comparesLess = Sse2.CompareLessThan(samps, MaxAmplitudes);
+					Vector128<short> comparesGreater = Sse2.CompareGreaterThan(samps, MinAmplitudes);
+					Vector128<short> compares = Sse2.And(comparesLess, comparesGreater);
 
 					//loud = 0
 					//silent = -1
-					var allLoud = Sse41.TestC(zeros, compares); //compares are all 0
+					bool allLoud = Sse41.TestC(Zeros, compares); //compares are all 0
 
 					//var allSilent = Sse41.TestC(compares, ones); //compares are all -1
 
@@ -119,7 +115,7 @@ namespace AAXClean.Codecs.AudioFilters
 
 					for (int j = 0; j < VECTOR_COUNT; j++)
 					{
-						bool Silence = buff128Span[j] == - 1;
+						bool Silence = buff128Span[j] == -1;
 						if (!Silence)
 						{
 							if (numConsecutiveSilences != 0)
@@ -149,29 +145,29 @@ namespace AAXClean.Codecs.AudioFilters
 
 		private void CheckAndAddSilence(long lastSilenceStart, long numConsecutiveSilences)
 		{
-			if (numConsecutiveSilences > numSamples)
+			if (numConsecutiveSilences > MinConsecutiveSamples)
 			{
-				var start = TimeSpan.FromSeconds((double)lastSilenceStart / decoder.Channels / decoder.SampleRate);
-				var end = TimeSpan.FromSeconds((double)(lastSilenceStart + numConsecutiveSilences) / decoder.Channels / decoder.SampleRate);
+				TimeSpan start = TimeSpan.FromSeconds((double)lastSilenceStart / AacDecoder.Channels / AacDecoder.SampleRate);
+				TimeSpan end = TimeSpan.FromSeconds((double)(lastSilenceStart + numConsecutiveSilences) / AacDecoder.Channels / AacDecoder.SampleRate);
 
-				var silence = new SilenceEntry(start, end);
+				SilenceEntry silence = new SilenceEntry(start, end);
 				Silences.Add(silence);
 				if (DetectionCallback != null)
-					DetectionCallback(new SilenceDetectCallback {SilenceThreshold = SilenceThreshold, MinimumDuration = MinimumDuration, Silence = silence });
+					DetectionCallback(new SilenceDetectCallback { SilenceThreshold = SilenceThreshold, MinimumDuration = MinimumDuration, Silence = silence });
 			}
 		}
 
 		public override bool FilterFrame(uint chunkIndex, uint frameIndex, Span<byte> aacSample)
 		{
-			waveFrameQueue.Add(decoder.DecodeRaw(aacSample));
+			WaveFrameQueue.Add(AacDecoder.DecodeRaw(aacSample));
 			return true;
 		}
 
 		public override void Close()
 		{
 			if (Closed) return;
-			waveFrameQueue.CompleteAdding();
-			encoderLoopTask.Wait();
+			WaveFrameQueue.CompleteAdding();
+			EncoderLoopTask.Wait();
 			Closed = true;
 		}
 
@@ -182,9 +178,9 @@ namespace AAXClean.Codecs.AudioFilters
 				if (disposing)
 				{
 					Close();
-					decoder?.Dispose();
-					waveFrameQueue?.Dispose();
-					encoderLoopTask?.Dispose();
+					AacDecoder?.Dispose();
+					WaveFrameQueue?.Dispose();
+					EncoderLoopTask?.Dispose();
 				}
 				base.Dispose(disposing);
 			}

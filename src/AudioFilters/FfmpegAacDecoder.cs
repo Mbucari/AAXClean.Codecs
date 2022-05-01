@@ -53,7 +53,7 @@ namespace AAXClean.Codecs.AudioFilters
 
 			Memory<byte> decoded = new byte[DecodeSize];
 
-			using var handle = decoded.Pin();
+			using MemoryHandle handle = decoded.Pin();
 
 			fixed (byte* buff = aacFrame)
 			{

@@ -2,15 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AAXClean.Codecs.AudioFilters
 {
-    internal class LameMP3FileWriterEx : LameMP3FileWriter
-    {
+	internal class LameMP3FileWriterEx : LameMP3FileWriter
+	{
 		private readonly Action ID3Init;
 		private readonly Action<string> ID3SetTitle;
 		private readonly Action<string> ID3SetArtist;
@@ -27,12 +24,12 @@ namespace AAXClean.Codecs.AudioFilters
 		private readonly object _lame;
 		private readonly IntPtr context;
 		internal LameMP3FileWriterEx(Stream outputStream, WaveFormat waveFormat, LameConfig lameConfig)
-            :base(outputStream, waveFormat, lameConfig)
-        {
+			: base(outputStream, waveFormat, lameConfig)
+		{
 			_lame = typeof(LameMP3FileWriter).GetField("_lame", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(this);
 			_outStream = typeof(LameMP3FileWriter).GetField("_outStream", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(this) as Stream;
 
-			var typ = _lame.GetType();
+			Type typ = _lame.GetType();
 
 			context = (IntPtr)typ.GetField("context", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(_lame);
 			ID3Init = typ.GetMethod("ID3Init").CreateDelegate<Action>(_lame);
@@ -79,7 +76,7 @@ namespace AAXClean.Codecs.AudioFilters
 				ID3SetFieldValue($"TPE2={tag.AlbumArtist}");
 
 			// Add user-defined tags if present
-			foreach (var kv in tag.UserDefinedText)
+			foreach (KeyValuePair<string, string> kv in tag.UserDefinedText)
 			{
 				ID3SetFieldValue($"TXXX={kv.Key}={kv.Value}");
 			}
@@ -90,7 +87,7 @@ namespace AAXClean.Codecs.AudioFilters
 
 			// check size of ID3 tag, if too large write it ourselves.
 			byte[] data = ID3GetID3v2Tag();
-			var tagStr = Encoding.UTF8.GetString(data);
+			string tagStr = Encoding.UTF8.GetString(data);
 			if (data?.Length >= 32768)
 			{
 				set_ID3WriteTagAutomatic(false);

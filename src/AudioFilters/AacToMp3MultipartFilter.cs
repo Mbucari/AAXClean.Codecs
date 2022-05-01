@@ -8,7 +8,7 @@ namespace AAXClean.Codecs.AudioFilters
 	{
 		protected override Action<NewSplitCallback> NewFileCallback { get; }
 
-        private readonly byte[] ASC;
+		private readonly byte[] ASC;
 		private readonly ushort SampleSize;
 		private LameConfig LameConfig;
 		private AacToMp3Filter AacToMp3Filter;

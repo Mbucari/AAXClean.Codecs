@@ -18,7 +18,7 @@ namespace AAXClean.Codecs.AudioFilters
 		private readonly Stream OutputStream;
 
 		static AacToMp3Filter()
-        {
+		{
 			int bitness = IntPtr.Size * 8;
 			string libName = $"libmp3lame.{bitness}.dll";
 
@@ -61,18 +61,18 @@ namespace AAXClean.Codecs.AudioFilters
 		{
 			if (appleTags is null) return new();
 
-            var tags = new ID3TagData
-            {
-                Album = appleTags.Album,
-                AlbumArt = appleTags.Cover,
-                AlbumArtist = appleTags.AlbumArtists,
-                Comment = appleTags.Comment,
-                Genre = appleTags.Generes,
-                Title = appleTags.Title,
-                Year = appleTags.ReleaseDate
-            };
+			ID3TagData tags = new ID3TagData
+			{
+				Album = appleTags.Album,
+				AlbumArt = appleTags.Cover,
+				AlbumArtist = appleTags.AlbumArtists,
+				Comment = appleTags.Comment,
+				Genre = appleTags.Generes,
+				Title = appleTags.Title,
+				Year = appleTags.ReleaseDate
+			};
 
-            return tags;
+			return tags;
 		}
 
 		private void EncoderLoop()
@@ -116,6 +116,6 @@ namespace AAXClean.Codecs.AudioFilters
 				}
 				base.Dispose(disposing);
 			}
-		}	
-	}	
+		}
+	}
 }
