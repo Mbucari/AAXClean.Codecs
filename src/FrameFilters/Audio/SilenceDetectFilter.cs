@@ -1,4 +1,4 @@
-﻿using AAXClean.AudioFilters;
+﻿using AAXClean.FrameFilters.Audio;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -7,7 +7,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Threading.Tasks;
 
-namespace AAXClean.Codecs.AudioFilters
+namespace AAXClean.Codecs.FrameFilters.Audio
 {
 	internal unsafe class SilenceDetectFilter : AudioFilterBase
 	{
@@ -157,7 +157,7 @@ namespace AAXClean.Codecs.AudioFilters
 			}
 		}
 
-		public override bool FilterFrame(uint chunkIndex, uint frameIndex, Span<byte> aacSample)
+		public override bool FilterFrame(Chunks.ChunkEntry cEntry, uint frameIndex, Span<byte> aacSample)
 		{
 			WaveFrameQueue.Add(AacDecoder.DecodeRaw(aacSample));
 			return true;

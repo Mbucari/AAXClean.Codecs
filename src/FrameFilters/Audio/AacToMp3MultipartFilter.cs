@@ -1,8 +1,8 @@
-﻿using AAXClean.AudioFilters;
+﻿using AAXClean.FrameFilters.Audio;
 using NAudio.Lame;
 using System;
 
-namespace AAXClean.Codecs.AudioFilters
+namespace AAXClean.Codecs.FrameFilters.Audio
 {
 	internal sealed class AacToMp3MultipartFilter : MultipartFilterBase
 	{
@@ -25,7 +25,7 @@ namespace AAXClean.Codecs.AudioFilters
 
 		protected override void CloseCurrentWriter() => AacToMp3Filter?.Dispose();
 
-		protected override void WriteFrameToFile(Span<byte> audioFrame, bool newChunk) => AacToMp3Filter.FilterFrame(0, 0, audioFrame);
+		protected override void WriteFrameToFile(Span<byte> audioFrame, bool newChunk) => AacToMp3Filter.FilterFrame(default, 0, audioFrame);
 
 		protected override void CreateNewWriter(NewSplitCallback callback)
 		{

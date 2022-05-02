@@ -1,11 +1,12 @@
-﻿using AAXClean.AudioFilters;
+﻿using AAXClean.Chunks;
+using AAXClean.FrameFilters.Audio;
 using NAudio.Lame;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace AAXClean.Codecs.AudioFilters
+namespace AAXClean.Codecs.FrameFilters.Audio
 {
 	internal class AacToMp3Filter : AudioFilterBase
 	{
@@ -86,7 +87,7 @@ namespace AAXClean.Codecs.AudioFilters
 			lameMp3Encoder.Close();
 		}
 
-		public override bool FilterFrame(uint chunkIndex, uint frameIndex, Span<byte> aacFrame)
+		public override bool FilterFrame(ChunkEntry cEntry, uint frameIndex, Span<byte> aacFrame)
 		{
 			waveFrameQueue.Add(decoder.Decode(aacFrame));
 			return true;

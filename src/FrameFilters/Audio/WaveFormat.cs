@@ -1,4 +1,4 @@
-﻿namespace AAXClean.Codecs.AudioFilters
+﻿namespace AAXClean.Codecs.FrameFilters.Audio
 {
 	internal class WaveFormat : NAudio.Wave.WaveFormat
 	{

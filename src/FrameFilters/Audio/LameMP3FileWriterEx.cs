@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace AAXClean.Codecs.AudioFilters
+namespace AAXClean.Codecs.FrameFilters.Audio
 {
 	internal class LameMP3FileWriterEx : LameMP3FileWriter
 	{

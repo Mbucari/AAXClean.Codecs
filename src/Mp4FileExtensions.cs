@@ -1,4 +1,4 @@
-﻿using AAXClean.Codecs.AudioFilters;
+﻿using AAXClean.Codecs.FrameFilters.Audio;
 using System;
 using System.Collections.Generic;
 using System.IO;
