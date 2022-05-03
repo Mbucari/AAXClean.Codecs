@@ -87,7 +87,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			lameMp3Encoder.Close();
 		}
 
-		public override bool FilterFrame(ChunkEntry cEntry, uint frameIndex, Span<byte> aacFrame)
+		public override bool FilterFrame(ChunkEntry cEntry, uint frameIndex, uint frameDelta, Span<byte> aacFrame)
 		{
 			waveFrameQueue.Add(decoder.Decode(aacFrame));
 			return true;

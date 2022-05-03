@@ -157,7 +157,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			}
 		}
 
-		public override bool FilterFrame(Chunks.ChunkEntry cEntry, uint frameIndex, Span<byte> aacSample)
+		public override bool FilterFrame(Chunks.ChunkEntry cEntry, uint frameIndex, uint frameDelta, Span<byte> aacSample)
 		{
 			WaveFrameQueue.Add(AacDecoder.DecodeRaw(aacSample));
 			return true;
