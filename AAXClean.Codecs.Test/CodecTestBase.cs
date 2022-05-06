@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace AAXClean.Codecs.Test
 {
@@ -30,7 +31,7 @@ namespace AAXClean.Codecs.Test
 		public abstract double SilenceThreshold { get; }
 
 		[TestMethod]
-		public void _0_SilenceDetection()
+		public async Task _0_SilenceDetection()
 		{
 			try
 			{
@@ -41,14 +42,14 @@ namespace AAXClean.Codecs.Test
 					Assert.AreEqual(callback.Silence.SilenceEnd, SilenceTimes[silEndex].end);
 					silEndex++;
 				}
-				List<SilenceEntry> silecnes = Aax.DetectSilence(SilenceThreshold, SilenceDuration, SilenceDetected).ToList();
+				List<SilenceEntry> silecnes = (await Aax.DetectSilenceAsync(SilenceThreshold, SilenceDuration, SilenceDetected)).ToList();
 
-				Assert.AreEqual(silecnes.Count, SilenceTimes.Count);
+				Assert.AreEqual(SilenceTimes.Count, silecnes.Count);
 
 				for (int i = 0; i < silecnes.Count; i++)
 				{
-					Assert.AreEqual(silecnes[i].SilenceStart, SilenceTimes[i].start);
-					Assert.AreEqual(silecnes[i].SilenceEnd, SilenceTimes[i].end);
+					Assert.AreEqual(SilenceTimes[i].start, silecnes[i].SilenceStart);
+					Assert.AreEqual(SilenceTimes[i].end, silecnes[i].SilenceEnd);
 				}
 
 #if DEBUG
@@ -64,14 +65,14 @@ namespace AAXClean.Codecs.Test
 		}
 
 		[TestMethod]
-		public void _1_ConvertMp3Single()
+		public async Task _1_ConvertMp3Single()
 		{
 			try
 			{
 				FileStream tempfile = TestFiles.NewTempFile();
-				ConversionResult result = Aax.ConvertToMp3(tempfile, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
+				ConversionResult result = await Aax.ConvertToMp3Async(tempfile, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
 
-				Assert.AreEqual(result, ConversionResult.NoErrorsDetected);
+				Assert.AreEqual(ConversionResult.NoErrorsDetected, result);
 
 				using SHA1 sha = SHA1.Create();
 
@@ -97,20 +98,20 @@ namespace AAXClean.Codecs.Test
 		}
 
 		[TestMethod]
-		public void _2_ConvertMp3SingleIndirect()
+		public async Task _2_ConvertMp3SingleIndirect()
 		{
 			try
 			{
 				FileStream m4bfile = TestFiles.NewTempFile();
 				FileStream mp3File = TestFiles.NewTempFile();
 
-				ConversionResult result = Aax.ConvertToMp4a(m4bfile);
-				Assert.AreEqual(result, ConversionResult.NoErrorsDetected);
+				ConversionResult result = await Aax.ConvertToMp4aAsync(m4bfile);
+				Assert.AreEqual(ConversionResult.NoErrorsDetected, result);
 				Aax.Close();
 
 				Mp4File mp4 = new Mp4File(m4bfile.Name);
 
-				result = mp4.ConvertToMp3(mp3File, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
+				result = await mp4.ConvertToMp3Async(mp3File, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
 				Assert.AreEqual(result, ConversionResult.NoErrorsDetected);
 				mp4.Close();
 
@@ -137,7 +138,7 @@ namespace AAXClean.Codecs.Test
 		}
 
 		[TestMethod]
-		public void _3_ConvertMp3Multiple()
+		public async Task _3_ConvertMp3Multiple()
 		{
 			try
 			{
@@ -148,7 +149,8 @@ namespace AAXClean.Codecs.Test
 					tempFiles.Add(((FileStream)callback.OutputFile).Name);
 				}
 
-				Aax.ConvertToMultiMp3(Aax.GetChapterInfo(), NewSplit, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
+				ConversionResult result = await Aax.ConvertToMultiMp3Async(await Aax.GetChapterInfoAsync(), NewSplit, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
+				Assert.AreEqual(ConversionResult.NoErrorsDetected, result);
 #if !DEBUG
 				Assert.AreEqual(MultiMp3Hashes.Count, tempFiles.Count);
 #endif

@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net5.0-windows</TargetFramework>
-		<Version>0.1.14</Version>
+		<Version>0.2.0</Version>
 		<Authors>MrGneissGuy</Authors>
 		<Company>Just Me, Inc.</Company>
 		<Description>Filter and convert aac audio from AAXClean</Description>
@@ -20,7 +20,11 @@
 	<PropertyGroup>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<PublishReadyToRun>true</PublishReadyToRun>
-		<PackageReleaseNotes>Update AAXClean package to 0.3.7</PackageReleaseNotes>
+		<PackageReleaseNotes>
+			Update AAXClean package to 0.4.1
+			Add async methods.
+			Lots of architectural changes and performance improvements.
+		</PackageReleaseNotes>
 	</PropertyGroup>
 	
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -29,8 +33,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\AAXClean\src\AAXClean.csproj" Condition="'$(Configuration)'=='Debug'" />
-		<PackageReference Include="AAXClean" Version="0.3.7" Condition="'$(Configuration)'=='Release'" />
+		<ProjectReference Include="..\..\AAXClean\src\AAXClean\AAXClean.csproj" Condition="'$(Configuration)'=='Debug'" />
+		<PackageReference Include="AAXClean" Version="0.4.1" Condition="'$(Configuration)'=='Release'" />
 		<PackageReference Include="NAudio.Lame" Version="2.0.1" />
 	</ItemGroup>
 	<ItemGroup>

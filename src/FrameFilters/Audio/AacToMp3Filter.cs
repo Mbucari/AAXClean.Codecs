@@ -1,22 +1,18 @@
-﻿using AAXClean.Chunks;
-using AAXClean.FrameFilters.Audio;
+﻿using AAXClean.FrameFilters;
 using NAudio.Lame;
 using System;
-using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
-	internal class AacToMp3Filter : AudioFilterBase
+	internal class AacToMp3Filter : FrameFinalBase<WaveEntry>
 	{
-		private const int MAX_BUFFER_SZ = 4 * 1024 * 1024;
-		private readonly FfmpegAacDecoder decoder;
-		private readonly BlockingCollection<Memory<byte>> waveFrameQueue;
 		private readonly LameMP3FileWriter lameMp3Encoder;
-		private readonly Task encoderLoopTask;
 		private readonly WaveFormat waveFormat;
 		private readonly Stream OutputStream;
+
+		public bool Closed { get; private set; }
 
 		static AacToMp3Filter()
 		{
@@ -39,23 +35,15 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			}
 		}
 
-		public AacToMp3Filter(Stream mp3Output, byte[] audioSpecificConfig, ushort sampleSize, LameConfig lameConfig)
+		public AacToMp3Filter(Stream mp3Output, int sampleRate, ushort sampleSize, int channels, LameConfig lameConfig)
 		{
 			if (sampleSize != FfmpegAacDecoder.BITS_PER_SAMPLE)
 				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
 
 			OutputStream = mp3Output;
-			decoder = new FfmpegAacDecoder(audioSpecificConfig);
 
-			waveFormat = new WaveFormat(decoder.SampleRate, sampleSize, decoder.Channels);
+			waveFormat = new WaveFormat(sampleRate, sampleSize, channels);
 			lameMp3Encoder = new LameMP3FileWriter(OutputStream, waveFormat, lameConfig);
-
-			int waveFrameSize = 1024 /* Decoded AAC frame size*/ * waveFormat.BlockAlign;
-			int maxCachedFrames = MAX_BUFFER_SZ / waveFrameSize;
-			waveFrameQueue = new BlockingCollection<Memory<byte>>(maxCachedFrames);
-
-			encoderLoopTask = new Task(EncoderLoop);
-			encoderLoopTask.Start();
 		}
 
 		public static ID3TagData GetDefaultMp3Tags(AppleTags appleTags)
@@ -76,47 +64,22 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			return tags;
 		}
 
-		private void EncoderLoop()
+		public override async Task CompleteAsync()
 		{
-			while (waveFrameQueue.TryTake(out Memory<byte> waveFrame, -1))
+			await base.CompleteAsync();
+			if (!Closed)
 			{
-				lameMp3Encoder.Write(waveFrame.Span);
+				lameMp3Encoder.Flush();
+				lameMp3Encoder.Close();
+				OutputStream.Close();
+				Closed = true;
 			}
-
-			lameMp3Encoder.Flush();
-			lameMp3Encoder.Close();
 		}
 
-		public override bool FilterFrame(ChunkEntry cEntry, uint frameIndex, uint frameDelta, Span<byte> aacFrame)
+		protected override void PerformFiltering(WaveEntry input)
 		{
-			waveFrameQueue.Add(decoder.Decode(aacFrame));
-			return true;
-		}
-
-		public override void Close()
-		{
-			if (Closed) return;
-			waveFrameQueue.CompleteAdding();
-			encoderLoopTask.Wait();
-			lameMp3Encoder.Close();
-			OutputStream.Close();
-			Closed = true;
-		}
-
-		protected override void Dispose(bool disposing)
-		{
-			if (!Disposed)
-			{
-				if (disposing)
-				{
-					Close();
-					decoder?.Dispose();
-					encoderLoopTask?.Dispose();
-					waveFrameQueue?.Dispose();
-					lameMp3Encoder?.Dispose();
-				}
-				base.Dispose(disposing);
-			}
+			lameMp3Encoder.Write(input.FrameData.Span);
+			input.hFrameData.Dispose();
 		}
 	}
 }
