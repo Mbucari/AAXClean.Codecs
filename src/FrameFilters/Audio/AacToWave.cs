@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
-	internal sealed unsafe class AacToWave : FrameTransformBase<FrameEntry, WaveEntry>
+	internal sealed class AacToWave : FrameTransformBase<FrameEntry, WaveEntry>
 	{
-		internal const int BITS_PER_SAMPLE = 16;
+		internal static int BitsPerSample => FfmpegAacDecoder.BITS_PER_SAMPLE;
 		internal int DecodeSize => AacDecoder.DecodeSize;
 		public int Channels => AacDecoder.Channels;
 		public int SampleRate => AacDecoder.SampleRate;

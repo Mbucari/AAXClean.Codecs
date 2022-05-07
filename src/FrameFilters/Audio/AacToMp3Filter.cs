@@ -37,7 +37,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		public AacToMp3Filter(Stream mp3Output, int sampleRate, ushort sampleSize, int channels, LameConfig lameConfig)
 		{
-			if (sampleSize != AacToWave.BITS_PER_SAMPLE)
+			if (sampleSize != AacToWave.BitsPerSample)
 				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
 
 			OutputStream = mp3Output;

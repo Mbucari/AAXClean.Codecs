@@ -19,7 +19,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 						: base(audioSpecificConfig, splitChapters)
 		{
 
-			if (sampleSize != AacToWave.BITS_PER_SAMPLE)
+			if (sampleSize != AacToWave.BitsPerSample)
 				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
 
 

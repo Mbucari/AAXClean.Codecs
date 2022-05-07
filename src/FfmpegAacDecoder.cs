@@ -1,23 +1,19 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AAXClean.Codecs
 {
 	internal unsafe class FfmpegAacDecoder
 	{
 		internal const int BITS_PER_SAMPLE = 16;
+		internal int DecodeSize { get; }
+		public int Channels { get; }
+		public int SampleRate { get; }
 
 		private const int AAC_FRAME_SIZE = 1024 * BITS_PER_SAMPLE / 8;
 		private readonly NativeAac AacDecoder;
-		internal int DecodeSize => AAC_FRAME_SIZE * Channels;
-		public int Channels { get; }
-		public int SampleRate { get; }
 
 		private static readonly int[] asc_samplerates = { 96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350 };
 
@@ -25,6 +21,7 @@ namespace AAXClean.Codecs
 		{
 			SampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
 			Channels = (asc[1] >> 3) & 7;
+			DecodeSize = AAC_FRAME_SIZE* Channels;
 			AacDecoder = NativeAac.Open(asc, asc.Length);
 		}
 
