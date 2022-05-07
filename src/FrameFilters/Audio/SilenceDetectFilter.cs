@@ -14,7 +14,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		private const int VECTOR_COUNT = 8;
 		private const int BITS_PER_SAMPLE = 16;
-		private readonly FfmpegAacDecoder AacDecoder;
+		private readonly AacToWave AacDecoder;
 		private readonly Action<SilenceDetectCallback> DetectionCallback;
 		private readonly TimeSpan MinimumDuration;
 		private readonly double SilenceThreshold;
@@ -34,7 +34,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
 
 			DetectionCallback = detectionCallback;
-			AacDecoder = new FfmpegAacDecoder(audioSpecificConfig);
+			AacDecoder = new AacToWave(audioSpecificConfig);
 			Silences = new List<SilenceEntry>();
 
 			SilenceThreshold = db;
@@ -89,10 +89,9 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 				TimeSpan start = TimeSpan.FromSeconds((double)lastSilenceStart / AacDecoder.Channels / AacDecoder.SampleRate);
 				TimeSpan end = TimeSpan.FromSeconds((double)(lastSilenceStart + numConsecutiveSilences) / AacDecoder.Channels / AacDecoder.SampleRate);
 
-				SilenceEntry silence = new SilenceEntry(start, end);
+				SilenceEntry silence = new(start, end);
 				Silences.Add(silence);
-				if (DetectionCallback != null)
-					DetectionCallback(new SilenceDetectCallback { SilenceThreshold = SilenceThreshold, MinimumDuration = MinimumDuration, Silence = silence });
+				DetectionCallback?.Invoke(new SilenceDetectCallback { SilenceThreshold = SilenceThreshold, MinimumDuration = MinimumDuration, Silence = silence });
 			}
 		}
 

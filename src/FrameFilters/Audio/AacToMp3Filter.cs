@@ -17,7 +17,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		static AacToMp3Filter()
 		{
 			int bitness = IntPtr.Size * 8;
-			string libName = $"libmp3lame.{bitness}.dll";
+			string libName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"libmp3lame.{bitness}.dll");
 
 			if (!File.Exists(libName))
 			{
@@ -37,7 +37,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		public AacToMp3Filter(Stream mp3Output, int sampleRate, ushort sampleSize, int channels, LameConfig lameConfig)
 		{
-			if (sampleSize != FfmpegAacDecoder.BITS_PER_SAMPLE)
+			if (sampleSize != AacToWave.BITS_PER_SAMPLE)
 				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
 
 			OutputStream = mp3Output;
@@ -50,7 +50,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		{
 			if (appleTags is null) return new();
 
-			ID3TagData tags = new ID3TagData
+			ID3TagData tags = new()
 			{
 				Album = appleTags.Album,
 				AlbumArt = appleTags.Cover,

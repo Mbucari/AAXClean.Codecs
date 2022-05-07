@@ -1,14 +1,15 @@
-﻿using AAXClean.FrameFilters;
-using System;
+﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
 
-
-namespace AAXClean.Codecs.FrameFilters.Audio
+namespace AAXClean.Codecs
 {
-
-	internal sealed unsafe class FfmpegAacDecoder : FrameTransformBase<FrameEntry, WaveEntry>
+	internal unsafe class FfmpegAacDecoder
 	{
 		internal const int BITS_PER_SAMPLE = 16;
 
@@ -25,20 +26,6 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			SampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
 			Channels = (asc[1] >> 3) & 7;
 			AacDecoder = NativeAac.Open(asc, asc.Length);
-		}
-
-		protected override WaveEntry PerformFiltering(FrameEntry input)
-		{
-			(MemoryHandle, Memory<byte>) decoded = DecodeRaw2(input.FrameData.Span);
-			return new WaveEntry
-			{
-				Chunk = input.Chunk,
-				FrameDelta = input.FrameDelta,
-				FrameData = decoded.Item2,
-				hFrameData = decoded.Item1,
-				FrameSize = 2 * Channels * (int)input.FrameDelta,
-				FrameIndex = input.FrameIndex
-			};
 		}
 
 		public (MemoryHandle, Memory<byte>) DecodeRaw2(Span<byte> aacFrame)
@@ -109,14 +96,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 			return decoded;
 		}
-		protected override void Dispose(bool disposing)
-		{
-			if (disposing && !Disposed)
-			{
-				AacDecoder?.Close();
-			}
-			base.Dispose(disposing);
-		}
+		public void Close() => AacDecoder?.Close();		
 
 		private class DecoderHandle : SafeHandle
 		{
@@ -132,12 +112,13 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		private abstract class NativeAac
 		{
+			private bool closed = false;
 			private DecoderHandle Handle;
 			private static readonly int bitness = IntPtr.Size * 8;
 
 			static NativeAac()
 			{
-				string libName = $"ffmpegaac_x{bitness}.dll";
+				string libName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"ffmpegaac_x{bitness}.dll");
 
 				if (!File.Exists(libName))
 				{
@@ -172,8 +153,12 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			}
 			public void Close()
 			{
-				Close(Handle);
-				Handle.Dispose();
+				if (!closed)
+				{
+					Close(Handle);
+					Handle.Dispose();
+					closed = true;
+				}
 			}
 
 			public int DecodeFrame(byte* pCompressedAudio, int cbInBufferSize, byte* pDecodedAudio, int cbOutBufferSize)

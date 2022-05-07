@@ -24,7 +24,7 @@ namespace AAXClean.Codecs
 				throw new ArgumentException($"{nameof(minDuration)} must be no shorter than 2 audio samples.");
 
 			using FrameTransformBase<FrameEntry, FrameEntry> f1 = mp4File.GetAudioFrameFilter();
-			using FfmpegAacDecoder f2 = new(mp4File.AscBlob);
+			using AacToWave f2 = new(mp4File.AscBlob);
 			using SilenceDetectFilter f3 = new(
 				decibels,
 				minDuration,
@@ -47,7 +47,7 @@ namespace AAXClean.Codecs
 			lameConfig.ID3 ??= AacToMp3Filter.GetDefaultMp3Tags(mp4File.AppleTags);
 
 			using FrameTransformBase<FrameEntry, FrameEntry> f1 = mp4File.GetAudioFrameFilter();
-			using FfmpegAacDecoder f2 = new(mp4File.AscBlob);
+			using AacToWave f2 = new(mp4File.AscBlob);
 			using AacToMp3Filter f3 = new(
 				outputStream,
 				(int)mp4File.TimeScale,
@@ -69,7 +69,7 @@ namespace AAXClean.Codecs
 			lameConfig.ID3 ??= AacToMp3Filter.GetDefaultMp3Tags(mp4File.AppleTags);
 
 			using FrameTransformBase<FrameEntry, FrameEntry> f1 = mp4File.GetAudioFrameFilter();
-			using FfmpegAacDecoder f2 = new(mp4File.AscBlob);
+			using AacToWave f2 = new(mp4File.AscBlob);
 			using AacToMp3MultipartFilter f3 = new(
 				userChapters,
 				newFileCallback,
