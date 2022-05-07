@@ -1,8 +1,6 @@
 ﻿using AAXClean.FrameFilters;
 using System;
 using System.Buffers;
-using System.IO;
-using System.Runtime.InteropServices;
 
 
 namespace AAXClean.Codecs.FrameFilters.Audio
@@ -10,7 +8,6 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 	internal sealed class AacToWave : FrameTransformBase<FrameEntry, WaveEntry>
 	{
 		internal static int BitsPerSample => FfmpegAacDecoder.BITS_PER_SAMPLE;
-		internal int DecodeSize => AacDecoder.DecodeSize;
 		public int Channels => AacDecoder.Channels;
 		public int SampleRate => AacDecoder.SampleRate;
 
@@ -22,7 +19,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		protected override WaveEntry PerformFiltering(FrameEntry input)
 		{
-			(MemoryHandle, Memory<byte>) decoded = AacDecoder.DecodeRaw2(input.FrameData.Span);
+			(MemoryHandle, Memory<byte>) decoded = AacDecoder.DecodeRaw(input.FrameData.Span, input.FrameDelta);
 			return new WaveEntry
 			{
 				Chunk = input.Chunk,
@@ -38,7 +35,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		{
 			if (disposing)
 			{
-				AacDecoder.Close();
+				AacDecoder.Dispose();
 			}
 			base.Dispose(disposing);
 		}

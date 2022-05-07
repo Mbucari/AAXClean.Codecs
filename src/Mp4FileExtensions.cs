@@ -29,7 +29,8 @@ namespace AAXClean.Codecs
 				decibels,
 				minDuration,
 				mp4File.AscBlob,
-				mp4File.AudioSampleSize,
+				mp4File.AudioChannels,
+				(int)mp4File.TimeScale,
 				detectionCallback);
 
 			f1.LinkTo(f2);

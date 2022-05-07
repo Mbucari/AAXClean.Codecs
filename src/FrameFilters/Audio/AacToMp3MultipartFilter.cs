@@ -37,13 +37,14 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			OutputStream?.Close();
 		}
 
-		protected override void WriteFrameToFile(IFrameEntry audioFrame, bool newChunk)
+		protected override void WriteFrameToFile(FrameEntry audioFrame, bool newChunk)
 		{
 			if (audioFrame is WaveEntry wave)
 			{
 				Writer.Write(wave.FrameData.Span);
 				wave.hFrameData.Dispose();
 			}
+			else throw new ArgumentException($"{nameof(audioFrame)} argument to {this.GetType().Name}.{nameof(WriteFrameToFile)} must be a {nameof(WaveEntry)}");
 		}
 
 		protected override void CreateNewWriter(NewSplitCallback callback)

@@ -5,14 +5,12 @@ using System.Runtime.InteropServices;
 
 namespace AAXClean.Codecs
 {
-	internal unsafe class FfmpegAacDecoder
+	internal unsafe sealed class FfmpegAacDecoder : IDisposable
 	{
 		internal const int BITS_PER_SAMPLE = 16;
-		internal int DecodeSize { get; }
 		public int Channels { get; }
 		public int SampleRate { get; }
 
-		private const int AAC_FRAME_SIZE = 1024 * BITS_PER_SAMPLE / 8;
 		private readonly NativeAac AacDecoder;
 
 		private static readonly int[] asc_samplerates = { 96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350 };
@@ -21,23 +19,22 @@ namespace AAXClean.Codecs
 		{
 			SampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
 			Channels = (asc[1] >> 3) & 7;
-			DecodeSize = AAC_FRAME_SIZE* Channels;
 			AacDecoder = NativeAac.Open(asc, asc.Length);
 		}
 
-		public (MemoryHandle, Memory<byte>) DecodeRaw2(Span<byte> aacFrame)
+		public (MemoryHandle, Memory<byte>) DecodeRaw(Span<byte> aacFrame, uint frameDelta)
 		{
-			int error, inputSize = aacFrame.Length;
+			int error, frameSize = (int)frameDelta * sizeof(short) * Channels;
 
-			Memory<byte> decoded = new byte[DecodeSize];
+			Memory<byte> decoded = new byte[frameSize];
 
 			MemoryHandle handle = decoded.Pin();
 
-			fixed (byte* buff = aacFrame)
+			fixed (byte* inBuff = aacFrame)
 			{
 				byte* outBuff = (byte*)handle.Pointer;
 
-				error = AacDecoder.DecodeFrame(buff, inputSize, outBuff, DecodeSize);
+				error = AacDecoder.DecodeFrame(inBuff, aacFrame.Length, outBuff, frameSize);
 			}
 
 			if (error != 0)
@@ -48,52 +45,18 @@ namespace AAXClean.Codecs
 			return (handle, decoded);
 		}
 
-		public MemoryHandle DecodeRaw(Span<byte> aacFrame)
+		private bool disposed = false;
+		public void Dispose()
 		{
-			int error, inputSize = aacFrame.Length;
-
-			Memory<byte> decoded = new byte[DecodeSize];
-
-			MemoryHandle handle = decoded.Pin();
-
-			fixed (byte* buff = aacFrame)
+			if (!disposed)
 			{
-				byte* outBuff = (byte*)handle.Pointer;
-
-				error = AacDecoder.DecodeFrame(buff, inputSize, outBuff, DecodeSize);
+				AacDecoder?.Close();
 			}
-
-			if (error != 0)
-			{
-				throw new Exception($"Error decoding AAC frame. Code {error:X}");
-			}
-
-			return handle;
 		}
-
-		public Memory<byte> Decode(Span<byte> aacFrame)
+		~FfmpegAacDecoder()
 		{
-			int error, inputSize = aacFrame.Length;
-
-			Memory<byte> decoded = new byte[DecodeSize];
-
-			using MemoryHandle handle = decoded.Pin();
-
-			fixed (byte* buff = aacFrame)
-			{
-				byte* outBuff = (byte*)handle.Pointer;
-
-				error = AacDecoder.DecodeFrame(buff, inputSize, outBuff, DecodeSize);
-			}
-
-			if (error != 0)
-			{
-				throw new Exception($"Error decoding AAC frame. Code {error:X}");
-			}
-
-			return decoded;
+			Dispose();
 		}
-		public void Close() => AacDecoder?.Close();		
 
 		private class DecoderHandle : SafeHandle
 		{
@@ -167,7 +130,7 @@ namespace AAXClean.Codecs
 		}
 
 		private class NativeAac32 : NativeAac
-		{
+		{			 
 			private const string libName = "ffmpegaac_x32.dll";
 
 			[DllImport(libName, CallingConvention = CallingConvention.StdCall)]

@@ -13,36 +13,36 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		public List<SilenceEntry> Silences { get; }
 
 		private const int VECTOR_COUNT = 8;
-		private const int BITS_PER_SAMPLE = 16;
-		private readonly AacToWave AacDecoder;
-		private readonly Action<SilenceDetectCallback> DetectionCallback;
-		private readonly TimeSpan MinimumDuration;
 		private readonly double SilenceThreshold;
+		private readonly TimeSpan MinimumDuration;
+		private readonly int Channels;
+		private readonly int SampleRate;
+		private readonly Action<SilenceDetectCallback> DetectionCallback;
 		private readonly long MinConsecutiveSamples;
+
 		private readonly Vector128<short> MaxAmplitudes;
 		private readonly Vector128<short> MinAmplitudes;
 		private readonly Vector128<short> Zeros = Vector128<short>.Zero;
-		private long currentSample;
-		private long lastSilenceStart;
-		private long numConsecutiveSilences;
+
+		private long currentSample = 0;
+		private long lastSilenceStart = 0;
+		private long numConsecutiveSilences = 0;
+
 		private readonly Memory<short> buff128;
-		private MemoryHandle hbuff128;
+		private readonly MemoryHandle hbuff128;
 		private readonly short* pbuff128;
-		public unsafe SilenceDetectFilter(double db, TimeSpan minDuration, byte[] audioSpecificConfig, ushort sampleSize, Action<SilenceDetectCallback> detectionCallback)
+		public unsafe SilenceDetectFilter(double db, TimeSpan minDuration, byte[] audioSpecificConfig, int channels, int sampleRate, Action<SilenceDetectCallback> detectionCallback)
 		{
-			if (BITS_PER_SAMPLE != sampleSize)
-				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
-
-			DetectionCallback = detectionCallback;
-			AacDecoder = new AacToWave(audioSpecificConfig);
-			Silences = new List<SilenceEntry>();
-
 			SilenceThreshold = db;
 			MinimumDuration = minDuration;
+			Channels = channels;
+			SampleRate = sampleRate;
+			DetectionCallback = detectionCallback;
+			Silences = new List<SilenceEntry>();
+			MinConsecutiveSamples = (long)Math.Round(SampleRate * MinimumDuration.TotalSeconds * Channels);
 
 			short maxAmplitude = (short)(Math.Pow(10, SilenceThreshold / 20) * short.MaxValue);
 			short minAmplitude = (short)-maxAmplitude;
-			MinConsecutiveSamples = (long)Math.Round(AacDecoder.SampleRate * MinimumDuration.TotalSeconds * AacDecoder.Channels);
 
 			//Initialize vectors for comparisons
 			short[] sbytes = new short[VECTOR_COUNT];
@@ -63,11 +63,6 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 				MinAmplitudes = Sse2.LoadVector128(s);
 			}
 
-			currentSample = 0;
-			lastSilenceStart = 0;
-			numConsecutiveSilences = 0;
-
-
 			//Buffer for storing Vector128<short>
 			buff128 = new short[VECTOR_COUNT];
 			hbuff128 = buff128.Pin();
@@ -86,8 +81,8 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		{
 			if (numConsecutiveSilences > MinConsecutiveSamples)
 			{
-				TimeSpan start = TimeSpan.FromSeconds((double)lastSilenceStart / AacDecoder.Channels / AacDecoder.SampleRate);
-				TimeSpan end = TimeSpan.FromSeconds((double)(lastSilenceStart + numConsecutiveSilences) / AacDecoder.Channels / AacDecoder.SampleRate);
+				TimeSpan start = TimeSpan.FromSeconds((double)lastSilenceStart / Channels / SampleRate);
+				TimeSpan end = TimeSpan.FromSeconds((double)(lastSilenceStart + numConsecutiveSilences) / Channels / SampleRate);
 
 				SilenceEntry silence = new(start, end);
 				Silences.Add(silence);
@@ -99,7 +94,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		{
 			short* samples = (short*)input.hFrameData.Pointer;
 
-			for (int i = 0; i < AacDecoder.DecodeSize / sizeof(short); i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
+			for (int i = 0; i < input.FrameDelta * Channels; i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
 			{
 				//2x compares and an AND is ~3% faster than Abs and 1x compare
 				//And for whatever reason, equivalent method with Avx 256-bit vectors is slightly slower.
@@ -124,7 +119,6 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 					}
 					continue;
 				}
-
 
 				Sse2.Store(pbuff128, compares);
 				Span<short> span = buff128.Span;
