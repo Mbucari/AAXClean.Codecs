@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net5.0-windows</TargetFramework>
-		<Version>0.2.1</Version>
+		<Version>0.2.3</Version>
 		<Authors>MrGneissGuy</Authors>
 		<Company>Just Me, Inc.</Company>
 		<Description>Filter and convert aac audio from AAXClean</Description>
@@ -21,7 +21,7 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<PublishReadyToRun>true</PublishReadyToRun>
 		<PackageReleaseNotes>
-			All native dlls are now written to AppDomain.CurrentDomain.BaseDirectory
+			Updated AAXClean to 0.4.3
 		</PackageReleaseNotes>
 	</PropertyGroup>
 	
@@ -32,7 +32,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\AAXClean\src\AAXClean\AAXClean.csproj" Condition="'$(Configuration)'=='Debug'" />
-		<PackageReference Include="AAXClean" Version="0.4.2" Condition="'$(Configuration)'=='Release'" />
+		<PackageReference Include="AAXClean" Version="0.4.3" Condition="'$(Configuration)'=='Release'" />
 		<PackageReference Include="NAudio.Lame" Version="2.0.1" />
 	</ItemGroup>
 	<ItemGroup>
