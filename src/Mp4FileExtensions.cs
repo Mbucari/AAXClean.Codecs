@@ -14,8 +14,8 @@ namespace AAXClean.Codecs
 			=> DetectSilenceAsync(mp4File, decibels, minDuration, detectionCallback).GetAwaiter().GetResult();
 		public static ConversionResult ConvertToMp3(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null, bool trimOutputToChapters = false) 
 			=> ConvertToMp3Async(mp4File, outputStream, lameConfig, userChapters, trimOutputToChapters).GetAwaiter().GetResult();
-		public static ConversionResult ConvertToMultiMp3(this Mp4File mp4File, ChapterInfo userChapters, Action<NewSplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null) 
-			=> ConvertToMultiMp3Async(mp4File, userChapters, newFileCallback, lameConfig).GetAwaiter().GetResult();
+		public static ConversionResult ConvertToMultiMp3(this Mp4File mp4File, ChapterInfo userChapters, Action<NewSplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null, bool trimOutputToChapters = false) 
+			=> ConvertToMultiMp3Async(mp4File, userChapters, newFileCallback, lameConfig, trimOutputToChapters).GetAwaiter().GetResult();
 		
 		public static async Task<IReadOnlyList<SilenceEntry>> DetectSilenceAsync(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null)
 		{
@@ -73,7 +73,7 @@ namespace AAXClean.Codecs
 			return await Task.FromResult(result);
 		}
 
-		public static async Task<ConversionResult> ConvertToMultiMp3Async(this Mp4File mp4File, ChapterInfo userChapters, Action<NewSplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null)
+		public static async Task<ConversionResult> ConvertToMultiMp3Async(this Mp4File mp4File, ChapterInfo userChapters, Action<NewSplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null, bool trimOutputToChapters = false)
 		{
 			lameConfig ??= GetDefaultLameConfig(mp4File);
 			lameConfig.ID3 ??= AacToMp3Filter.GetDefaultMp3Tags(mp4File.AppleTags);
@@ -89,7 +89,7 @@ namespace AAXClean.Codecs
 
 			f1.LinkTo(f2);
 			f2.LinkTo(f3);
-			ConversionResult result = await mp4File.ProcessAudio((mp4File.Moov.AudioTrack, f1));
+			ConversionResult result = await mp4File.ProcessAudio(trimOutputToChapters, userChapters.StartOffset, userChapters.EndOffset, (mp4File.Moov.AudioTrack, f1));
 			return await Task.FromResult(result);
 		}
 
