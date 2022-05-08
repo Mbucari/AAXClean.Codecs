@@ -33,7 +33,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\AAXClean\src\AAXClean\AAXClean.csproj" Condition="'$(Configuration)'=='Debug'" />
-		<PackageReference Include="AAXClean" Version="0.4.5" Condition="'$(Configuration)'=='Release'" />
+		<PackageReference Include="AAXClean" Version="0.4.6" Condition="'$(Configuration)'=='Release'" />
 		<PackageReference Include="NAudio.Lame" Version="2.0.1" />
 	</ItemGroup>
 	<ItemGroup>
