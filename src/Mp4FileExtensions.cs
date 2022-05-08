@@ -1,5 +1,6 @@
 ﻿using AAXClean.Codecs.FrameFilters.Audio;
 using AAXClean.FrameFilters;
+using AAXClean.FrameFilters.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,8 +12,8 @@ namespace AAXClean.Codecs
 	{
 		public static IReadOnlyList<SilenceEntry> DetectSilence(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null) 
 			=> DetectSilenceAsync(mp4File, decibels, minDuration, detectionCallback).GetAwaiter().GetResult();
-		public static ConversionResult ConvertToMp3(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null) 
-			=> ConvertToMp3Async(mp4File, outputStream, lameConfig, userChapters).GetAwaiter().GetResult();
+		public static ConversionResult ConvertToMp3(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null, bool trimOutputToChapters = false) 
+			=> ConvertToMp3Async(mp4File, outputStream, lameConfig, userChapters, trimOutputToChapters).GetAwaiter().GetResult();
 		public static ConversionResult ConvertToMultiMp3(this Mp4File mp4File, ChapterInfo userChapters, Action<NewSplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null) 
 			=> ConvertToMultiMp3Async(mp4File, userChapters, newFileCallback, lameConfig).GetAwaiter().GetResult();
 		
@@ -36,13 +37,12 @@ namespace AAXClean.Codecs
 			f1.LinkTo(f2);
 			f2.LinkTo(f3);
 
-
 			await mp4File.ProcessAudio((mp4File.Moov.AudioTrack, f1));
 
 			return f3.Silences;
 		}
 
-		public static async Task<ConversionResult> ConvertToMp3Async(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null)
+		public static async Task<ConversionResult> ConvertToMp3Async(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null, bool trimOutputToChapters = false)
 		{
 			lameConfig ??= GetDefaultLameConfig(mp4File);
 			lameConfig.ID3 ??= AacToMp3Filter.GetDefaultMp3Tags(mp4File.AppleTags);
@@ -59,7 +59,16 @@ namespace AAXClean.Codecs
 
 			f1.LinkTo(f2);
 			f2.LinkTo(f3);
-			ConversionResult result = await mp4File.ProcessAudio((mp4File.Moov.AudioTrack, f1));
+
+			using ChapterFilter c1 = new(mp4File.TimeScale);
+
+			var start = userChapters?.StartOffset ?? TimeSpan.Zero;
+			var end = userChapters?.EndOffset ?? TimeSpan.Zero;
+
+			ConversionResult result = await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1), (mp4File.Moov.TextTrack, c1));
+
+			mp4File.Chapters = userChapters ?? c1.Chapters;
+
 			outputStream.Close();
 			return await Task.FromResult(result);
 		}
@@ -84,7 +93,7 @@ namespace AAXClean.Codecs
 			return await Task.FromResult(result);
 		}
 
-		private static NAudio.Lame.LameConfig GetDefaultLameConfig(Mp4File mp4File)
+		public static NAudio.Lame.LameConfig GetDefaultLameConfig(Mp4File mp4File)
 		{
 			NAudio.Lame.LameConfig lameConfig = new NAudio.Lame.LameConfig
 			{
