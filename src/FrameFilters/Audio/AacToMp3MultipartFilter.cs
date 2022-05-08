@@ -10,6 +10,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 	{
 		protected override Action<NewSplitCallback> NewFileCallback { get; }
 
+		private bool CurrentWriterOpen;
 		private readonly WaveFormat waveFormat;
 		private LameMP3FileWriter Writer;
 		private LameConfig LameConfig;
@@ -31,11 +32,14 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		protected override void CloseCurrentWriter()
 		{
+			if (!CurrentWriterOpen) return;
+
 			Writer?.Flush();
 			Writer?.Close();
 			Writer?.Dispose();
 			OutputStream?.Close();
 			OutputStream?.Dispose();
+			CurrentWriterOpen = false;
 		}
 
 		protected override void WriteFrameToFile(FrameEntry audioFrame, bool newChunk)
@@ -50,6 +54,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		protected override void CreateNewWriter(NewSplitCallback callback)
 		{
+			CurrentWriterOpen = true;
 			callback.UserState = LameConfig;
 			NewFileCallback(callback);
 			if (callback.UserState is LameConfig lameConfig)
@@ -65,7 +70,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		{
 			if (!Disposed)
 			{
-				if (disposing)
+				if (disposing && CurrentWriterOpen)
 				{
 					CloseCurrentWriter();
 				}
