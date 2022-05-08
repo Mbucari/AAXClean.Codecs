@@ -35,6 +35,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			Writer?.Close();
 			Writer?.Dispose();
 			OutputStream?.Close();
+			OutputStream?.Dispose();
 		}
 
 		protected override void WriteFrameToFile(FrameEntry audioFrame, bool newChunk)
@@ -66,7 +67,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			{
 				if (disposing)
 				{
-					Writer?.Dispose();
+					CloseCurrentWriter();
 				}
 				base.Dispose(disposing);
 			}
