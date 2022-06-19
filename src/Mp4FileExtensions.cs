@@ -60,14 +60,22 @@ namespace AAXClean.Codecs
 			f1.LinkTo(f2);
 			f2.LinkTo(f3);
 
-			using ChapterFilter c1 = new(mp4File.TimeScale);
-
 			var start = userChapters?.StartOffset ?? TimeSpan.Zero;
 			var end = userChapters?.EndOffset ?? TimeSpan.Zero;
 
-			ConversionResult result = await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1), (mp4File.Moov.TextTrack, c1));
+			ConversionResult result;
+			if (mp4File.Moov.TextTrack is null)
+			{
+				result = await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1));
+			}
+			else
+			{
+				using ChapterFilter c1 = new(mp4File.TimeScale);
 
-			mp4File.Chapters = userChapters ?? c1.Chapters;
+				result = await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1), (mp4File.Moov.TextTrack, c1));
+
+				mp4File.Chapters = userChapters ?? c1.Chapters;
+			}
 
 			outputStream.Close();
 			return await Task.FromResult(result);
