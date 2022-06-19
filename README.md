@@ -15,7 +15,7 @@ aaxcFile.SetDecryptionKey(audible_key, audible_iv);
 ```
 ### Convert to Mp3:
 ```C#
-var conversionResult = aaxcFile.ConvertToMp3(File.Open(@"C:\Decrypted book.mp3", FileMode.OpenOrCreate, FileAccess.ReadWrite);
+var conversionResult = aaxcFile.ConvertToMp3(File.Open(@"C:\Decrypted book.mp3", FileMode.OpenOrCreate, FileAccess.ReadWrite));
 ```
 Note that the output stream must be Readable, Writable and Seekable for the mp3 Xing header to be written. See [NAudio.Lame #24](https://github.com/Corey-M/NAudio.Lame/issues/24)
 
