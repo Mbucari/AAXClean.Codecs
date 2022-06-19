@@ -6,26 +6,24 @@ using System.IO;
 
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
-	internal sealed class AacToMp3MultipartFilter : MultipartFilterBase<WaveEntry>
+	internal sealed class AacToMp3MultipartFilter : MultipartFilterBase<WaveEntry, NewMP3SplitCallback>
 	{
-		protected override Action<NewSplitCallback> NewFileCallback { get; }
+		private Action<NewMP3SplitCallback> NewFileCallback { get; }
 
 		private bool CurrentWriterOpen;
-		private readonly WaveFormat waveFormat;
+		private readonly WaveFormat WaveFormat;
 		private LameMP3FileWriter Writer;
 		private LameConfig LameConfig;
 		private Stream OutputStream;
 
-		public AacToMp3MultipartFilter(ChapterInfo splitChapters, Action<NewSplitCallback> newFileCallback, byte[] audioSpecificConfig, ushort sampleSize, LameConfig lameConfig)
+		public AacToMp3MultipartFilter(ChapterInfo splitChapters, Action<NewMP3SplitCallback> newFileCallback, byte[] audioSpecificConfig, ushort sampleSize, LameConfig lameConfig)
 						: base(audioSpecificConfig, splitChapters)
 		{
 
 			if (sampleSize != AacToWave.BitsPerSample)
 				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
 
-
-			waveFormat = new WaveFormat(SampleRate, sampleSize, Channels);
-
+			WaveFormat = new WaveFormat(SampleRate, sampleSize, Channels);
 			LameConfig = lameConfig;
 			NewFileCallback = newFileCallback;
 		}
@@ -52,19 +50,16 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			else throw new ArgumentException($"{nameof(audioFrame)} argument to {this.GetType().Name}.{nameof(WriteFrameToFile)} must be a {nameof(WaveEntry)}");
 		}
 
-		protected override void CreateNewWriter(NewSplitCallback callback)
+		protected override void CreateNewWriter(NewMP3SplitCallback callback)
 		{
 			CurrentWriterOpen = true;
-			callback.UserState = LameConfig;
-			NewFileCallback(callback);
-			if (callback.UserState is LameConfig lameConfig)
-			{
-				LameConfig = lameConfig;
+			callback.LameConfig = LameConfig;
 
-				OutputStream = callback.OutputFile;
-				Writer = new LameMP3FileWriter(OutputStream, waveFormat, lameConfig);
-			}
-			else throw new ArgumentException($"{nameof(NewSplitCallback.UserState)} must be {typeof(LameConfig).Name}");
+			NewFileCallback(callback);
+			LameConfig.ID3.Track = callback.TrackNumber.ToString();
+			LameConfig.ID3.Title = callback.TrackTitle ?? LameConfig.ID3.Title;
+			OutputStream = callback.OutputFile;
+			Writer = new LameMP3FileWriter(OutputStream, WaveFormat, LameConfig);
 		}
 		protected override void Dispose(bool disposing)
 		{
