@@ -19,7 +19,7 @@ namespace AAXClean.Codecs.Properties {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -76,26 +76,6 @@ namespace AAXClean.Codecs.Properties {
         internal static byte[] ffmpegx86 {
             get {
                 object obj = ResourceManager.GetObject("ffmpegx86", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
-        internal static byte[] libmp3lame_32 {
-            get {
-                object obj = ResourceManager.GetObject("libmp3lame_32", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
-        internal static byte[] libmp3lame_64 {
-            get {
-                object obj = ResourceManager.GetObject("libmp3lame_64", resourceCulture);
                 return ((byte[])(obj));
             }
         }

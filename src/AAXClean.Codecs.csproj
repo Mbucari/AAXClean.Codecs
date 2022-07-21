@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net5.0-windows</TargetFramework>
-		<Version>0.2.10</Version>
+		<Version>0.2.11</Version>
 		<Authors>MrGneissGuy</Authors>
 		<Company>Just Me, Inc.</Company>
 		<Description>Filter and convert aac audio from AAXClean</Description>
@@ -32,7 +32,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\AAXClean\src\AAXClean\AAXClean.csproj" Condition="'$(Configuration)'=='Debug'" />
 		<PackageReference Include="AAXClean" Version="0.4.9" Condition="'$(Configuration)'=='Release'" />
-		<PackageReference Include="NAudio.Lame" Version="2.0.1" />
+		<PackageReference Include="NAudio.Lame_SA" Version="1.0.1" />
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Update="Properties\Resources.Designer.cs">
@@ -48,5 +48,4 @@
 			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
 		</EmbeddedResource>
 	</ItemGroup>
-
 </Project>

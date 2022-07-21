@@ -14,27 +14,6 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		public bool Closed { get; private set; }
 
-		static AacToMp3Filter()
-		{
-			int bitness = IntPtr.Size * 8;
-			string libName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"libmp3lame.{bitness}.dll");
-
-			if (!File.Exists(libName))
-			{
-				try
-				{
-					if (bitness == 64)
-						File.WriteAllBytes(libName, Properties.Resources.libmp3lame_64);
-					else
-						File.WriteAllBytes(libName, Properties.Resources.libmp3lame_32);
-				}
-				catch (Exception ex)
-				{
-					throw new DllNotFoundException($"Could not load {libName}", ex);
-				}
-			}
-		}
-
 		public AacToMp3Filter(Stream mp3Output, int sampleRate, ushort sampleSize, int channels, LameConfig lameConfig)
 		{
 			if (sampleSize != AacToWave.BitsPerSample)
