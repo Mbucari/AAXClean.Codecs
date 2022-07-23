@@ -4,12 +4,53 @@ using AAXClean.FrameFilters.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace AAXClean.Codecs
 {
 	public static class Mp4FileExtensions
 	{
+		private const string ffmpeglibname = "ffmpegaac";
+		private static IntPtr ffmpegaac;
+
+		private static IntPtr DllImportResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
+		{
+			if (libraryName == ffmpeglibname)
+			{
+				if (ffmpegaac != IntPtr.Zero)
+					return ffmpegaac;
+				else if (NativeLibrary.TryLoad(ffmpeglibname, assembly, searchPath, out ffmpegaac))
+					return ffmpegaac;
+
+				if (Environment.OSVersion.Platform == PlatformID.Unix)
+				{
+					var libBytes = Properties.Resources.ffmpegx64_so;
+					var libPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ffmpeglibname + ".so");
+					File.WriteAllBytes(libPath, libBytes);
+					return ffmpegaac = NativeLibrary.Load(ffmpeglibname, assembly, searchPath);
+				}
+
+				else if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+				{
+					var libBytes = Environment.Is64BitProcess ? Properties.Resources.ffmpegx64 : Properties.Resources.ffmpegx86;
+					var libPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ffmpeglibname + ".dll");
+					File.WriteAllBytes(libPath, libBytes);
+					return ffmpegaac = NativeLibrary.Load(ffmpeglibname, assembly, searchPath);
+				}
+				else
+					throw new PlatformNotSupportedException();
+			}
+
+			// Otherwise, fallback to default import resolver.
+			return IntPtr.Zero;
+		}
+
+		static Mp4FileExtensions()
+		{
+			NativeLibrary.SetDllImportResolver(System.Reflection.Assembly.GetExecutingAssembly(), DllImportResolver);
+		}
+
 		public static IReadOnlyList<SilenceEntry> DetectSilence(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null) 
 			=> DetectSilenceAsync(mp4File, decibels, minDuration, detectionCallback).GetAwaiter().GetResult();
 		public static ConversionResult ConvertToMp3(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null, bool trimOutputToChapters = false) 

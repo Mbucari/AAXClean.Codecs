@@ -73,6 +73,16 @@ namespace AAXClean.Codecs.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
+        internal static byte[] ffmpegx64_so {
+            get {
+                object obj = ResourceManager.GetObject("ffmpegx64_so", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
         internal static byte[] ffmpegx86 {
             get {
                 object obj = ResourceManager.GetObject("ffmpegx86", resourceCulture);
