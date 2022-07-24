@@ -1,6 +1,8 @@
 # AAXClean.Codecs
 Converts and filters aac audio from [AAXClean](https://github.com/Mbucari/AAXClean).
 
+**Now Cross-Platform!**
+
 ## Nuget
 Include the [AAXClean.Codecs](https://www.nuget.org/packages/AAXClean.Codecs/) NuGet package to your project.
 
