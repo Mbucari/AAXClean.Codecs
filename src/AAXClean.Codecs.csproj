@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net5.0</TargetFramework>
-		<Version>0.2.14</Version>
+		<Version>0.2.15</Version>
 		<Authors>MrGneissGuy</Authors>
 		<Company>Just Me, Inc.</Company>
 		<Description>Filter and convert aac audio from AAXClean</Description>
@@ -33,7 +33,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\AAXClean\src\AAXClean\AAXClean.csproj" Condition="'$(Configuration)'=='Debug'" />
 		<ProjectReference Include="..\..\NAudio.Lame_SA\NAudio.Lame_SA\NAudio.Lame_SA.csproj" Condition="'$(Configuration)'=='Debug'" />
-		<PackageReference Include="AAXClean" Version="0.4.14" Condition="'$(Configuration)'=='Release'" />
+		<PackageReference Include="AAXClean" Version="0.4.15" Condition="'$(Configuration)'=='Release'" />
 		<PackageReference Include="NAudio.Lame_SA" Version="1.0.3" Condition="'$(Configuration)'=='Release'" />
 	</ItemGroup>
 	<ItemGroup>
