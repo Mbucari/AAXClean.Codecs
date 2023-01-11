@@ -20,24 +20,13 @@ namespace AAXClean.Codecs
 			{
 				if (ffmpegaac != IntPtr.Zero)
 					return ffmpegaac;
-				else if (NativeLibrary.TryLoad(ffmpeglibname, assembly, searchPath, out ffmpegaac))
+
+				if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+					libraryName = $"{libraryName}.{(Environment.Is64BitProcess ? "x64" : "x86")}.dll";
+
+				
+				if (NativeLibrary.TryLoad(libraryName, assembly, searchPath, out ffmpegaac))
 					return ffmpegaac;
-
-				if (Environment.OSVersion.Platform == PlatformID.Unix)
-				{
-					var libBytes = Properties.Resources.ffmpegx64_so;
-					var libPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ffmpeglibname + ".so");
-					File.WriteAllBytes(libPath, libBytes);
-					return ffmpegaac = NativeLibrary.Load(ffmpeglibname, assembly, searchPath);
-				}
-
-				else if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-				{
-					var libBytes = Environment.Is64BitProcess ? Properties.Resources.ffmpegx64 : Properties.Resources.ffmpegx86;
-					var libPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ffmpeglibname + ".dll");
-					File.WriteAllBytes(libPath, libBytes);
-					return ffmpegaac = NativeLibrary.Load(ffmpeglibname, assembly, searchPath);
-				}
 				else
 					throw new PlatformNotSupportedException();
 			}

@@ -1,15 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.32413.511
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AAXClean.Codecs", "src\AAXClean.Codecs.csproj", "{F5B23D7B-C2A5-40A3-B475-BFE356373DF8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AAXClean.Codecs", "AAXClean.Codecs\AAXClean.Codecs.csproj", "{F5B23D7B-C2A5-40A3-B475-BFE356373DF8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AAXClean.Codecs.Test", "AAXClean.Codecs.Test\AAXClean.Codecs.Test.csproj", "{18923356-9ED4-4FBA-A430-432753DE0E16}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AAXClean", "..\AAXClean\src\AAXClean.csproj", "{D705027D-03E8-495E-8BE9-FE1D3CAA55F7}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AAXClean.Test", "..\AAXClean\AAXClean.Test\AAXClean.Test.csproj", "{F4818669-CEAA-4A30-ACA6-D1A7E0EB85DF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B02FC7EE-FCEA-49BA-B7E0-5DECF9BDD0FE}"
 EndProject
@@ -27,21 +23,12 @@ Global
 		{18923356-9ED4-4FBA-A430-432753DE0E16}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18923356-9ED4-4FBA-A430-432753DE0E16}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18923356-9ED4-4FBA-A430-432753DE0E16}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D705027D-03E8-495E-8BE9-FE1D3CAA55F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D705027D-03E8-495E-8BE9-FE1D3CAA55F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D705027D-03E8-495E-8BE9-FE1D3CAA55F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D705027D-03E8-495E-8BE9-FE1D3CAA55F7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F4818669-CEAA-4A30-ACA6-D1A7E0EB85DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F4818669-CEAA-4A30-ACA6-D1A7E0EB85DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F4818669-CEAA-4A30-ACA6-D1A7E0EB85DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F4818669-CEAA-4A30-ACA6-D1A7E0EB85DF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{18923356-9ED4-4FBA-A430-432753DE0E16} = {B02FC7EE-FCEA-49BA-B7E0-5DECF9BDD0FE}
-		{F4818669-CEAA-4A30-ACA6-D1A7E0EB85DF} = {B02FC7EE-FCEA-49BA-B7E0-5DECF9BDD0FE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EDCBDAD3-6503-4EE0-A342-DDB0D25BF10E}

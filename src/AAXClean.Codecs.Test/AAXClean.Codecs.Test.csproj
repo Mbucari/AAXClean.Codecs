@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
     <IsPackable>false</IsPackable>
-	<PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\AAXClean.Codecs.csproj" />
+    <ProjectReference Include="..\AAXClean.Codecs\AAXClean.Codecs.csproj" />
   </ItemGroup>
 
 </Project>
