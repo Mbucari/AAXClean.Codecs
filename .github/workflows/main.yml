@@ -20,10 +20,14 @@ jobs:
         uses: Mbucari/publish-nuget@master
         with:
           # Filepath of the project to be packaged, relative to root of repository
-          PROJECT_FILE_PATH: src/AAXClean.Codecs.csproj
+          PROJECT_FILE_PATH: src/AAXClean.Codecs/AAXClean.Codecs.csproj
           
           # NuGet package id, used for version detection & defaults to project name
           PACKAGE_NAME: AAXClean.Codecs
+          
+          BUILD_PLATFORM: AnyCPU
+          BUILD_CONFIGURATION: Release
+          NUSPEC_FILE: ../../AAXClean.Codecs.nuspec
           
           # Filepath with version info, relative to root of repository & defaults to PROJECT_FILE_PATH
           # VERSION_FILE_PATH: Directory.Build.props
