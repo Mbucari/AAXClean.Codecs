@@ -1,15 +1,24 @@
 ﻿namespace AAXClean.Codecs.FrameFilters.Audio
 {
+	public enum WaveFormatEncoding : int
+	{
+		Pcm = 1,
+		IeeeFloat = 3,
+		Dts = 8
+	}
+
 	internal class WaveFormat : NAudio.Wave.WaveFormat
 	{
-		public WaveFormat(int sampleRate, int bitsPerSample, int channels)
+		public SampleRate SampleRateEnum { get; }
+		public WaveFormat(SampleRate sampleRate, WaveFormatEncoding format, bool stereo)
 		{
-			this.sampleRate = sampleRate;
-			this.channels = (short)channels;
-			this.bitsPerSample = (short)(bitsPerSample);
-			blockAlign = (short)(channels * this.bitsPerSample / 8);
-			averageBytesPerSecond = blockAlign * sampleRate;
-			waveFormatTag = NAudio.Wave.WaveFormatEncoding.Pcm;
+			SampleRateEnum = sampleRate;
+			this.sampleRate = (int)sampleRate;
+			channels = (short)(stereo ? 2 : 1);
+			bitsPerSample = (short)(format is WaveFormatEncoding.Pcm ? 16 : 32);
+			blockAlign = (short)(channels * bitsPerSample / 8);
+			averageBytesPerSecond = blockAlign * this.sampleRate;
+			waveFormatTag = (NAudio.Wave.WaveFormatEncoding)format;
 		}
 	}
 }

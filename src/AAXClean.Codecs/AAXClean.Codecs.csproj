@@ -23,7 +23,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AAXClean" Version="0.4.15" />
-		<PackageReference Include="NAudio.Lame_SA" Version="1.0.5" />
+	  <ProjectReference Include="..\..\..\AAXClean\src\AAXClean\AAXClean.csproj" />
+	  <ProjectReference Include="..\..\..\NAudio.Lame_SA\NAudio.Lame_SA\NAudio.Lame_SA.csproj" />
 	</ItemGroup>
 </Project>

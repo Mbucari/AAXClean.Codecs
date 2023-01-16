@@ -1,28 +1,20 @@
 ﻿using AAXClean.FrameFilters;
 using NAudio.Lame;
-using System;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
-	internal class AacToMp3Filter : FrameFinalBase<WaveEntry>
+	internal class WaveToMp3Filter : FrameFinalBase<WaveEntry>
 	{
 		private readonly LameMP3FileWriter lameMp3Encoder;
-		private readonly WaveFormat waveFormat;
 		private readonly Stream OutputStream;
 
 		public bool Closed { get; private set; }
 
-		public AacToMp3Filter(Stream mp3Output, int sampleRate, ushort sampleSize, int channels, LameConfig lameConfig)
+		public WaveToMp3Filter(Stream mp3Output, WaveFormat waveFormat, LameConfig lameConfig)
 		{
-			if (sampleSize != AacToWave.BitsPerSample)
-				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
-
 			//lameConfig.Quality = EncoderQuality.Standard;
 			OutputStream = mp3Output;
-
-			waveFormat = new WaveFormat(sampleRate, sampleSize, channels);
 			lameMp3Encoder = new LameMP3FileWriter(OutputStream, waveFormat, lameConfig);
 		}
 
@@ -44,20 +36,17 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			return tags;
 		}
 
-		public override async Task CompleteAsync()
+		protected override void Flush()
 		{
-			await base.CompleteAsync();
-			if (!Closed)
-			{
-				lameMp3Encoder.Flush();
-				lameMp3Encoder.Close();
-				OutputStream.Close();
-				Closed = true;
-			}
+			lameMp3Encoder.Flush();
+			lameMp3Encoder.Close();
+			OutputStream.Close();
+			Closed = true;
 		}
-
+		int t = 0;
 		protected override void PerformFiltering(WaveEntry input)
 		{
+			//if (t++ > 2000) throw new System.Exception("TEST EXCEPTION!");
 			lameMp3Encoder.Write(input.FrameData.Span);
 			input.hFrameData.Dispose();
 		}

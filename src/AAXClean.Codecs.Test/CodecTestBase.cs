@@ -70,9 +70,9 @@ namespace AAXClean.Codecs.Test
 			try
 			{
 				FileStream tempfile = TestFiles.NewTempFile();
-				ConversionResult result = await Aax.ConvertToMp3Async(tempfile, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
+				ConversionStatus result = await Aax.ConvertToMp3Async(tempfile, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
 
-				Assert.AreEqual(ConversionResult.NoErrorsDetected, result);
+				Assert.AreEqual(ConversionStatus.NoErrorsDetected, result);
 
 				using SHA1 sha = SHA1.Create();
 
@@ -105,14 +105,14 @@ namespace AAXClean.Codecs.Test
 				FileStream m4bfile = TestFiles.NewTempFile();
 				FileStream mp3File = TestFiles.NewTempFile();
 
-				ConversionResult result = await Aax.ConvertToMp4aAsync(m4bfile);
-				Assert.AreEqual(ConversionResult.NoErrorsDetected, result);
+				ConversionStatus result = await Aax.ConvertToMp4aAsync(m4bfile);
+				Assert.AreEqual(ConversionStatus.NoErrorsDetected, result);
 				Aax.Close();
 
 				Mp4File mp4 = new Mp4File(m4bfile.Name);
 
 				result = await mp4.ConvertToMp3Async(mp3File, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
-				Assert.AreEqual(result, ConversionResult.NoErrorsDetected);
+				Assert.AreEqual(result, ConversionStatus.NoErrorsDetected);
 				mp4.Close();
 
 				using SHA1 sha = SHA1.Create();
@@ -149,8 +149,8 @@ namespace AAXClean.Codecs.Test
 					tempFiles.Add(((FileStream)callback.OutputFile).Name);
 				}
 
-				ConversionResult result = await Aax.ConvertToMultiMp3Async(await Aax.GetChapterInfoAsync(), NewSplit, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
-				Assert.AreEqual(ConversionResult.NoErrorsDetected, result);
+				ConversionStatus result = await Aax.ConvertToMultiMp3Async(await Aax.GetChapterInfoAsync(), NewSplit, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
+				Assert.AreEqual(ConversionStatus.NoErrorsDetected, result);
 #if !DEBUG
 				Assert.AreEqual(MultiMp3Hashes.Count, tempFiles.Count);
 #endif

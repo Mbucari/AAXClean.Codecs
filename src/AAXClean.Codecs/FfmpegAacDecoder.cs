@@ -1,48 +1,95 @@
-﻿using System;
+﻿using AAXClean.Codecs.FrameFilters.Audio;
+using AAXClean.FrameFilters;
+using System;
 using System.Buffers;
-using System.IO;
 using System.Runtime.InteropServices;
 
 namespace AAXClean.Codecs
 {
 	internal unsafe sealed class FfmpegAacDecoder : IDisposable
 	{
-		internal const int BITS_PER_SAMPLE = 16;
-		public int Channels { get; }
-		public int SampleRate { get; }
+		internal const string libname = "ffmpegaac";
+		public WaveFormat WaveFormat { get; }
 
-		private readonly NativeAac AacDecoder;
+		private int lastFrameNumSamples;
+		private readonly NativeAacDecode aacDecoder;
+		private readonly int inputSampleRate;
 
 		private static readonly int[] asc_samplerates = { 96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350 };
 
-		public FfmpegAacDecoder(byte[] asc)
+		public FfmpegAacDecoder(byte[] asc, WaveFormatEncoding waveFormatEncoding)
 		{
-			SampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
-			Channels = (asc[1] >> 3) & 7;
-			AacDecoder = NativeAac.Open(asc, asc.Length);
+			inputSampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
+			var inputChannels = (asc[1] >> 3) & 7;
+
+			WaveFormat = new WaveFormat((SampleRate)inputSampleRate, waveFormatEncoding, inputChannels == 2);
+			aacDecoder = NativeAacDecode.Open(asc, WaveFormat);
+
+		}
+		public FfmpegAacDecoder(byte[] asc, WaveFormatEncoding waveFormatEncoding, SampleRate sampleRate, bool stereo)
+		{
+			inputSampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
+
+			WaveFormat = new WaveFormat(sampleRate, waveFormatEncoding, stereo);
+			aacDecoder = NativeAacDecode.Open(asc, WaveFormat);
 		}
 
-		public (MemoryHandle, Memory<byte>) DecodeRaw(Span<byte> aacFrame, uint frameDelta)
+		public WaveEntry DecodeWave(FrameEntry input)
 		{
-			int error, frameSize = (int)frameDelta * sizeof(short) * Channels;
+			lastFrameNumSamples = (int)Math.Ceiling(input.SamplesInFrame * (double)WaveFormat.SampleRate / inputSampleRate); /* add one frame of headroom to ensure that sw_convert gives us everything*/
 
-			Memory<byte> decoded = new byte[frameSize];
-
+			Memory<byte> decoded = new byte[lastFrameNumSamples * WaveFormat.BlockAlign];
 			MemoryHandle handle = decoded.Pin();
 
-			fixed (byte* inBuff = aacFrame)
+			int samplesDecoded;
+
+			fixed (byte* inBuff = input.FrameData.Span)
 			{
 				byte* outBuff = (byte*)handle.Pointer;
 
-				error = AacDecoder.DecodeFrame(inBuff, aacFrame.Length, outBuff, frameSize);
+				samplesDecoded = aacDecoder.DecodeFrame(inBuff, input.FrameData.Length, outBuff, lastFrameNumSamples);
 			}
 
-			if (error != 0)
+			if (samplesDecoded <= 0)
 			{
-				throw new Exception($"Error decoding AAC frame. Code {error:X}");
+				throw new Exception($"Error decoding AAC frame. Code {samplesDecoded:X}");
 			}
 
-			return (handle, decoded);
+			int bytesDecoded = samplesDecoded * WaveFormat.BlockAlign;
+
+			return new WaveEntry
+			{
+				Chunk = input.Chunk,
+				SamplesInFrame = (uint)samplesDecoded,
+				FrameData = decoded.Slice(0, bytesDecoded),
+				hFrameData = handle,
+				FrameIndex = input.FrameIndex
+			};
+		}
+
+		int t = 0;
+		public WaveEntry DecodeFlush()
+		{			
+			Memory<byte> decoded = new byte[lastFrameNumSamples * WaveFormat.BlockAlign];
+			MemoryHandle handle = decoded.Pin();
+
+			byte* outBuff = (byte*)handle.Pointer;
+
+			int samplesDecoded = aacDecoder.DecodeFlush(outBuff, lastFrameNumSamples);
+
+			if (samplesDecoded < 0)
+			{
+				throw new Exception($"Error decoding AAC frame. Code {samplesDecoded:X}");
+			}
+
+			int size = samplesDecoded * WaveFormat.BlockAlign;
+
+			return new WaveEntry
+			{
+				SamplesInFrame = (uint)samplesDecoded,
+				FrameData = decoded.Slice(0, size),
+				hFrameData = handle
+			};
 		}
 
 		private bool disposed = false;
@@ -50,67 +97,79 @@ namespace AAXClean.Codecs
 		{
 			if (!disposed)
 			{
-				AacDecoder?.Close();
+				aacDecoder?.Close();
+				disposed = true;
 			}
-		}
-		~FfmpegAacDecoder()
-		{
-			Dispose();
+			GC.SuppressFinalize(this);
 		}
 
-		private class DecoderHandle : SafeHandle
+		private class NativeAacDecode
 		{
-			public Action<DecoderHandle> CloseHandle { get; set; }
-			public DecoderHandle() : base(IntPtr.Zero, true) { }
-			public override bool IsInvalid => !IsClosed && handle != IntPtr.Zero;
-			protected override bool ReleaseHandle()
+			private readonly DecoderHandle Handle;
+			private NativeAacDecode(DecoderHandle handle) => Handle = handle;
+
+			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
+			private static extern DecoderHandle aacDecoder_Open(AacDecoderOptions* decoder_options);
+
+			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
+			private static extern int aacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, byte* pDecodedAudio, int numOutSamples);
+
+			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
+			private static extern int aacDecoder_DecodeFlush(DecoderHandle self, byte* pDecodedAudio, int numOutSamples);
+
+			public static NativeAacDecode Open(byte[] ASC, WaveFormat waveFormat)
 			{
-				CloseHandle(this);
-				return true;
-			}
-		}
-		private class NativeAac
-		{
-			private bool closed = false;
-			private DecoderHandle Handle;
+				DecoderHandle handle;
+				fixed (byte* asc = ASC)
+				{
+					AacDecoderOptions options = new()
+					{
+						asc_size = ASC.Length,
+						sample_rate = waveFormat.SampleRate,
+						channels = waveFormat.Channels,
+						sample_fmt = (int)waveFormat.Encoding,
+						ASC = asc
+					};
+					handle = aacDecoder_Open(&options);
+				}
 
-			private const string libname = "ffmpegaac";
-
-			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern DecoderHandle aacDecoder_Open(byte[] ASC, int ASCSize);
-
-			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern void aacDecoder_Close(DecoderHandle self);
-
-			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int aacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, byte* pDecodedAudio, int cbOutBufferSize);
-
-			public static NativeAac Open(byte[] ASC, int ASCSize)
-			{
-				var aac = new NativeAac();
-				aac.Handle = aacDecoder_Open(ASC, ASCSize);
-				aac.Handle.CloseHandle = aacDecoder_Close;
-
-				long err = (long)aac.Handle.DangerousGetHandle();
+				long err = (long)handle.DangerousGetHandle();
 
 				if (err < 0)
 				{
 					throw new Exception($"Error opening AAC Decoder. Code {err}");
 				}
-				return aac;
+
+				return new NativeAacDecode(handle);
 			}
-			public void Close()
+			public void Close() => Handle.Close();
+			public int DecodeFrame(byte* pCompressedAudio, int cbInputSize, byte* pDecodedAudio, int numOutSamples)
+				=> aacDecoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize, pDecodedAudio, numOutSamples);
+			public int DecodeFlush(byte* pDecodedAudio,int numOutSamples)
+				=> aacDecoder_DecodeFlush(Handle, pDecodedAudio, numOutSamples);
+
+			private class DecoderHandle : SafeHandle
 			{
-				if (!closed)
+				[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
+				private static extern int aacDecoder_Close(IntPtr self);
+				private DecoderHandle() : base(IntPtr.Zero, true) { }
+				public override bool IsInvalid => IsClosed || handle == IntPtr.Zero;
+				protected override bool ReleaseHandle()
 				{
-					aacDecoder_Close(Handle);
-					Handle.Dispose();
-					closed = true;
+					aacDecoder_Close(handle);
+					return true;
 				}
 			}
 
-			public int DecodeFrame(byte* pCompressedAudio, int cbInBufferSize, byte* pDecodedAudio, int cbOutBufferSize)
-				=> aacDecoder_DecodeFrame(Handle, pCompressedAudio, cbInBufferSize, pDecodedAudio, cbOutBufferSize);
+			[StructLayout(LayoutKind.Sequential)]
+			private struct AacDecoderOptions
+			{
+				public int asc_size;
+				public int sample_rate;
+				public int channels;
+				public int sample_fmt;
+				public byte* ASC;
+			}
 		}
 	}
 }

@@ -69,14 +69,6 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			pbuff128 = (short*)hbuff128.Pointer;
 		}
 
-		public override Task CompleteAsync()
-		{
-			base.CompleteAsync().GetAwaiter().GetResult();
-			CheckAndAddSilence(lastSilenceStart, numConsecutiveSilences);
-			hbuff128.Dispose();
-			return Task.Delay(0);
-		}
-
 		private void CheckAndAddSilence(long lastSilenceStart, long numConsecutiveSilences)
 		{
 			if (numConsecutiveSilences > MinConsecutiveSamples)
@@ -90,11 +82,17 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			}
 		}
 
+		protected override void Flush()
+		{
+			CheckAndAddSilence(lastSilenceStart, numConsecutiveSilences);
+			hbuff128.Dispose();
+		}
+
 		protected override void PerformFiltering(WaveEntry input)
 		{
 			short* samples = (short*)input.hFrameData.Pointer;
 
-			for (int i = 0; i < input.FrameDelta * Channels; i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
+			for (int i = 0; i < input.SamplesInFrame * Channels; i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
 			{
 				//2x compares and an AND is ~3% faster than Abs and 1x compare
 				//And for whatever reason, equivalent method with Avx 256-bit vectors is slightly slower.

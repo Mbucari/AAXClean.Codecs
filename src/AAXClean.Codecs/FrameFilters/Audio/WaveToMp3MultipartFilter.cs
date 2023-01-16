@@ -1,12 +1,11 @@
-﻿using AAXClean.FrameFilters;
-using AAXClean.FrameFilters.Audio;
+﻿using AAXClean.FrameFilters.Audio;
 using NAudio.Lame;
 using System;
 using System.IO;
 
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
-	internal sealed class AacToMp3MultipartFilter : MultipartFilterBase<WaveEntry, NewMP3SplitCallback>
+	internal sealed class WaveToMp3MultipartFilter : MultipartFilterBase<WaveEntry, NewMP3SplitCallback>
 	{
 		private Action<NewMP3SplitCallback> NewFileCallback { get; }
 
@@ -16,14 +15,11 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		private LameConfig LameConfig;
 		private Stream OutputStream;
 
-		public AacToMp3MultipartFilter(ChapterInfo splitChapters, Action<NewMP3SplitCallback> newFileCallback, byte[] audioSpecificConfig, ushort sampleSize, LameConfig lameConfig)
-						: base(audioSpecificConfig, splitChapters)
+		public WaveToMp3MultipartFilter(ChapterInfo splitChapters, WaveFormat waveFormat, LameConfig lameConfig, Action<NewMP3SplitCallback> newFileCallback)
+			: base(splitChapters, waveFormat.SampleRateEnum, waveFormat.Channels == 2)
 		{
 
-			if (sampleSize != AacToWave.BitsPerSample)
-				throw new ArgumentException($"{nameof(AacToMp3Filter)} only supports 16-bit aac streams.");
-
-			WaveFormat = new WaveFormat(SampleRate, sampleSize, Channels);
+			WaveFormat = waveFormat;
 			LameConfig = lameConfig;
 			NewFileCallback = newFileCallback;
 		}
@@ -40,14 +36,10 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			CurrentWriterOpen = false;
 		}
 
-		protected override void WriteFrameToFile(FrameEntry audioFrame, bool newChunk)
+		protected override void WriteFrameToFile(WaveEntry audioFrame, bool newChunk)
 		{
-			if (audioFrame is WaveEntry wave)
-			{
-				Writer.Write(wave.FrameData.Span);
-				wave.hFrameData.Dispose();
-			}
-			else throw new ArgumentException($"{nameof(audioFrame)} argument to {this.GetType().Name}.{nameof(WriteFrameToFile)} must be a {nameof(WaveEntry)}");
+			Writer.Write(audioFrame.FrameData.Span);
+			audioFrame.hFrameData.Dispose();
 		}
 
 		protected override void CreateNewWriter(NewMP3SplitCallback callback)
