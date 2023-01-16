@@ -4,16 +4,21 @@ using AAXClean.FrameFilters.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace AAXClean.Codecs
 {
+	public class AacEncoderOptions
+	{
+		public SampleRate SampleRate { get; set; }
+		public bool Stereo { get; set; }
+		public double EncoderQuality { get; set; }
+		public long BitRate { get; set; }
+	}
 	public static class Mp4FileExtensions
 	{
 		private static IntPtr ffmpegaac;
-
 		private static IntPtr DllImportResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
 		{
 			if (libraryName == FfmpegAacDecoder.libname)
@@ -21,14 +26,11 @@ namespace AAXClean.Codecs
 				if (ffmpegaac != IntPtr.Zero)
 					return ffmpegaac;
 
-
-				var archStr = Environment.Is64BitProcess ? "x64" : "x86";
-
+				if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 				if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 					libraryName = $"{libraryName}.{(Environment.Is64BitProcess ? "x64" : "x86")}.dll";
-
 				
-				if (NativeLibrary.TryLoad(@$"D:\OneDrive\Projects\AaxClean\AaxTest\ffmpeg5\ffmpeg5\msvc\bin\{archStr}\{FfmpegAacDecoder.libname}.dll", assembly, searchPath, out ffmpegaac))
+				if (NativeLibrary.TryLoad(libraryName, assembly, searchPath, out ffmpegaac))
 					return ffmpegaac;
 				else
 					throw new PlatformNotSupportedException();
@@ -80,8 +82,11 @@ namespace AAXClean.Codecs
 			lameConfig ??= GetDefaultLameConfig(mp4File);
 			lameConfig.ID3 ??= WaveToMp3Filter.GetDefaultMp3Tags(mp4File.AppleTags);
 
+			var stereo = lameConfig.Mode is not NAudio.Lame.MPEGMode.Mono;
+			var sampleRate = (SampleRate)mp4File.TimeScale;
+
 			using FrameTransformBase<FrameEntry, FrameEntry> f1 = mp4File.GetAudioFrameFilter();
-			using AacToWave f2 = new(mp4File.AscBlob, WaveFormatEncoding.IeeeFloat, SampleRate._16000, true);
+			using AacToWave f2 = new(mp4File.AscBlob, WaveFormatEncoding.IeeeFloat, sampleRate, stereo);
 			using WaveToMp3Filter f3 = new(
 				outputStream,
 				f2.WaveFormat,
@@ -112,16 +117,22 @@ namespace AAXClean.Codecs
 			return result;
 		}
 
-		public static async Task<ConversionResult> ConvertToAacAsync(this Mp4File mp4File, Stream outputStream, ChapterInfo userChapters = null, bool trimOutputToChapters = false)
+		public static async Task<ConversionResult> ConvertToAacAsync(this Mp4File mp4File, Stream outputStream, AacEncoderOptions options, ChapterInfo userChapters = null, bool trimOutputToChapters = false)
 		{
+			if (options is null) return ConversionResult.Failed;
+
+			var stereo = mp4File.AudioChannels > 1 && options.Stereo;
+			var sampleRate = (SampleRate)Math.Min(mp4File.TimeScale, (uint)options.SampleRate);
+
 			using FrameTransformBase<FrameEntry, FrameEntry> f1 = mp4File.GetAudioFrameFilter();
-			using AacToWave f2 = new(mp4File.AscBlob, WaveFormatEncoding.Dts, SampleRate._16000, false);
+			using AacToWave f2 = new(mp4File.AscBlob, WaveFormatEncoding.Dts, sampleRate, stereo);
 			using WaveToAacFilter f3 = new(
 				outputStream,
 				mp4File.Ftyp,
 				mp4File.Moov,
-				f2.WaveFormat
-				);
+				f2.WaveFormat,
+				options.BitRate,
+				options.EncoderQuality);
 
 			f1.LinkTo(f2);
 			f2.LinkTo(f3);
@@ -130,18 +141,20 @@ namespace AAXClean.Codecs
 			var end = userChapters?.EndOffset ?? TimeSpan.Zero;
 
 			ConversionResult result;
-			if (mp4File.Moov.TextTrack is null)
+			if (mp4File.Moov.TextTrack is null || userChapters is not null)
 			{
+				f3.SetChapterDelegate(() => userChapters);
 				result = await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1));
 			}
 			else
 			{
 				using ChapterFilter c1 = new(mp4File.TimeScale);
-
+				f3.SetChapterDelegate(() => c1.Chapters);
 				result = await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1), (mp4File.Moov.TextTrack, c1));
-
-				mp4File.Chapters = userChapters ?? c1.Chapters;
 			}
+
+			if (result is ConversionResult.NoErrorsDetected)
+				mp4File.Chapters = f3.Chapters;
 
 			outputStream.Close();
 			return result;
@@ -152,8 +165,11 @@ namespace AAXClean.Codecs
 			lameConfig ??= GetDefaultLameConfig(mp4File);
 			lameConfig.ID3 ??= WaveToMp3Filter.GetDefaultMp3Tags(mp4File.AppleTags);
 
+			var stereo = lameConfig.Mode is not NAudio.Lame.MPEGMode.Mono;
+			var sampleRate = (SampleRate)mp4File.TimeScale;
+
 			using FrameTransformBase<FrameEntry, FrameEntry> f1 = mp4File.GetAudioFrameFilter();
-			using AacToWave f2 = new(mp4File.AscBlob, WaveFormatEncoding.IeeeFloat, SampleRate._12000, false);
+			using AacToWave f2 = new(mp4File.AscBlob, WaveFormatEncoding.IeeeFloat, sampleRate, stereo);
 			using WaveToMp3MultipartFilter f3 = new(
 				userChapters,
 				f2.WaveFormat,

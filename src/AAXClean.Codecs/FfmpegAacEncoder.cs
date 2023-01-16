@@ -12,11 +12,12 @@ namespace AAXClean.Codecs
 		private readonly NativeAacEncode aacEncoder;
 		private readonly Memory<byte> buffer;
 		private const int AAC_SAMPLES_PER_FRAME = 1024;
-		public FfmpegAacEncoder(WaveFormat inputWaveFormat)
+
+		public FfmpegAacEncoder(WaveFormat inputWaveFormat, long bitRate, double quality)
 		{
 			WaveFormat = inputWaveFormat;
 			buffer = new byte[AAC_SAMPLES_PER_FRAME * WaveFormat.BlockAlign];
-			aacEncoder = NativeAacEncode.Open(WaveFormat, 64000, 0.8);
+			aacEncoder = NativeAacEncode.Open(WaveFormat, bitRate, quality);
 		}
 
 		public FrameEntry EncodeWave(WaveEntry input)
@@ -127,6 +128,7 @@ namespace AAXClean.Codecs
 				}
 				return new NativeAacEncode(handle);
 			}
+
 			public void Close() => Handle.Close();
 			public int EncodeFrame(byte* pWaveAudio, int nbSamples)
 				=> aacEncoder_EncodeFrame(Handle, pWaveAudio, nbSamples);
