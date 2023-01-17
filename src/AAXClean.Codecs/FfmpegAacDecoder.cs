@@ -24,8 +24,8 @@ namespace AAXClean.Codecs
 
 			WaveFormat = new WaveFormat((SampleRate)inputSampleRate, waveFormatEncoding, inputChannels == 2);
 			aacDecoder = NativeAacDecode.Open(asc, WaveFormat);
-
 		}
+
 		public FfmpegAacDecoder(byte[] asc, WaveFormatEncoding waveFormatEncoding, SampleRate sampleRate, bool stereo)
 		{
 			inputSampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
@@ -68,7 +68,7 @@ namespace AAXClean.Codecs
 		}
 
 		public WaveEntry DecodeFlush()
-		{			
+		{
 			Memory<byte> decoded = new byte[lastFrameNumSamples * WaveFormat.BlockAlign];
 			MemoryHandle handle = decoded.Pin();
 
@@ -144,7 +144,7 @@ namespace AAXClean.Codecs
 			public void Close() => Handle.Close();
 			public int DecodeFrame(byte* pCompressedAudio, int cbInputSize, byte* pDecodedAudio, int numOutSamples)
 				=> aacDecoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize, pDecodedAudio, numOutSamples);
-			public int DecodeFlush(byte* pDecodedAudio,int numOutSamples)
+			public int DecodeFlush(byte* pDecodedAudio, int numOutSamples)
 				=> aacDecoder_DecodeFlush(Handle, pDecodedAudio, numOutSamples);
 
 			private class DecoderHandle : SafeHandle

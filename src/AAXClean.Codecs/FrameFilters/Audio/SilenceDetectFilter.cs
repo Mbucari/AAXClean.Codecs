@@ -75,8 +75,6 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		protected override Task PerformFilteringAsync(WaveEntry input)
 		{
-			//if (lastSilenceStart > 100000000) throw new Exception("TEST BASE EXCEPTION");
-
 			short* samples = (short*)input.hFrameData.Pointer;
 
 			for (int i = 0; i < input.SamplesInFrame * WaveFormat.Channels; i += VECTOR_COUNT, currentSample += VECTOR_COUNT)

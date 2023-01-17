@@ -52,5 +52,11 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			input.Dispose();
 			return Task.CompletedTask;
 		}
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing && !Disposed)
+				lameMp3Encoder.Dispose();
+			base.Dispose(disposing);
+		}
 	}
 }

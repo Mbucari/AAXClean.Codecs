@@ -36,7 +36,7 @@ namespace AAXClean.Codecs
 			Memory<byte> encAud = new byte[bytesEncoded];
 			if (bytesEncoded > 0)
 			{
-				
+
 				fixed (byte* pEncAud = encAud.Span)
 				{
 					bytesEncoded = aacEncoder.GetEncodedFrame(pEncAud, bytesEncoded);
@@ -58,7 +58,7 @@ namespace AAXClean.Codecs
 
 		public FrameEntry EncodeFlush()
 		{
-			Memory<byte> decoded = new byte[4096];			
+			Memory<byte> decoded = new byte[4096];
 
 			int bytesEncoded = 0;
 			fixed (byte* pEncAud = decoded.Span)
@@ -119,7 +119,7 @@ namespace AAXClean.Codecs
 					sample_fmt = (int)waveFormat.Encoding
 				};
 				var handle = aacEncoder_Open(&options);
-			
+
 				long err = (long)handle.DangerousGetHandle();
 
 				if (err < 0)
@@ -134,7 +134,7 @@ namespace AAXClean.Codecs
 				=> aacEncoder_EncodeFrame(Handle, pWaveAudio, nbSamples);
 			public int GetEncodedFrame(byte* pEncodedAudio, int size)
 				=> aacEncoder_GetEncodedFrame(Handle, pEncodedAudio, size);
-			public int EncodeFlush(byte* pDecodedAudio,int numOutSamples)
+			public int EncodeFlush(byte* pDecodedAudio, int numOutSamples)
 				=> aacEncoder_EncodeFlush(Handle, pDecodedAudio, numOutSamples);
 
 			private class EncoderHandle : SafeHandle

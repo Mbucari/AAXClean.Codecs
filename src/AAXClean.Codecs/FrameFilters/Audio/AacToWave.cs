@@ -1,6 +1,5 @@
 ﻿using AAXClean.FrameFilters;
 
-
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
 	internal sealed class AacToWave : FrameTransformBase<FrameEntry, WaveEntry>
@@ -23,7 +22,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		protected override void Dispose(bool disposing)
 		{
-			if (disposing &&!Disposed)
+			if (disposing && !Disposed)
 				AacDecoder.Dispose();
 			base.Dispose(disposing);
 		}

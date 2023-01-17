@@ -9,13 +9,6 @@ using System.Threading.Tasks;
 
 namespace AAXClean.Codecs
 {
-	public class AacEncoderOptions
-	{
-		public SampleRate SampleRate { get; set; }
-		public bool Stereo { get; set; }
-		public double EncoderQuality { get; set; }
-		public long BitRate { get; set; }
-	}
 	public static class Mp4FileExtensions
 	{
 		private static IntPtr ffmpegaac;
@@ -27,10 +20,9 @@ namespace AAXClean.Codecs
 					return ffmpegaac;
 
 				if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-				if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 					libraryName = $"{libraryName}.{(Environment.Is64BitProcess ? "x64" : "x86")}.dll";
-				
-				if (NativeLibrary.TryLoad(@"D:\OneDrive\Projects\AaxClean\AaxTest\ffmpeg5\ffmpeg5\msvc\bin\x64\" + libraryName, assembly, searchPath, out ffmpegaac))
+
+				if (NativeLibrary.TryLoad(libraryName, assembly, searchPath, out ffmpegaac))
 					return ffmpegaac;
 				else
 					throw new PlatformNotSupportedException();
@@ -45,13 +37,13 @@ namespace AAXClean.Codecs
 			NativeLibrary.SetDllImportResolver(System.Reflection.Assembly.GetExecutingAssembly(), DllImportResolver);
 		}
 
-		public static IReadOnlyList<SilenceEntry> DetectSilence(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null) 
+		public static IReadOnlyList<SilenceEntry> DetectSilence(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null)
 			=> DetectSilenceAsync(mp4File, decibels, minDuration, detectionCallback).GetAwaiter().GetResult();
-		public static void ConvertToMp3(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null, bool trimOutputToChapters = false) 
+		public static void ConvertToMp3(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null, bool trimOutputToChapters = false)
 			=> ConvertToMp3Async(mp4File, outputStream, lameConfig, userChapters, trimOutputToChapters).GetAwaiter().GetResult();
-		public static void ConvertToMultiMp3(this Mp4File mp4File, ChapterInfo userChapters, Action<NewMP3SplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null, bool trimOutputToChapters = false) 
+		public static void ConvertToMultiMp3(this Mp4File mp4File, ChapterInfo userChapters, Action<NewMP3SplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null, bool trimOutputToChapters = false)
 			=> ConvertToMultiMp3Async(mp4File, userChapters, newFileCallback, lameConfig, trimOutputToChapters).GetAwaiter().GetResult();
-		
+
 		public static async Task<IReadOnlyList<SilenceEntry>> DetectSilenceAsync(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null)
 		{
 			if (decibels >= 0 || decibels < -90)

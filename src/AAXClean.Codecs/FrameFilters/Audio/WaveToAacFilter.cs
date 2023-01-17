@@ -1,8 +1,8 @@
 ﻿using AAXClean.FrameFilters;
 using AAXClean.FrameFilters.Audio;
 using Mpeg4Lib.Boxes;
-using System.IO;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 

@@ -2,7 +2,6 @@
 using NAudio.Lame;
 using System;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
