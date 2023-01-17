@@ -67,7 +67,6 @@ namespace AAXClean.Codecs
 			};
 		}
 
-		int t = 0;
 		public WaveEntry DecodeFlush()
 		{			
 			Memory<byte> decoded = new byte[lastFrameNumSamples * WaveFormat.BlockAlign];

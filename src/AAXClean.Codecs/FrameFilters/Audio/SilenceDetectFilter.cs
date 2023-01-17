@@ -2,6 +2,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Threading.Tasks;
@@ -11,70 +12,54 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 	internal unsafe class SilenceDetectFilter : FrameFinalBase<WaveEntry>
 	{
 		public List<SilenceEntry> Silences { get; }
+		protected override int InputBufferSize => 500;
 
-		private const int VECTOR_COUNT = 8;
+		private const int VECTOR_COUNT = 16;
 		private readonly double SilenceThreshold;
 		private readonly TimeSpan MinimumDuration;
-		private readonly int Channels;
-		private readonly int SampleRate;
+		private readonly WaveFormat WaveFormat;
 		private readonly Action<SilenceDetectCallback> DetectionCallback;
 		private readonly long MinConsecutiveSamples;
 
-		private readonly Vector128<short> MaxAmplitudes;
-		private readonly Vector128<short> MinAmplitudes;
-		private readonly Vector128<short> Zeros = Vector128<short>.Zero;
+		private readonly Vector256<short> MaxAmplitudes;
+		private readonly Vector256<short> AllBitsSet = Vector256<short>.AllBitsSet;
 
 		private long currentSample = 0;
 		private long lastSilenceStart = 0;
 		private long numConsecutiveSilences = 0;
 
-		private readonly Memory<short> buff128;
-		private readonly MemoryHandle hbuff128;
-		private readonly short* pbuff128;
-		public unsafe SilenceDetectFilter(double db, TimeSpan minDuration, byte[] audioSpecificConfig, int channels, int sampleRate, Action<SilenceDetectCallback> detectionCallback)
+		private readonly Memory<short> buff256;
+		private readonly MemoryHandle hbuff256;
+		private readonly short* pbuff256;
+		public unsafe SilenceDetectFilter(double db, TimeSpan minDuration, WaveFormat waveFormat, Action<SilenceDetectCallback> detectionCallback)
 		{
 			SilenceThreshold = db;
 			MinimumDuration = minDuration;
-			Channels = channels;
-			SampleRate = sampleRate;
+			WaveFormat = waveFormat;
 			DetectionCallback = detectionCallback;
 			Silences = new List<SilenceEntry>();
-			MinConsecutiveSamples = (long)Math.Round(SampleRate * MinimumDuration.TotalSeconds * Channels);
+			MinConsecutiveSamples = (long)Math.Round(waveFormat.SampleRate * MinimumDuration.TotalSeconds * waveFormat.Channels);
 
-			short maxAmplitude = (short)(Math.Pow(10, SilenceThreshold / 20) * short.MaxValue);
-			short minAmplitude = (short)-maxAmplitude;
+			short maxAmplitude = (short)Math.Round(Math.Pow(10, SilenceThreshold / 20) * short.MaxValue);
 
 			//Initialize vectors for comparisons
-			short[] sbytes = new short[VECTOR_COUNT];
-
-			for (int i = 0; i < sbytes.Length; i++)
-				sbytes[i] = maxAmplitude;
-
-			fixed (short* s = sbytes)
+			fixed (short* s = Enumerable.Repeat(maxAmplitude, VECTOR_COUNT).ToArray())
 			{
-				MaxAmplitudes = Sse2.LoadVector128(s);
+				MaxAmplitudes = Avx.LoadVector256(s);
 			}
 
-			for (int i = 0; i < sbytes.Length; i++)
-				sbytes[i] = minAmplitude;
-
-			fixed (short* s = sbytes)
-			{
-				MinAmplitudes = Sse2.LoadVector128(s);
-			}
-
-			//Buffer for storing Vector128<short>
-			buff128 = new short[VECTOR_COUNT];
-			hbuff128 = buff128.Pin();
-			pbuff128 = (short*)hbuff128.Pointer;
+			//Buffer for storing Vector256<short>
+			buff256 = new short[VECTOR_COUNT];
+			hbuff256 = buff256.Pin();
+			pbuff256 = (short*)hbuff256.Pointer;
 		}
 
 		private void CheckAndAddSilence(long lastSilenceStart, long numConsecutiveSilences)
 		{
 			if (numConsecutiveSilences > MinConsecutiveSamples)
 			{
-				TimeSpan start = TimeSpan.FromSeconds((double)lastSilenceStart / Channels / SampleRate);
-				TimeSpan end = TimeSpan.FromSeconds((double)(lastSilenceStart + numConsecutiveSilences) / Channels / SampleRate);
+				TimeSpan start = TimeSpan.FromSeconds((double)lastSilenceStart / WaveFormat.Channels / WaveFormat.SampleRate);
+				TimeSpan end = TimeSpan.FromSeconds((double)(lastSilenceStart + numConsecutiveSilences) / WaveFormat.Channels / WaveFormat.SampleRate);
 
 				SilenceEntry silence = new(start, end);
 				Silences.Add(silence);
@@ -82,30 +67,38 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			}
 		}
 
-		protected override void Flush()
+		protected override Task FlushAsync()
 		{
 			CheckAndAddSilence(lastSilenceStart, numConsecutiveSilences);
-			hbuff128.Dispose();
+			return Task.CompletedTask;
 		}
 
-		protected override void PerformFiltering(WaveEntry input)
+		protected override Task PerformFilteringAsync(WaveEntry input)
 		{
+			//if (lastSilenceStart > 100000000) throw new Exception("TEST BASE EXCEPTION");
+
 			short* samples = (short*)input.hFrameData.Pointer;
 
-			for (int i = 0; i < input.SamplesInFrame * Channels; i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
+			for (int i = 0; i < input.SamplesInFrame * WaveFormat.Channels; i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
 			{
-				//2x compares and an AND is ~3% faster than Abs and 1x compare
-				//And for whatever reason, equivalent method with Avx 256-bit vectors is slightly slower.
-				Vector128<short> samps = Sse2.LoadVector128(samples + i);
-				Vector128<short> comparesLess = Sse2.CompareLessThan(samps, MaxAmplitudes);
-				Vector128<short> comparesGreater = Sse2.CompareGreaterThan(samps, MinAmplitudes);
-				Vector128<short> compares = Sse2.And(comparesLess, comparesGreater);
+				var sampleVector = Avx.LoadVector256(samples + i);
+				var absVal = Avx2.Abs(sampleVector).AsInt16();
+				var greaterThan = Avx2.CompareGreaterThan(MaxAmplitudes, absVal);
 
-				//loud = 0
-				//silent = -1
-				bool allLoud = Sse41.TestC(Zeros, compares); //compares are all 0
+				var allSilent = Avx.TestC(greaterThan, AllBitsSet);
 
-				//var allSilent = Sse41.TestC(compares, ones); //compares are all -1
+				if (allSilent)
+				{
+					if (numConsecutiveSilences == 0)
+					{
+						lastSilenceStart = currentSample;
+					}
+
+					numConsecutiveSilences += VECTOR_COUNT;
+					continue;
+				}
+
+				bool allLoud = Avx.TestZ(greaterThan, AllBitsSet);
 
 				if (allLoud)
 				{
@@ -118,23 +111,14 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 					continue;
 				}
 
-				Sse2.Store(pbuff128, compares);
-				Span<short> span = buff128.Span;
+				Avx.Store(pbuff256, greaterThan);
+				Span<short> span = buff256.Span;
 
 				for (int j = 0; j < VECTOR_COUNT; j++)
 				{
-					bool Silence = span[j] == -1;
-					if (!Silence)
+					if (span[j] == -1)
 					{
-						if (numConsecutiveSilences != 0)
-						{
-							CheckAndAddSilence(lastSilenceStart, numConsecutiveSilences);
-
-							numConsecutiveSilences = 0;
-						}
-					}
-					else
-					{
+						//Sample is silent
 						if (numConsecutiveSilences == 0)
 						{
 							lastSilenceStart = currentSample + j;
@@ -142,10 +126,25 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 						numConsecutiveSilences++;
 					}
+					else if (numConsecutiveSilences != 0)
+					{
+						CheckAndAddSilence(lastSilenceStart, numConsecutiveSilences);
+
+						numConsecutiveSilences = 0;
+					}
 				}
 			}
 
-			input.hFrameData.Dispose();
+			input.Dispose();
+
+			return Task.CompletedTask;
+		}
+
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing && !Disposed)
+				hbuff256.Dispose();
+			base.Dispose(disposing);
 		}
 	}
 }

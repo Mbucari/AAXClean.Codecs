@@ -5,6 +5,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 {
 	internal sealed class AacToWave : FrameTransformBase<FrameEntry, WaveEntry>
 	{
+		protected override int InputBufferSize => 300;
 		public WaveFormat WaveFormat => AacDecoder.WaveFormat;
 
 		readonly FfmpegAacDecoder AacDecoder;
@@ -22,10 +23,8 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		protected override void Dispose(bool disposing)
 		{
-			if (disposing)
-			{
+			if (disposing &&!Disposed)
 				AacDecoder.Dispose();
-			}
 			base.Dispose(disposing);
 		}
 	}

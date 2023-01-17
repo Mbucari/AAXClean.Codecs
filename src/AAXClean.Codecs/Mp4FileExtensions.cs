@@ -30,7 +30,7 @@ namespace AAXClean.Codecs
 				if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 					libraryName = $"{libraryName}.{(Environment.Is64BitProcess ? "x64" : "x86")}.dll";
 				
-				if (NativeLibrary.TryLoad(libraryName, assembly, searchPath, out ffmpegaac))
+				if (NativeLibrary.TryLoad(@"D:\OneDrive\Projects\AaxClean\AaxTest\ffmpeg5\ffmpeg5\msvc\bin\x64\" + libraryName, assembly, searchPath, out ffmpegaac))
 					return ffmpegaac;
 				else
 					throw new PlatformNotSupportedException();
@@ -47,9 +47,9 @@ namespace AAXClean.Codecs
 
 		public static IReadOnlyList<SilenceEntry> DetectSilence(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null) 
 			=> DetectSilenceAsync(mp4File, decibels, minDuration, detectionCallback).GetAwaiter().GetResult();
-		public static ConversionResult ConvertToMp3(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null, bool trimOutputToChapters = false) 
+		public static void ConvertToMp3(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null, bool trimOutputToChapters = false) 
 			=> ConvertToMp3Async(mp4File, outputStream, lameConfig, userChapters, trimOutputToChapters).GetAwaiter().GetResult();
-		public static ConversionResult ConvertToMultiMp3(this Mp4File mp4File, ChapterInfo userChapters, Action<NewMP3SplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null, bool trimOutputToChapters = false) 
+		public static void ConvertToMultiMp3(this Mp4File mp4File, ChapterInfo userChapters, Action<NewMP3SplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null, bool trimOutputToChapters = false) 
 			=> ConvertToMultiMp3Async(mp4File, userChapters, newFileCallback, lameConfig, trimOutputToChapters).GetAwaiter().GetResult();
 		
 		public static async Task<IReadOnlyList<SilenceEntry>> DetectSilenceAsync(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null)
@@ -60,13 +60,11 @@ namespace AAXClean.Codecs
 				throw new ArgumentException($"{nameof(minDuration)} must be no shorter than 2 audio samples.");
 
 			using FrameTransformBase<FrameEntry, FrameEntry> f1 = mp4File.GetAudioFrameFilter();
-			using AacToWave f2 = new(mp4File.AscBlob, WaveFormatEncoding.Pcm);
+			using AacToWave f2 = new(mp4File.AscBlob, WaveFormatEncoding.Pcm, SampleRate._22050, true);
 			using SilenceDetectFilter f3 = new(
 				decibels,
 				minDuration,
-				mp4File.AscBlob,
-				mp4File.AudioChannels,
-				(int)mp4File.TimeScale,
+				f2.WaveFormat,
 				detectionCallback);
 
 			f1.LinkTo(f2);
@@ -77,7 +75,7 @@ namespace AAXClean.Codecs
 			return f3.Silences;
 		}
 
-		public static async Task<ConversionResult> ConvertToMp3Async(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null, bool trimOutputToChapters = false)
+		public static async Task ConvertToMp3Async(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null, bool trimOutputToChapters = false)
 		{
 			lameConfig ??= GetDefaultLameConfig(mp4File);
 			lameConfig.ID3 ??= WaveToMp3Filter.GetDefaultMp3Tags(mp4File.AppleTags);
@@ -90,8 +88,7 @@ namespace AAXClean.Codecs
 			using WaveToMp3Filter f3 = new(
 				outputStream,
 				f2.WaveFormat,
-				lameConfig
-				);
+				lameConfig);
 
 			f1.LinkTo(f2);
 			f2.LinkTo(f3);
@@ -99,27 +96,25 @@ namespace AAXClean.Codecs
 			var start = userChapters?.StartOffset ?? TimeSpan.Zero;
 			var end = userChapters?.EndOffset ?? TimeSpan.Zero;
 
-			ConversionResult result;
 			if (mp4File.Moov.TextTrack is null)
 			{
-				result = await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1));
+				await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1));
 			}
 			else
 			{
 				ChapterFilter c1 = new(mp4File.TimeScale);
 
-				result = await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1), (mp4File.Moov.TextTrack, c1));
+				await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1), (mp4File.Moov.TextTrack, c1));
 
 				mp4File.Chapters = userChapters ?? c1.Chapters;
 			}
 
 			outputStream.Close();
-			return result;
 		}
 
-		public static async Task<ConversionResult> ConvertToAacAsync(this Mp4File mp4File, Stream outputStream, AacEncoderOptions options, ChapterInfo userChapters = null, bool trimOutputToChapters = false)
+		public static async Task ConvertToAacAsync(this Mp4File mp4File, Stream outputStream, AacEncoderOptions options, ChapterInfo userChapters = null, bool trimOutputToChapters = false)
 		{
-			if (options is null) return ConversionResult.Failed;
+			if (options is null) return;
 
 			var stereo = mp4File.AudioChannels > 1 && options.Stereo;
 			var sampleRate = (SampleRate)Math.Min(mp4File.TimeScale, (uint)options.SampleRate);
@@ -140,27 +135,25 @@ namespace AAXClean.Codecs
 			var start = userChapters?.StartOffset ?? TimeSpan.Zero;
 			var end = userChapters?.EndOffset ?? TimeSpan.Zero;
 
-			ConversionResult result;
 			if (mp4File.Moov.TextTrack is null || userChapters is not null)
 			{
 				f3.SetChapterDelegate(() => userChapters);
-				result = await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1));
+				await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1));
 			}
 			else
 			{
 				using ChapterFilter c1 = new(mp4File.TimeScale);
 				f3.SetChapterDelegate(() => c1.Chapters);
-				result = await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1), (mp4File.Moov.TextTrack, c1));
+				await mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, (mp4File.Moov.AudioTrack, f1), (mp4File.Moov.TextTrack, c1));
 			}
 
-			if (result is ConversionResult.NoErrorsDetected)
+			if (!mp4File.IsCancelled)
 				mp4File.Chapters = f3.Chapters;
 
 			outputStream.Close();
-			return result;
 		}
 
-		public static async Task<ConversionResult> ConvertToMultiMp3Async(this Mp4File mp4File, ChapterInfo userChapters, Action<NewMP3SplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null, bool trimOutputToChapters = false)
+		public static async Task ConvertToMultiMp3Async(this Mp4File mp4File, ChapterInfo userChapters, Action<NewMP3SplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null, bool trimOutputToChapters = false)
 		{
 			lameConfig ??= GetDefaultLameConfig(mp4File);
 			lameConfig.ID3 ??= WaveToMp3Filter.GetDefaultMp3Tags(mp4File.AppleTags);
@@ -179,7 +172,7 @@ namespace AAXClean.Codecs
 			f1.LinkTo(f2);
 			f2.LinkTo(f3);
 
-			return await mp4File.ProcessAudio(trimOutputToChapters, userChapters.StartOffset, userChapters.EndOffset, (mp4File.Moov.AudioTrack, f1));
+			await mp4File.ProcessAudio(trimOutputToChapters, userChapters.StartOffset, userChapters.EndOffset, (mp4File.Moov.AudioTrack, f1));
 		}
 
 		public static NAudio.Lame.LameConfig GetDefaultLameConfig(Mp4File mp4File)

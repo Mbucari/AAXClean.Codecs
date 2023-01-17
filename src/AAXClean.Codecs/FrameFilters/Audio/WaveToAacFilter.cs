@@ -4,6 +4,7 @@ using Mpeg4Lib.Boxes;
 using System.IO;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
@@ -14,6 +15,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		private readonly Stream outputFile;
 		private Func<ChapterInfo> GetChapterDelegate;
 		public ChapterInfo Chapters => GetChapterDelegate?.Invoke();
+		protected override int InputBufferSize => 200;
 
 		int chunkCount = 0;
 		public bool Closed { get; private set; }
@@ -39,7 +41,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 				Mp4AWriter.Moov.TextTrack.Mdia.Mdhd.Timescale = (uint)waveFormat.SampleRate;
 			}
 		}
-		protected override void PerformFiltering(WaveEntry input)
+		protected override Task PerformFilteringAsync(WaveEntry input)
 		{
 			FrameEntry encodedAac = aacEncoder.EncodeWave(input);
 
@@ -48,7 +50,9 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 				Mp4AWriter.AddFrame(encodedAac.FrameData.Span, chunkCount++ == 0);
 				chunkCount %= 20;
 			}
-			input.hFrameData.Dispose();
+			input.Dispose();
+
+			return Task.CompletedTask;
 		}
 
 		public void SetChapterDelegate(Func<ChapterInfo> getChapterDelegate)
@@ -56,11 +60,12 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			GetChapterDelegate = getChapterDelegate;
 		}
 
-		protected override void Flush()
+		protected override Task FlushAsync()
 		{
 			var flushedFrame = aacEncoder.EncodeFlush();
 			Mp4AWriter.AddFrame(flushedFrame.FrameData.Span, newChunk: false);
 			CloseWriter();
+			return Task.CompletedTask;
 		}
 
 		private void CloseWriter()
@@ -78,12 +83,12 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		protected override void Dispose(bool disposing)
 		{
-			base.Dispose(disposing);
-			if (disposing)
+			if (disposing && !Disposed)
 			{
 				aacEncoder?.Dispose();
 				Mp4AWriter?.Dispose();
 			}
+			base.Dispose(disposing);
 		}
 	}
 }

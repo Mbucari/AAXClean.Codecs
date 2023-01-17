@@ -1,6 +1,7 @@
 ﻿using AAXClean.FrameFilters;
 using NAudio.Lame;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
@@ -8,6 +9,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 	{
 		private readonly LameMP3FileWriter lameMp3Encoder;
 		private readonly Stream OutputStream;
+		protected override int InputBufferSize => 100;
 
 		public bool Closed { get; private set; }
 
@@ -36,19 +38,19 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			return tags;
 		}
 
-		protected override void Flush()
+		protected override async Task FlushAsync()
 		{
-			lameMp3Encoder.Flush();
+			await lameMp3Encoder.FlushAsync();
 			lameMp3Encoder.Close();
 			OutputStream.Close();
 			Closed = true;
 		}
-		int t = 0;
-		protected override void PerformFiltering(WaveEntry input)
+
+		protected override Task PerformFilteringAsync(WaveEntry input)
 		{
-			//if (t++ > 2000) throw new System.Exception("TEST EXCEPTION!");
 			lameMp3Encoder.Write(input.FrameData.Span);
-			input.hFrameData.Dispose();
+			input.Dispose();
+			return Task.CompletedTask;
 		}
 	}
 }

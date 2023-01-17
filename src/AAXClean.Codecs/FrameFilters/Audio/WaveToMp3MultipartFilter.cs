@@ -2,12 +2,14 @@
 using NAudio.Lame;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
 	internal sealed class WaveToMp3MultipartFilter : MultipartFilterBase<WaveEntry, NewMP3SplitCallback>
 	{
 		private Action<NewMP3SplitCallback> NewFileCallback { get; }
+		protected override int InputBufferSize => 100;
 
 		private bool CurrentWriterOpen;
 		private readonly WaveFormat WaveFormat;
@@ -39,7 +41,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		protected override void WriteFrameToFile(WaveEntry audioFrame, bool newChunk)
 		{
 			Writer.Write(audioFrame.FrameData.Span);
-			audioFrame.hFrameData.Dispose();
+			audioFrame.Dispose();
 		}
 
 		protected override void CreateNewWriter(NewMP3SplitCallback callback)
@@ -55,14 +57,9 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		}
 		protected override void Dispose(bool disposing)
 		{
-			if (!Disposed)
-			{
-				if (disposing && CurrentWriterOpen)
-				{
-					CloseCurrentWriter();
-				}
-				base.Dispose(disposing);
-			}
+			if (disposing && !Disposed && CurrentWriterOpen)
+				CloseCurrentWriter();
+			base.Dispose(disposing);
 		}
 	}
 }
