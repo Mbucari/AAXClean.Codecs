@@ -38,10 +38,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		}
 
 		protected override void WriteFrameToFile(WaveEntry audioFrame, bool newChunk)
-		{
-			Writer.Write(audioFrame.FrameData.Span);
-			audioFrame.Dispose();
-		}
+			=> Writer.Write(audioFrame.FrameData.Span);
 
 		protected override void CreateNewWriter(NewMP3SplitCallback callback)
 		{

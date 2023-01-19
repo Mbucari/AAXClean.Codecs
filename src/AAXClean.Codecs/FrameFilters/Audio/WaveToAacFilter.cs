@@ -43,14 +43,11 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		}
 		protected override Task PerformFilteringAsync(WaveEntry input)
 		{
-			FrameEntry encodedAac = aacEncoder.EncodeWave(input);
-
-			if (encodedAac?.FrameData.Length > 0)
+			foreach (var encodedAac in aacEncoder.EncodeWave(input))
 			{
 				Mp4AWriter.AddFrame(encodedAac.FrameData.Span, chunkCount++ == 0);
 				chunkCount %= 20;
 			}
-			input.Dispose();
 
 			return Task.CompletedTask;
 		}
@@ -62,8 +59,10 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		protected override Task FlushAsync()
 		{
-			var flushedFrame = aacEncoder.EncodeFlush();
-			Mp4AWriter.AddFrame(flushedFrame.FrameData.Span, newChunk: false);
+			foreach (var flushedFrame in aacEncoder.EncodeFlush())
+			{
+				Mp4AWriter.AddFrame(flushedFrame.FrameData.Span, newChunk: false);
+			}
 			CloseWriter();
 			return Task.CompletedTask;
 		}

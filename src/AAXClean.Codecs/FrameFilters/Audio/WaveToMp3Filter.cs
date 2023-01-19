@@ -15,7 +15,6 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		public WaveToMp3Filter(Stream mp3Output, WaveFormat waveFormat, LameConfig lameConfig)
 		{
-			//lameConfig.Quality = EncoderQuality.Standard;
 			OutputStream = mp3Output;
 			lameMp3Encoder = new LameMP3FileWriter(OutputStream, waveFormat, lameConfig);
 		}
@@ -49,13 +48,15 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		protected override Task PerformFilteringAsync(WaveEntry input)
 		{
 			lameMp3Encoder.Write(input.FrameData.Span);
-			input.Dispose();
 			return Task.CompletedTask;
 		}
 		protected override void Dispose(bool disposing)
 		{
 			if (disposing && !Disposed)
+			{
+				lameMp3Encoder.Close();
 				lameMp3Encoder.Dispose();
+			}
 			base.Dispose(disposing);
 		}
 	}

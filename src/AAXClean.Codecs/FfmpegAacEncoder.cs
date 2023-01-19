@@ -1,6 +1,7 @@
 ﻿using AAXClean.Codecs.FrameFilters.Audio;
 using AAXClean.FrameFilters;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace AAXClean.Codecs
@@ -20,62 +21,60 @@ namespace AAXClean.Codecs
 			aacEncoder = NativeAacEncode.Open(WaveFormat, bitRate, quality);
 		}
 
-		public FrameEntry EncodeWave(WaveEntry input)
+		public IEnumerable<FrameEntry> EncodeWave(WaveEntry input)
 		{
-			int bytesEncoded;
-			fixed (byte* inData = input.FrameData.Span)
-			{
-				bytesEncoded = aacEncoder.EncodeFrame(inData, (int)input.SamplesInFrame);
-			}
+			if (input.SamplesInFrame > 1024)
+				throw new Exception("Maximum number of samples that can be sent to the encoder at one time is 1024");
 
-			if (bytesEncoded < 0)
-			{
-				throw new Exception("Failed to encode samples.");
-			}
+			int samplesNeeded = SendSamples(input.FrameData.Span, input.FrameData2.Span, (int)input.SamplesInFrame);
 
-			Memory<byte> encAud = new byte[bytesEncoded];
-			if (bytesEncoded > 0)
-			{
+			if (samplesNeeded > 0) yield break;
 
-				fixed (byte* pEncAud = encAud.Span)
+			int encodedSize;
+
+			do
+			{
+				encodedSize = GetAvailableFrameSize();
+
+				if (encodedSize < 0)
+					throw new Exception("Failed to retrieve encoded samples.");
+				else if (encodedSize == 0) yield break;
+
+				Memory<byte> encAud = GetEncodedFrame(encodedSize);
+				yield return new FrameEntry
 				{
-					bytesEncoded = aacEncoder.GetEncodedFrame(pEncAud, bytesEncoded);
-				}
-			}
-			if (bytesEncoded < 0)
-			{
-				throw new Exception("Failed to retrieve encoded samples.");
-			}
-
-			return new FrameEntry
-			{
-				Chunk = input.Chunk,
-				FrameIndex = input.FrameIndex,
-				SamplesInFrame = AAC_SAMPLES_PER_FRAME,
-				FrameData = encAud
-			};
+					Chunk = input.Chunk,
+					FrameIndex = input.FrameIndex,
+					SamplesInFrame = AAC_SAMPLES_PER_FRAME,
+					FrameData = encAud
+				};
+			} while (true);
 		}
 
-		public FrameEntry EncodeFlush()
+		public IEnumerable<FrameEntry> EncodeFlush()
 		{
-			Memory<byte> decoded = new byte[4096];
+			int ret = aacEncoder.EncodeFlush();
 
-			int bytesEncoded = 0;
-			fixed (byte* pEncAud = decoded.Span)
-			{
-				bytesEncoded = aacEncoder.EncodeFlush(pEncAud, decoded.Length);
-			}
-
-			if (bytesEncoded < 0)
-			{
+			if (ret < 0)
 				throw new Exception($"Error flusing AAC encoder.");
-			}
 
-			return new FrameEntry
+			int encodedSize;
+
+			do
 			{
-				SamplesInFrame = AAC_SAMPLES_PER_FRAME,
-				FrameData = decoded.Slice(0, bytesEncoded)
-			};
+				encodedSize = GetAvailableFrameSize();
+
+				if (encodedSize < 0)
+					throw new Exception("Failed to retrieve encoded samples.");
+				else if (encodedSize == 0) yield break;
+
+				Memory<byte> encAud = GetEncodedFrame(encodedSize);
+				yield return new FrameEntry
+				{
+					SamplesInFrame = AAC_SAMPLES_PER_FRAME,
+					FrameData = encAud
+				};
+			} while (true);
 		}
 
 		private bool disposed = false;
@@ -89,6 +88,37 @@ namespace AAXClean.Codecs
 			GC.SuppressFinalize(this);
 		}
 
+		private int SendSamples(Span<byte> frameData1, Span<byte> frameData2, int numSamples)
+		{
+			int ret;
+			fixed(byte* buffer1 = frameData1)
+			{
+				fixed (byte* buffer2 = frameData2)
+				{
+					ret = aacEncoder.EncodeFrame(buffer1, buffer2, numSamples);
+				}
+			}
+
+			if (ret < 0)
+				throw new Exception("Failed to encode samples.");
+
+			return ret;
+		}
+
+		private int GetAvailableFrameSize() => aacEncoder.ReceiveEncodedFrame(null, 0);
+
+		private Memory<byte> GetEncodedFrame(int encodedSize)
+		{
+			Memory<byte> encAud = new byte[encodedSize];
+			fixed (byte* pEncAud = encAud.Span)
+			{
+				encodedSize = aacEncoder.ReceiveEncodedFrame(pEncAud, encodedSize);
+			}
+			if (encodedSize != 0)
+				throw new Exception("Failed to retrieve encoded samples.");
+			return encAud;
+		}
+
 		private class NativeAacEncode
 		{
 			//Factor for converting quality to global_quality
@@ -100,13 +130,13 @@ namespace AAXClean.Codecs
 			private static extern EncoderHandle aacEncoder_Open(AacEncoderOptions* options);
 
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int aacEncoder_EncodeFrame(EncoderHandle self, byte* pWaveAudio, int nbSamples);
+			private static extern int aacEncoder_EncodeFrame(EncoderHandle self, byte* pWaveAudio1, byte* pWaveAudio2, int nbSamples);
 
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int aacEncoder_GetEncodedFrame(EncoderHandle self, byte* pEncodedAudio, int size);
+			private static extern int aacEncoder_ReceiveEncodedFrame(EncoderHandle self, byte* pEncodedAudio, int size);
 
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int aacEncoder_EncodeFlush(EncoderHandle self, byte* pEncodedAudio, int numOutSamples);
+			private static extern int aacEncoder_EncodeFlush(EncoderHandle self);
 
 			public static NativeAacEncode Open(WaveFormat waveFormat, long bitRate, double quality)
 			{
@@ -130,12 +160,12 @@ namespace AAXClean.Codecs
 			}
 
 			public void Close() => Handle.Close();
-			public int EncodeFrame(byte* pWaveAudio, int nbSamples)
-				=> aacEncoder_EncodeFrame(Handle, pWaveAudio, nbSamples);
-			public int GetEncodedFrame(byte* pEncodedAudio, int size)
-				=> aacEncoder_GetEncodedFrame(Handle, pEncodedAudio, size);
-			public int EncodeFlush(byte* pDecodedAudio, int numOutSamples)
-				=> aacEncoder_EncodeFlush(Handle, pDecodedAudio, numOutSamples);
+			public int EncodeFrame(byte* pWaveAudio1, byte* pWaveAudio2, int nbSamples)
+				=> aacEncoder_EncodeFrame(Handle, pWaveAudio1, pWaveAudio2, nbSamples);
+			public int ReceiveEncodedFrame(byte* pEncodedAudio, int size)
+				=> aacEncoder_ReceiveEncodedFrame(Handle, pEncodedAudio, size);
+			public int EncodeFlush()
+				=> aacEncoder_EncodeFlush(Handle);
 
 			private class EncoderHandle : SafeHandle
 			{

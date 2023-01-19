@@ -75,7 +75,8 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		protected override Task PerformFilteringAsync(WaveEntry input)
 		{
-			short* samples = (short*)input.hFrameData.Pointer;
+			var hFrameData = input.FrameData.Pin();
+			short* samples = (short*)hFrameData.Pointer;
 
 			for (int i = 0; i < input.SamplesInFrame * WaveFormat.Channels; i += VECTOR_COUNT, currentSample += VECTOR_COUNT)
 			{
@@ -133,7 +134,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 				}
 			}
 
-			input.Dispose();
+			hFrameData.Dispose();
 
 			return Task.CompletedTask;
 		}

@@ -1,8 +1,10 @@
 ﻿using AAXClean.Codecs.FrameFilters.Audio;
 using AAXClean.FrameFilters;
+using NAudio.Codecs;
 using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace AAXClean.Codecs
 {
@@ -36,60 +38,97 @@ namespace AAXClean.Codecs
 
 		public WaveEntry DecodeWave(FrameEntry input)
 		{
-			lastFrameNumSamples = (int)Math.Ceiling(input.SamplesInFrame * (double)WaveFormat.SampleRate / inputSampleRate); /* add one frame of headroom to ensure that sw_convert gives us everything*/
+			SendSamples(input.FrameData, (int)input.SamplesInFrame);
 
-			Memory<byte> decoded = new byte[lastFrameNumSamples * WaveFormat.BlockAlign];
-			MemoryHandle handle = decoded.Pin();
+			int requiredSamples = GetMaxAvaliableDecodeSize();
 
-			int samplesDecoded;
+			Memory<byte> decoded = new byte[requiredSamples * WaveFormat.BlockAlign];
 
-			fixed (byte* inBuff = input.FrameData.Span)
+			if (WaveFormat.Encoding is NAudio.Wave.WaveFormatEncoding.Dts && WaveFormat.Channels == 2)
 			{
-				byte* outBuff = (byte*)handle.Pointer;
-
-				samplesDecoded = aacDecoder.DecodeFrame(inBuff, input.FrameData.Length, outBuff, lastFrameNumSamples);
+				int receivedSamples;
+				fixed (byte* decodeBuff = decoded.Span)
+				{
+					receivedSamples = aacDecoder.ReceiveDecodedFrame(decodeBuff, decodeBuff + decoded.Length / 2, requiredSamples);
+				}
+				return new WaveEntry
+				{
+					Chunk = input.Chunk,
+					SamplesInFrame = (uint)receivedSamples,
+					FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign / 2),
+					FrameData2 = decoded.Slice(requiredSamples * WaveFormat.BlockAlign / 2, receivedSamples * WaveFormat.BlockAlign / 2),
+					FrameIndex = input.FrameIndex
+				};
 			}
-
-			if (samplesDecoded <= 0)
+			else
 			{
-				throw new Exception($"Error decoding AAC frame. Code {samplesDecoded:X}");
+				int receivedSamples;
+				fixed (byte* decodeBuff = decoded.Span)
+				{
+					receivedSamples = aacDecoder.ReceiveDecodedFrame(decodeBuff, null, requiredSamples);
+				}
+
+				return new WaveEntry
+				{
+					Chunk = input.Chunk,
+					SamplesInFrame = (uint)receivedSamples,
+					FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign),
+					FrameIndex = input.FrameIndex
+				};
 			}
-
-			int bytesDecoded = samplesDecoded * WaveFormat.BlockAlign;
-
-			return new WaveEntry
-			{
-				Chunk = input.Chunk,
-				SamplesInFrame = (uint)samplesDecoded,
-				FrameData = decoded.Slice(0, bytesDecoded),
-				hFrameData = handle,
-				FrameIndex = input.FrameIndex
-			};
 		}
 
 		public WaveEntry DecodeFlush()
 		{
-			Memory<byte> decoded = new byte[lastFrameNumSamples * WaveFormat.BlockAlign];
-			MemoryHandle handle = decoded.Pin();
+			int requiredSamples = GetMaxAvaliableDecodeSize();
 
-			byte* outBuff = (byte*)handle.Pointer;
+			Memory<byte> decoded = new byte[requiredSamples * WaveFormat.BlockAlign];
 
-			int samplesDecoded = aacDecoder.DecodeFlush(outBuff, lastFrameNumSamples);
-
-			if (samplesDecoded < 0)
+			if (WaveFormat.Encoding is NAudio.Wave.WaveFormatEncoding.Dts && WaveFormat.Channels == 2)
 			{
-				throw new Exception($"Error decoding AAC frame. Code {samplesDecoded:X}");
+				int receivedSamples;
+				fixed (byte* decodeBuff = decoded.Span)
+				{
+					receivedSamples = aacDecoder.DecodeFlush(decodeBuff, decodeBuff + decoded.Length / 2, requiredSamples);
+				}
+				return new WaveEntry
+				{
+					SamplesInFrame = (uint)receivedSamples,
+					FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign / 2),
+					FrameData2 = decoded.Slice(requiredSamples * WaveFormat.BlockAlign / 2, receivedSamples * WaveFormat.BlockAlign / 2),
+				};
+			}
+			else
+			{
+				int receivedSamples;
+				fixed (byte* decodeBuff = decoded.Span)
+				{
+					receivedSamples = aacDecoder.DecodeFlush(decodeBuff, null, requiredSamples);
+				}
+
+				return new WaveEntry
+				{
+					SamplesInFrame = (uint)receivedSamples,
+					FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign),
+				};
+			}
+		}
+
+		private void SendSamples(Memory<byte> frameData, int numSamples)
+		{
+			int ret;
+
+			fixed (byte* inBuff = frameData.Span)
+			{
+				ret = aacDecoder.DecodeFrame(inBuff, frameData.Length);
 			}
 
-			int size = samplesDecoded * WaveFormat.BlockAlign;
-
-			return new WaveEntry
-			{
-				SamplesInFrame = (uint)samplesDecoded,
-				FrameData = decoded.Slice(0, size),
-				hFrameData = handle
-			};
+			if (ret < 0)
+				throw new Exception($"Error decoding AAC frame. Code {ret:X}");
 		}
+
+		private int GetMaxAvaliableDecodeSize() => aacDecoder.ReceiveDecodedFrame(null, null, 0);
+
 
 		private bool disposed = false;
 		public void Dispose()
@@ -111,10 +150,13 @@ namespace AAXClean.Codecs
 			private static extern DecoderHandle aacDecoder_Open(AacDecoderOptions* decoder_options);
 
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int aacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, byte* pDecodedAudio, int numOutSamples);
+			private static extern int aacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize);
 
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int aacDecoder_DecodeFlush(DecoderHandle self, byte* pDecodedAudio, int numOutSamples);
+			private static extern int aacDecoder_ReceiveDecodedFrame(DecoderHandle self, byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInBufferSize);
+
+			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
+			private static extern int aacDecoder_DecodeFlush(DecoderHandle self, byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInBufferSize);
 
 			public static NativeAacDecode Open(byte[] ASC, WaveFormat waveFormat)
 			{
@@ -141,11 +183,14 @@ namespace AAXClean.Codecs
 
 				return new NativeAacDecode(handle);
 			}
+
 			public void Close() => Handle.Close();
-			public int DecodeFrame(byte* pCompressedAudio, int cbInputSize, byte* pDecodedAudio, int numOutSamples)
-				=> aacDecoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize, pDecodedAudio, numOutSamples);
-			public int DecodeFlush(byte* pDecodedAudio, int numOutSamples)
-				=> aacDecoder_DecodeFlush(Handle, pDecodedAudio, numOutSamples);
+			public int DecodeFrame(byte* pCompressedAudio, int cbInputSize)
+				=> aacDecoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize);
+			public int ReceiveDecodedFrame(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
+				=> aacDecoder_ReceiveDecodedFrame(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
+			public int DecodeFlush(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
+				=> aacDecoder_DecodeFlush(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
 
 			private class DecoderHandle : SafeHandle
 			{
