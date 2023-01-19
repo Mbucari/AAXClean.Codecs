@@ -1,0 +1,44 @@
+install gcc
+install make
+install perl
+install pkg-config
+install yasm
+
+./configure --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=aac --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=aac --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-parser=aac --enable-demuxer=aac --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples
+
+make
+
+gcc -fPIC -c aacDecoder.c -c aacEncoder.c -I/home/mbucari/ffmpeg-5.1.2 -I/home/mbucari/ffmpegaac
+
+gcc -shared -fPIC -Wl,-Bsymbolic -Wl,-soname,ffmpegaac.so.1  -o ffmpegaac.so aacEncoder.o aacDecoder.o -L/home/mbucari/ffmpeg-5.1.2/libavutil -L/home/mbucari/ffmpeg-5.1.2/libswscale -L/home/mbucari/ffmpeg-5.1.2/libswresample -L/home/mbucari/ffmpeg-5.1.2/libavcodec -L/home/mbucari/ffmpeg-5.1.2/libavformat -L/home/mbucari/ffmpeg-5.1.2/libavfilter -L/home/mbucari/ffmpeg-5.1.2/libavdevice -lc -lswresample -lavformat -lavcodec -lavutil -lm
+
+
+
+
+#!/bin/bash
+
+FILE=$1; shift
+_self="${0##*/}"
+
+if [ ! -f "$FILE" ]
+then
+  echo "The file \"$FILE\" does not exist."
+  exit
+fi
+
+FOLDER_MAIN=${FILE::-7}
+THIS_DIR=$(pwd)
+
+tar -xf ${FILE}
+
+cd ${FOLDER_MAIN}
+
+./configure --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=aac --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=aac --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-parser=aac --enable-demuxer=aac --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples
+make
+cd ${THIS_DIR}
+
+gcc -fPIC -c aacDecoder.c -c aacEncoder.c -I${FOLDER_MAIN} -I./
+
+gcc -shared -fPIC -Wl,-Bsymbolic -Wl,-soname,ffmpegaac.so.1 -o ffmpegaac.so aacEncoder.o aacDecoder.o -L${FOLDER_MAIN}/libavutil -L${FOLDER_MAIN}/libswscale -L${FOLDER_MAIN}/libswresample -L${FOLDER_MAIN}/libavcodec -L${FOLDER_MAIN}/libavformat -L${FOLDER_MAIN}/libavfilter -L${FOLDER_MAIN}/libavdevice -lc -lswresample -lavformat -lavcodec -lavutil -lm
+
+ldd -v ffmpegaac.so
