@@ -17,28 +17,27 @@ aaxcFile.SetDecryptionKey(audible_key, audible_iv);
 ```
 ### Convert to Mp3:
 ```C#
-var conversionResult = aaxcFile.ConvertToMp3(File.Open(@"C:\Decrypted book.mp3", FileMode.OpenOrCreate, FileAccess.ReadWrite));
+await aaxcFile.ConvertToMp3Async(File.Open(@"C:\Decrypted book.mp3", FileMode.OpenOrCreate, FileAccess.ReadWrite));
 ```
 Note that the output stream must be Readable, Writable and Seekable for the mp3 Xing header to be written. See [NAudio.Lame #24](https://github.com/Corey-M/NAudio.Lame/issues/24)
 
 ### Detect Silence
 ```C#
-var silences = aaxcFile.DetectSilence(-30, TimeSpan.FromSeconds(0.25));
+await aaxcFile.DetectSilenceAsync(-30, TimeSpan.FromSeconds(0.25));
 ```
 
 
 ### Conversion Usage:
 ```C#
 var mp4File = new Mp4File(File.OpenRead(@"C:\Decrypted book.m4b"));
-var conversionResult = mp4File.ConvertToMp3(File.OpenWrite(@"C:\Decrypted book.mp3"));
+await mp4File.ConvertToMp3Async(File.OpenWrite(@"C:\Decrypted book.mp3"));
 ```
 ### Multipart Conversion Example:
 Note that the input stream needs to be seekable to call GetChapterInfo()
 
-
 ```C#
-var chapters = aaxcFile.GetChapterInfo();
-aaxcFile.ConvertToMultiMp4a(chapters, NewSplit);
+var chapters = aaxcFile.GetChaptersFromMetadata();
+await aaxcFile.ConvertToMultiMp4aAsync(chapters, NewSplit);
             
 private static void NewSplit(NewSplitCallback newSplitCallback)
 {
