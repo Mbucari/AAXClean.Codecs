@@ -7,7 +7,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		protected override int InputBufferSize => 300;
 		public WaveFormat WaveFormat => AacDecoder.WaveFormat;
 
-		readonly FfmpegAacDecoder AacDecoder;
+		private readonly FfmpegAacDecoder AacDecoder;
 		public AacToWave(byte[] asc, WaveFormatEncoding waveFormat, SampleRate sampleRate, bool stereo)
 		{
 			AacDecoder = new FfmpegAacDecoder(asc, waveFormat, sampleRate, stereo);

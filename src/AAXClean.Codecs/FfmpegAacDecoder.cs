@@ -1,10 +1,7 @@
 ﻿using AAXClean.Codecs.FrameFilters.Audio;
 using AAXClean.FrameFilters;
-using NAudio.Codecs;
 using System;
-using System.Buffers;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace AAXClean.Codecs
 {
@@ -13,27 +10,29 @@ namespace AAXClean.Codecs
 		internal const string libname = "ffmpegaac";
 		public WaveFormat WaveFormat { get; }
 
-		private int lastFrameNumSamples;
 		private readonly NativeAacDecode aacDecoder;
 		private readonly int inputSampleRate;
-
+		private readonly int inputChannels;
 		private static readonly int[] asc_samplerates = { 96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350 };
 
 		public FfmpegAacDecoder(byte[] asc, WaveFormatEncoding waveFormatEncoding)
+			: this(asc)
 		{
-			inputSampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
-			var inputChannels = (asc[1] >> 3) & 7;
-
 			WaveFormat = new WaveFormat((SampleRate)inputSampleRate, waveFormatEncoding, inputChannels == 2);
 			aacDecoder = NativeAacDecode.Open(asc, WaveFormat);
 		}
 
 		public FfmpegAacDecoder(byte[] asc, WaveFormatEncoding waveFormatEncoding, SampleRate sampleRate, bool stereo)
+			: this(asc)
 		{
-			inputSampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
-
 			WaveFormat = new WaveFormat(sampleRate, waveFormatEncoding, stereo);
 			aacDecoder = NativeAacDecode.Open(asc, WaveFormat);
+		}
+
+		private FfmpegAacDecoder(byte[] asc)
+		{
+			inputSampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
+			inputChannels = (asc[1] >> 3) & 7;
 		}
 
 		public WaveEntry DecodeWave(FrameEntry input)
@@ -128,7 +127,6 @@ namespace AAXClean.Codecs
 		}
 
 		private int GetMaxAvaliableDecodeSize() => aacDecoder.ReceiveDecodedFrame(null, null, 0);
-
 
 		private bool disposed = false;
 		public void Dispose()

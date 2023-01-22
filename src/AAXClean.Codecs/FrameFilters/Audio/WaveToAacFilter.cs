@@ -17,36 +17,23 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		public ChapterInfo Chapters => GetChapterDelegate?.Invoke();
 		protected override int InputBufferSize => 200;
 
-		int chunkCount = 0;
+		private const int FRAMES_PER_CHUNK = 20;
+		private int FramesInCurrentChunk = 0;
 		public bool Closed { get; private set; }
 
-		private static readonly int[] asc_samplerates = { 96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350 };
-
-		public WaveToAacFilter(Stream mp4Output, FtypBox ftyp, MoovBox moov, WaveFormat waveFormat, long bitrate, double quality)
+		public WaveToAacFilter(Stream mp4Output, FtypBox ftyp, MoovBox moov, WaveFormat waveFormat, long? bitrate, double? quality)
 		{
 			outputFile = mp4Output;
 			long audioSize = moov.AudioTrack.Mdia.Minf.Stbl.Stsz.SampleSizes.Sum(s => (long)s);
-			Mp4AWriter = new Mp4aWriter(mp4Output, ftyp, moov, audioSize > uint.MaxValue);
+			Mp4AWriter = new Mp4aWriter(mp4Output, ftyp, moov, audioSize > uint.MaxValue, waveFormat.SampleRate, waveFormat.Channels);
 			aacEncoder = new FfmpegAacEncoder(waveFormat, bitrate, quality);
-
-			int sampleRateIndex = Array.IndexOf(asc_samplerates, waveFormat.SampleRate);
-
-			Mp4AWriter.Moov.AudioTrack.Mdia.Mdhd.Timescale = (uint)waveFormat.SampleRate;
-			Mp4AWriter.Moov.AudioTrack.Mdia.Minf.Stbl.Stsd.AudioSampleEntry.SampleRate = (ushort)waveFormat.SampleRate;
-			Mp4AWriter.Moov.AudioTrack.Mdia.Minf.Stbl.Stsd.AudioSampleEntry.Esds.ES_Descriptor.DecoderConfig.AudioSpecificConfig.SamplingFrequencyIndex = sampleRateIndex;
-			Mp4AWriter.Moov.AudioTrack.Mdia.Minf.Stbl.Stsd.AudioSampleEntry.Esds.ES_Descriptor.DecoderConfig.AudioSpecificConfig.ChannelConfiguration = waveFormat.Channels;
-
-			if (Mp4AWriter.Moov.TextTrack is not null)
-			{
-				Mp4AWriter.Moov.TextTrack.Mdia.Mdhd.Timescale = (uint)waveFormat.SampleRate;
-			}
 		}
 		protected override Task PerformFilteringAsync(WaveEntry input)
 		{
 			foreach (var encodedAac in aacEncoder.EncodeWave(input))
 			{
-				Mp4AWriter.AddFrame(encodedAac.FrameData.Span, chunkCount++ == 0);
-				chunkCount %= 20;
+				Mp4AWriter.AddFrame(encodedAac.FrameData.Span, FramesInCurrentChunk++ == 0);
+				FramesInCurrentChunk %= FRAMES_PER_CHUNK;
 			}
 
 			return Task.CompletedTask;

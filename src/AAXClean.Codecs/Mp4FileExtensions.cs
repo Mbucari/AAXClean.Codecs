@@ -55,13 +55,11 @@ namespace AAXClean.Codecs
 			f1.LinkTo(f2);
 			f2.LinkTo(f3);
 
-			Func<Task, List<SilenceEntry>> completion = t =>
+			List<SilenceEntry> completion(Task t)
 			{
 				f1.Dispose();
-				f2.Dispose();
-				f3.Dispose();
-				return t.IsFaulted ? null: f3.Silences;
-			};
+				return t.IsFaulted ? null : f3.Silences;
+			}
 
 			return mp4File.ProcessAudio(completion, (mp4File.Moov.AudioTrack, f1));
 		}
@@ -89,13 +87,11 @@ namespace AAXClean.Codecs
 
 			if (mp4File.Moov.TextTrack is null)
 			{
-				Action<Task> completion = t =>
+				void completion(Task t)
 				{
-					f3.Dispose();
-					f2.Dispose();
 					f1.Dispose();
 					outputStream.Close();
-				};
+				}
 
 				return mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, completion, (mp4File.Moov.AudioTrack, f1));
 			}
@@ -103,27 +99,25 @@ namespace AAXClean.Codecs
 			{
 				ChapterFilter c1 = new(mp4File.TimeScale);
 
-				Action<Task> completion = t =>
+				void completion(Task t)
 				{
-					f3.Dispose();
-					f2.Dispose();
 					f1.Dispose();
 					c1.Dispose();
 					if (t.IsCompletedSuccessfully)
 						mp4File.Chapters = userChapters ?? c1.Chapters;
 					outputStream.Close();
-				};
+				}
 
 				return mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, completion, (mp4File.Moov.AudioTrack, f1), (mp4File.Moov.TextTrack, c1));
 			}
 		}
 
-		public static Mp4Operation ConvertToMp4aAsync(this Mp4File mp4File, Stream outputStream, AacEncoderOptions options, ChapterInfo userChapters = null, bool trimOutputToChapters = false)
+		public static Mp4Operation ConvertToMp4aAsync(this Mp4File mp4File, Stream outputStream, AacEncodingOptions options, ChapterInfo userChapters = null, bool trimOutputToChapters = false)
 		{
 			if (options is null) return Mp4Operation.CompletedOperation;
 
-			var stereo = mp4File.AudioChannels > 1 && options.Stereo;
-			var sampleRate = (SampleRate)Math.Min(mp4File.TimeScale, (uint)options.SampleRate);
+			var stereo = mp4File.AudioChannels > 1 && options.Stereo is true;
+			var sampleRate = options.SampleRate.HasValue ? (SampleRate)Math.Min(mp4File.TimeScale, (uint)options.SampleRate) : (SampleRate)mp4File.TimeScale;
 
 			FrameTransformBase<FrameEntry, FrameEntry> f1 = mp4File.GetAudioFrameFilter();
 			AacToWave f2 = new(mp4File.AscBlob, WaveFormatEncoding.Dts, sampleRate, stereo);
@@ -145,13 +139,11 @@ namespace AAXClean.Codecs
 			{
 				f3.SetChapterDelegate(() => userChapters);
 
-				Action<Task> completion = t =>
+				void completion(Task t)
 				{
-					f3.Dispose();
-					f2.Dispose();
 					f1.Dispose();
 					outputStream.Close();
-				};
+				}
 
 				return mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, completion, (mp4File.Moov.AudioTrack, f1));
 			}
@@ -160,18 +152,36 @@ namespace AAXClean.Codecs
 				ChapterFilter c1 = new(mp4File.TimeScale);
 				f3.SetChapterDelegate(() => c1.Chapters);
 
-
-				Action<Task> completion = t =>
+				void completion(Task t)
 				{
-					f3.Dispose();
-					f2.Dispose();
 					f1.Dispose();
 					c1.Dispose();
 					outputStream.Close();
-				};
-				
-				return mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, completion,(mp4File.Moov.AudioTrack, f1), (mp4File.Moov.TextTrack, c1));
+				}
+
+				return mp4File.ProcessAudio(trimOutputToChapters && userChapters is not null, start, end, completion, (mp4File.Moov.AudioTrack, f1), (mp4File.Moov.TextTrack, c1));
 			}
+		}
+
+		public static Mp4Operation ConvertToMultiMp4aAsync(this Mp4File mp4File, ChapterInfo userChapters, Action<NewAacSplitCallback> newFileCallback, AacEncodingOptions options = null, bool trimOutputToChapters = false)
+		{
+			var stereo = mp4File.AudioChannels > 1 && options?.Stereo is true;
+			var sampleRate = (options?.SampleRate).HasValue ? (SampleRate)Math.Min(mp4File.TimeScale, (uint)options.SampleRate) : (SampleRate)mp4File.TimeScale;
+
+			FrameTransformBase<FrameEntry, FrameEntry> f1 = mp4File.GetAudioFrameFilter();
+			AacToWave f2 = new(mp4File.AscBlob, WaveFormatEncoding.Dts, sampleRate, stereo);
+			WaveToAacMultipartFilter f3 = new(
+				userChapters, mp4File.Ftyp, mp4File.Moov,
+				f2.WaveFormat,
+				options,
+				newFileCallback);
+
+			f1.LinkTo(f2);
+			f2.LinkTo(f3);
+
+			void completion(Task t) => f1.Dispose();
+
+			return mp4File.ProcessAudio(trimOutputToChapters, userChapters.StartOffset, userChapters.EndOffset, completion, (mp4File.Moov.AudioTrack, f1));
 		}
 
 		public static Mp4Operation ConvertToMultiMp3Async(this Mp4File mp4File, ChapterInfo userChapters, Action<NewMP3SplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null, bool trimOutputToChapters = false)
@@ -193,12 +203,7 @@ namespace AAXClean.Codecs
 			f1.LinkTo(f2);
 			f2.LinkTo(f3);
 
-			Action<Task> completion = t =>
-			{
-				f3.Dispose();
-				f2.Dispose();
-				f1.Dispose();
-			};
+			void completion(Task t) => f1.Dispose();
 
 			return mp4File.ProcessAudio(trimOutputToChapters, userChapters.StartOffset, userChapters.EndOffset, completion, (mp4File.Moov.AudioTrack, f1));
 		}

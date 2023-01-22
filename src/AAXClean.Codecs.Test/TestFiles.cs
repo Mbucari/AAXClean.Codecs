@@ -7,7 +7,7 @@ namespace AAXClean.Codecs.Test
 	public static class TestFiles
 	{
 		private static readonly List<FileStream> OpenTempFiles = new List<FileStream>();
-		private const string TEST_FILE_DIR = @"..\..\..\..\..\TestFiles";
+		private const string TEST_FILE_DIR = @"..\..\..\..\..\..\TestFiles";
 		private const string HP_URL = "https://drive.google.com/uc?export=download&id=1UIc0ouxIspS2RjGstX1Rzvp3QdeidDrR&confirm=t";
 		private static readonly string HP_FILENAME = Path.Combine(TEST_FILE_DIR, "HP_Zero.aax");
 		public static string HP_BookPath => FindOrDownload(HP_FILENAME, HP_URL);

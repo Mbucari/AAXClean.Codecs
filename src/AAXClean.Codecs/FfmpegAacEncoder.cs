@@ -14,27 +14,25 @@ namespace AAXClean.Codecs
 		private readonly Memory<byte> buffer;
 		private const int AAC_SAMPLES_PER_FRAME = 1024;
 
-		public FfmpegAacEncoder(WaveFormat inputWaveFormat, long bitRate, double quality)
+		public FfmpegAacEncoder(WaveFormat inputWaveFormat, long? bitRate, double? quality)
 		{
 			WaveFormat = inputWaveFormat;
 			buffer = new byte[AAC_SAMPLES_PER_FRAME * WaveFormat.BlockAlign];
-			aacEncoder = NativeAacEncode.Open(WaveFormat, bitRate, quality);
+			aacEncoder = NativeAacEncode.Open(WaveFormat, bitRate ?? 0, quality ?? 0);
 		}
 
 		public IEnumerable<FrameEntry> EncodeWave(WaveEntry input)
 		{
-			if (input.SamplesInFrame > 1024)
-				throw new Exception("Maximum number of samples that can be sent to the encoder at one time is 1024");
+			if (input.SamplesInFrame > AAC_SAMPLES_PER_FRAME)
+				throw new Exception($"Maximum number of samples that can be sent to the encoder at one time is {AAC_SAMPLES_PER_FRAME}");
 
 			int samplesNeeded = SendSamples(input.FrameData.Span, input.FrameData2.Span, (int)input.SamplesInFrame);
 
 			if (samplesNeeded > 0) yield break;
 
-			int encodedSize;
-
 			do
 			{
-				encodedSize = GetAvailableFrameSize();
+				int encodedSize = GetAvailableFrameSize();
 
 				if (encodedSize < 0)
 					throw new Exception("Failed to retrieve encoded samples.");
@@ -58,11 +56,9 @@ namespace AAXClean.Codecs
 			if (ret < 0)
 				throw new Exception($"Error flusing AAC encoder.");
 
-			int encodedSize;
-
 			do
 			{
-				encodedSize = GetAvailableFrameSize();
+				int encodedSize = GetAvailableFrameSize();
 
 				if (encodedSize < 0)
 					throw new Exception("Failed to retrieve encoded samples.");
@@ -75,17 +71,6 @@ namespace AAXClean.Codecs
 					FrameData = encAud
 				};
 			} while (true);
-		}
-
-		private bool disposed = false;
-		public void Dispose()
-		{
-			if (!disposed)
-			{
-				aacEncoder?.Close();
-				disposed = true;
-			}
-			GC.SuppressFinalize(this);
 		}
 
 		private int SendSamples(Span<byte> frameData1, Span<byte> frameData2, int numSamples)
@@ -117,6 +102,17 @@ namespace AAXClean.Codecs
 			if (encodedSize != 0)
 				throw new Exception("Failed to retrieve encoded samples.");
 			return encAud;
+		}
+
+		private bool disposed = false;
+		public void Dispose()
+		{
+			if (!disposed)
+			{
+				aacEncoder?.Close();
+				disposed = true;
+			}
+			GC.SuppressFinalize(this);
 		}
 
 		private class NativeAacEncode

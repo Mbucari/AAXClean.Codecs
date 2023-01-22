@@ -25,9 +25,11 @@ namespace AAXClean.Codecs.Test
 		}
 		public abstract string AaxFile { get; }
 		public abstract string SingleMp3Hash { get; }
+		public abstract string SingleM4AHash { get; }
 		public abstract TimeSpan SilenceDuration { get; }
 		public abstract List<(TimeSpan start, TimeSpan end)> SilenceTimes { get; }
 		public abstract List<string> MultiMp3Hashes { get; }
+		public abstract List<string> MultiM4AHashes { get; }
 		public abstract double SilenceThreshold { get; }
 
 		[TestMethod]
@@ -70,9 +72,7 @@ namespace AAXClean.Codecs.Test
 			try
 			{
 				FileStream tempfile = TestFiles.NewTempFile();
-				ConversionStatus result = await Aax.ConvertToMp3Async(tempfile, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
-
-				Assert.AreEqual(ConversionStatus.NoErrorsDetected, result);
+				await Aax.ConvertToMp3Async(tempfile, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
 
 				using SHA1 sha = SHA1.Create();
 
@@ -105,14 +105,12 @@ namespace AAXClean.Codecs.Test
 				FileStream m4bfile = TestFiles.NewTempFile();
 				FileStream mp3File = TestFiles.NewTempFile();
 
-				ConversionStatus result = await Aax.ConvertToMp4aAsync(m4bfile);
-				Assert.AreEqual(ConversionStatus.NoErrorsDetected, result);
+				await Aax.ConvertToMp4aAsync(m4bfile);
 				Aax.Close();
 
 				Mp4File mp4 = new Mp4File(m4bfile.Name);
 
-				result = await mp4.ConvertToMp3Async(mp3File, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
-				Assert.AreEqual(result, ConversionStatus.NoErrorsDetected);
+				await mp4.ConvertToMp3Async(mp3File, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
 				mp4.Close();
 
 				using SHA1 sha = SHA1.Create();
@@ -149,8 +147,7 @@ namespace AAXClean.Codecs.Test
 					tempFiles.Add(((FileStream)callback.OutputFile).Name);
 				}
 
-				ConversionStatus result = await Aax.ConvertToMultiMp3Async(await Aax.GetChapterInfoAsync(), NewSplit, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
-				Assert.AreEqual(ConversionStatus.NoErrorsDetected, result);
+				await Aax.ConvertToMultiMp3Async(Aax.GetChaptersFromMetadata(), NewSplit, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
 #if !DEBUG
 				Assert.AreEqual(MultiMp3Hashes.Count, tempFiles.Count);
 #endif
@@ -174,6 +171,85 @@ namespace AAXClean.Codecs.Test
 				for (int i = 0; i < tempFiles.Count; i++)
 				{
 					Assert.AreEqual(MultiMp3Hashes[i], hashes[i]);
+				}
+			}
+			finally
+			{
+				TestFiles.CloseAllFiles();
+				Aax.Close();
+			}
+		}
+
+		[TestMethod]
+		public async Task _4_ConvertMp4ReencodeSingle()
+		{
+			try
+			{
+				FileStream tempfile = TestFiles.NewTempFile();
+				var options = new AacEncodingOptions
+				{
+					BitRate= 30000, Stereo = false, SampleRate = SampleRate.Hz_16000
+				};
+				await Aax.ConvertToMp4aAsync(tempfile, options);
+
+				using SHA1 sha = SHA1.Create();
+
+				FileStream mp4file = File.OpenRead(tempfile.Name);
+				int read;
+				byte[] buff = new byte[4 * 1024 * 1024];
+
+				while ((read = mp4file.Read(buff)) == buff.Length)
+				{
+					sha.TransformBlock(buff, 0, read, null, 0);
+				}
+				mp4file.Close();
+				sha.TransformFinalBlock(buff, 0, read);
+				string fileHash = string.Join("", sha.Hash.Select(b => b.ToString("x2")));
+
+				Assert.AreEqual(SingleM4AHash, fileHash);
+			}
+			finally
+			{
+				TestFiles.CloseAllFiles();
+				Aax.Close();
+			}
+		}
+		[TestMethod]
+		public async Task _5_ConvertMp4ReencodeMultiple()
+		{
+			try
+			{
+				List<string> tempFiles = new();
+				void NewSplit(NewSplitCallback callback)
+				{
+					callback.OutputFile = TestFiles.NewTempFile();
+					tempFiles.Add(((FileStream)callback.OutputFile).Name);
+				}
+
+				await Aax.ConvertToMultiMp4aAsync(Aax.GetChaptersFromMetadata(), NewSplit, new AacEncodingOptions { BitRate = 30000, EncoderQuality = 0.6, Stereo = false, SampleRate = SampleRate.Hz_16000 });
+#if !DEBUG
+				Assert.AreEqual(MultiMp3Hashes.Count, tempFiles.Count);
+#endif
+				using SHA1 sha = SHA1.Create();
+				List<string> hashes = new();
+
+				foreach (string tmp in tempFiles)
+				{
+					sha.ComputeHash(File.ReadAllBytes(tmp));
+					hashes.Add(string.Join("", sha.Hash.Select(b => b.ToString("x2"))));
+				}
+#if DEBUG
+				var hs = new System.Text.StringBuilder();
+
+				foreach (var h in hashes)
+				{
+					hs.AppendLine($"\"{h}\",");
+				}
+#endif
+
+				for (int i = 0; i < tempFiles.Count; i++)
+				{
+					Assert.AreEqual(MultiM4AHashes[i], hashes[i]);
 				}
 			}
 			finally

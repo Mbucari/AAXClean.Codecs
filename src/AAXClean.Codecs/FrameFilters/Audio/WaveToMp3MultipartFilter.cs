@@ -19,7 +19,6 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		public WaveToMp3MultipartFilter(ChapterInfo splitChapters, WaveFormat waveFormat, LameConfig lameConfig, Action<NewMP3SplitCallback> newFileCallback)
 			: base(splitChapters, waveFormat.SampleRateEnum, waveFormat.Channels == 2)
 		{
-
 			WaveFormat = waveFormat;
 			LameConfig = lameConfig;
 			NewFileCallback = newFileCallback;
@@ -42,11 +41,12 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 		protected override void CreateNewWriter(NewMP3SplitCallback callback)
 		{
-			CurrentWriterOpen = true;
 			callback.LameConfig = LameConfig;
-
 			NewFileCallback(callback);
-			LameConfig.ID3.Track = callback.TrackNumber.ToString();
+			LameConfig = callback.LameConfig;
+			CurrentWriterOpen = true;
+
+			LameConfig.ID3.Track = callback.TrackNumber?.ToString();
 			LameConfig.ID3.Title = callback.TrackTitle ?? LameConfig.ID3.Title;
 			OutputStream = callback.OutputFile;
 			Writer = new LameMP3FileWriter(OutputStream, WaveFormat, LameConfig);

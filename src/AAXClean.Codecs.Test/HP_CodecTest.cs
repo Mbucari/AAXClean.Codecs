@@ -10,31 +10,58 @@ namespace AAXClean.Codecs.Test
 		public override string AaxFile => TestFiles.HP_BookPath;
 		public override double SilenceThreshold => -30;
 		public override TimeSpan SilenceDuration => TimeSpan.FromSeconds(0.25);
-		public override string SingleMp3Hash => "003fd6bbd14940007c2f41340102b3c3981e10c7";
+		public override string SingleMp3Hash => "c75ea67d584286802226df5b15fcdf16fcf37c47";
+		public override string SingleM4AHash => "dd36693f2d51e6b380c029331c9e9027aa63e337";
 		public override List<string> MultiMp3Hashes => new()
 		{
-			"b3e9a4c5c1586381f34ac55333ca4fe5b1ea4bf9",
-			"847b284351bfbe11dd9b8dbe84b0a537ed6d3f8c",
-			"8a3d497fd6b7661756580bc1588ca0e82d8aa860",
-			"e4a4801a161adf236b6618dd8ce190f0bcd3aa0e",
-			"2278b8585fcfeeb9c753097c4d329a9cd845cf83",
-			"c4263ef95cf165cd91389efed18b4ccc1749d264",
-			"8880ec425715630daf667e5302637d9148074e6b",
-			"db2b6a4375d48969e3265403e4001426f82f4ba0",
-			"169dffb292c822fe05afdb8409b9f204da5b0530",
-			"304b2a969cbc5d53dbb2577c6de526590d82a06d",
-			"c6da0d958c44d4cdafdbddaad47fd9bff3556894",
-			"4557c58f443de926851159f7f86075aa31857e2a",
-			"f47072fd9ee364a7f679f8bbb32602896cde8b95",
-			"96b0ed0f0d76e9e0dd3c20d211a31ce2c941c631",
-			"4995da7a1db7fcdd021372cc41e97698796f9c0f",
-			"d9f24b6d9083143dd6b1210c3f3449adca1a2ffe",
-			"d79d7e6f2e7dd9e71188c1bd3c0f7a937bb4ac82",
-			"6f4f6bc0f52a8443e04d1bec1e154604fe846ae8",
-			"897155b8d34a013e47b09399af2f3e92e6e7746e",
-			"1cf30a396ed21249d3686648b758cb2ed12f218e",
-			"dfd1e4280602c984a6ec90778e9f57c721f04cca",
+			"71c509a10957e61e0975c4ab0fb35f891228c272",
+			"c5a211b0e39bab24b10a0bf76e7a128daf7395b1",
+			"5b57fadf1d69a6ace59a146a6da750122e409006",
+			"d1f9f4a4e6ee40d4aa5aaaddc13a49593fb1e9a5",
+			"c084c39a0f04b15326e8c710a676983c1f5fc398",
+			"b676c8158d875dbd885c1dc5763c4924d27a0e30",
+			"347caf48868d28872bcbb724863c1ec558b69133",
+			"3a7187940de80bd08ac5ac8a5a2ca71ec29fb681",
+			"9390c22f074ec8ab2a4955a5901617b76e413a79",
+			"0152fdac2f1f13627ae5900dac1c57ea30713ad6",
+			"35e4cbc399774c1bf522eb873d4e2f5d4b1b0691",
+			"f9aadd3cb70100d5ea3e626b8b2887965c7c1ced",
+			"d53e72c5adcdf1a7a56b302c89f162f75c7bb686",
+			"630b6dfc2a61fc027939dd44ddc854e43967dd8e",
+			"543e4037c5ac1d3ef77e6872850b703f4ed0d661",
+			"701f2934226678e2fcf0ebab6628aa7ca7d2e2a7",
+			"00230382e6c5b887682fb7f8094d3960213c63b0",
+			"d6b81e27ccae203dec4e9d3badebcb8ce4da7147",
+			"6bdb20189e8d134ec3397d8f4419b99ff51e9e28",
+			"438c4c0ebed76f9e88b37af3f31dd3a67243f904",
+			"58adc9d9c21b4e89324ceff91c6fc4c88df45184",
 		};
+		
+		public override List<string> MultiM4AHashes => new()
+		{
+			"ebe466e7d1a6e07a77337c0c8c12842325e28574",
+			"06ec87fb660ff3ce8b20e6f4f9f785e2814ee028",
+			"006adcdbd280235bec1fc016f9be5f6578c3ef2b",
+			"8615e4d1d824b071489b3966f2ad93574418d114",
+			"eea39a1e4016cf91c40c68a95cc83a9cd705f1b4",
+			"93a0e95c800910a8bcf71cde13daae6d9cc33d05",
+			"ceb898fb4aae2330252015171c7d55690248dce7",
+			"b60e35df16368a9e1ef433eba628a8f8b8a4871b",
+			"82f1e495723de4c72d45005d4c436b92fa2a6ee8",
+			"497736b84257bbf1a71fe53cb6a774edf7d5638b",
+			"9afbda023da8b2461094d20719939d115dd435dc",
+			"1340ff8a67271e5305c088ae28eb8fbe3ad58104",
+			"acf482eab752a0e4ba6b91884f4efa0852bcdf5b",
+			"a0849b7e3dae5aa76fee0a24ea8fb5f5bb4737ee",
+			"4156070cc56eb8361eda2faac9913ef135cfefb3",
+			"6dfbffcb2b210558b0c55adf8bdbc82d8abbb460",
+			"b13094752326b906ed7865609a1304ff25ae6d4b",
+			"55af6a0154b23508cd1ff3e8249e97e62e7d248d",
+			"3bfa967487a7f46f245805dbb103b4db517523c7",
+			"255c631cf852ead9d88dfcbd54734414cf1ec718",
+			"2c3b55d464fefd34e4febc5eaedb6c331b22587a",
+		};
+
 		public override List<(TimeSpan start, TimeSpan end)> SilenceTimes => new()
 		{
 			(TimeSpan.FromTicks(0), TimeSpan.FromTicks(5543310)),
