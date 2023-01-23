@@ -11,7 +11,7 @@
         <language>en-US</language>
 		<dependencies>
 			<dependency id="AAXClean" version="0.5.5" />
-			<dependency id="NAudio.Lame_SA" version="1.0.5" />
+			<dependency id="NAudio.Lame_SA" version="1.0.7" />
 		</dependencies>
 	</metadata>
 	<files>
