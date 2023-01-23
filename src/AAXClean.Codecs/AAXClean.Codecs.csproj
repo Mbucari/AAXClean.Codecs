@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
-		<Version>0.5.7</Version>
+		<Version>0.5.8</Version>
 		<Authors>MrGneissGuy</Authors>
 		<Company>Just Me, Inc.</Company>
 		<Description>Filter and convert aac audio from AAXClean</Description>
@@ -20,15 +20,27 @@
 	<PropertyGroup>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<PublishReadyToRun>true</PublishReadyToRun>
+		<IncludeSymbols>False</IncludeSymbols>
+	</PropertyGroup>
+	
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <DebugType>embedded</DebugType>
+	</PropertyGroup>
+	
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	  <DebugType>embedded</DebugType>
 	</PropertyGroup>
 	
 	<ItemGroup Condition="'$(Configuration)'=='Release'">
-	  <PackageReference Include="NAudio.Lame_SA" Version="1.0.7" />
 	  <PackageReference Include="AAXClean" Version="0.5.7" />
 	</ItemGroup>
 	
 	<ItemGroup Condition="'$(Configuration)'=='Debug'">
 	  <ProjectReference Include="..\..\..\AAXClean\src\AAXClean\AAXClean.csproj" />
-	  <ProjectReference Include="..\..\..\NAudio.Lame_SA\NAudio.Lame_SA\NAudio.Lame_SA.csproj" />
 	</ItemGroup>
+	
+	<ItemGroup>
+	  <PackageReference Include="NAudio.Lame_SA" Version="1.0.8" />
+	</ItemGroup>
+	
 </Project>
