@@ -11,7 +11,7 @@ namespace AAXClean.Codecs.Test
 		public override double SilenceThreshold => -30;
 		public override TimeSpan SilenceDuration => TimeSpan.FromSeconds(0.25);
 		public override string SingleMp3Hash => "c75ea67d584286802226df5b15fcdf16fcf37c47";
-		public override string SingleM4AHash => "dd36693f2d51e6b380c029331c9e9027aa63e337";
+		public override string SingleM4AHash => "6eb0cfaac46c58b27e6c7e5bbd7a6fe9a6403f70";
 		public override List<string> MultiMp3Hashes => new()
 		{
 			"71c509a10957e61e0975c4ab0fb35f891228c272",
@@ -39,27 +39,27 @@ namespace AAXClean.Codecs.Test
 		
 		public override List<string> MultiM4AHashes => new()
 		{
-			"ebe466e7d1a6e07a77337c0c8c12842325e28574",
-			"06ec87fb660ff3ce8b20e6f4f9f785e2814ee028",
-			"006adcdbd280235bec1fc016f9be5f6578c3ef2b",
-			"8615e4d1d824b071489b3966f2ad93574418d114",
-			"eea39a1e4016cf91c40c68a95cc83a9cd705f1b4",
-			"93a0e95c800910a8bcf71cde13daae6d9cc33d05",
-			"ceb898fb4aae2330252015171c7d55690248dce7",
-			"b60e35df16368a9e1ef433eba628a8f8b8a4871b",
-			"82f1e495723de4c72d45005d4c436b92fa2a6ee8",
-			"497736b84257bbf1a71fe53cb6a774edf7d5638b",
-			"9afbda023da8b2461094d20719939d115dd435dc",
-			"1340ff8a67271e5305c088ae28eb8fbe3ad58104",
-			"acf482eab752a0e4ba6b91884f4efa0852bcdf5b",
-			"a0849b7e3dae5aa76fee0a24ea8fb5f5bb4737ee",
-			"4156070cc56eb8361eda2faac9913ef135cfefb3",
-			"6dfbffcb2b210558b0c55adf8bdbc82d8abbb460",
-			"b13094752326b906ed7865609a1304ff25ae6d4b",
-			"55af6a0154b23508cd1ff3e8249e97e62e7d248d",
-			"3bfa967487a7f46f245805dbb103b4db517523c7",
-			"255c631cf852ead9d88dfcbd54734414cf1ec718",
-			"2c3b55d464fefd34e4febc5eaedb6c331b22587a",
+			"417d53313994a9216ec0743feba908266a564bdf",
+			"0c858b98f01742cc8323eb049e93a10b50ee25bd",
+			"96e52c16435bd86ee0005ba902f2124eea0a42a1",
+			"17393e83d85e20e990ded404bec17e7a5e6ee054",
+			"96cb69c400dc216fdb2c393e273b9c43c9474c10",
+			"4a37da41b84e296ce9e102ffb8afda8779df246c",
+			"672be9b56787c5d7454eb25c4f3fe02dc78e8e35",
+			"9ec5f2a8f5c4149cc0927131995e4838e2ed9e6a",
+			"bb0717baf8d70827f25ee266837b0678f128296c",
+			"b570d77fb9052497830c3a2ab2ea53fac0cadb6b",
+			"4243aff7e61386f75c172eee81d79e4446f962d5",
+			"1262003ce0db0795080ae83dea4f3692dc9fa818",
+			"1de955ad5e0fffed703ade353f27e420572d3092",
+			"46c04a6219a7acefed39dd5720721acde8f854d6",
+			"648850b0708ab3b2f1f3f3ceecb71a5f6ad068bd",
+			"db062b44c46740186dbbae0e31b53ead34decbda",
+			"0c7ce47e8c2845bd1724027cb13c2bd595198ccd",
+			"1606e2cbbaa6ccc3fc409e4614496160f2cffe34",
+			"9310d4eadb0a0e5d3c9506b8ed83fafe25d81456",
+			"2d78ad18048ca7cbe75a702fd364e409257be8bb",
+			"16ebe4b5a1654ec35413228e547020afb2311cf9",
 		};
 
 		public override List<(TimeSpan start, TimeSpan end)> SilenceTimes => new()
