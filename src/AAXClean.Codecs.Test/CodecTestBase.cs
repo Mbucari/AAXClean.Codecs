@@ -56,8 +56,8 @@ namespace AAXClean.Codecs.Test
 
 #if DEBUG
 				System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                foreach (var sil in silecnes)
-                    sb.AppendLine($"(TimeSpan.FromTicks({sil.SilenceStart.Ticks}), TimeSpan.FromTicks({sil.SilenceEnd.Ticks})),");
+				foreach (var sil in silecnes)
+					sb.AppendLine($"(TimeSpan.FromTicks({sil.SilenceStart.Ticks}), TimeSpan.FromTicks({sil.SilenceEnd.Ticks})),");
 #endif
 			}
 			finally
@@ -160,12 +160,12 @@ namespace AAXClean.Codecs.Test
 					hashes.Add(string.Join("", sha.Hash.Select(b => b.ToString("x2"))));
 				}
 #if DEBUG
-                var hs = new System.Text.StringBuilder();
+				var hs = new System.Text.StringBuilder();
 
-                foreach (var h in hashes)
-                {
-                    hs.AppendLine($"\"{h}\",");
-                }
+				foreach (var h in hashes)
+				{
+					hs.AppendLine($"\"{h}\",");
+				}
 #endif
 
 				for (int i = 0; i < tempFiles.Count; i++)
@@ -188,7 +188,9 @@ namespace AAXClean.Codecs.Test
 				FileStream tempfile = TestFiles.NewTempFile();
 				var options = new AacEncodingOptions
 				{
-					BitRate= 30000, Stereo = false, SampleRate = SampleRate.Hz_16000
+					BitRate = 30000,
+					Stereo = false,
+					SampleRate = SampleRate.Hz_16000
 				};
 				await Aax.ConvertToMp4aAsync(tempfile, options);
 
@@ -256,6 +258,62 @@ namespace AAXClean.Codecs.Test
 			{
 				TestFiles.CloseAllFiles();
 				Aax.Close();
+			}
+		}
+		[TestMethod]
+		public async Task _6_TestCancelSingleMp3()
+		{
+			var aaxFile = Aax;
+			try
+			{
+				FileStream tempfile = TestFiles.NewTempFile();
+
+				var convertTask = aaxFile.ConvertToMp3Async(tempfile);
+				convertTask.Start();
+
+				await Task.Delay(100);
+				await convertTask.CancelAsync();
+				await convertTask;
+				Assert.IsTrue(convertTask.IsCanceled);
+
+				TestFiles.CloseAllFiles();
+				Aax.Close();
+			}
+			finally
+			{
+				TestFiles.CloseAllFiles();
+				aaxFile.Close();
+			}
+		}
+
+		[TestMethod]
+		public async Task _7_TestCancelMultiMp3()
+		{
+			var aaxFile = Aax;
+			try
+			{
+				FileStream tempfile = TestFiles.NewTempFile();
+
+				void NewSplit(NewSplitCallback callback)
+				{
+					callback.OutputFile = TestFiles.NewTempFile();
+				}
+
+				var convertTask = aaxFile.ConvertToMultiMp3Async(Aax.GetChaptersFromMetadata(), NewSplit);
+				convertTask.Start();
+				await Task.Delay(100);
+				await convertTask.CancelAsync();
+
+				await convertTask;
+				Assert.IsTrue(convertTask.IsCanceled);
+
+				TestFiles.CloseAllFiles();
+				Aax.Close();
+			}
+			finally
+			{
+				TestFiles.CloseAllFiles();
+				aaxFile.Close();
 			}
 		}
 	}

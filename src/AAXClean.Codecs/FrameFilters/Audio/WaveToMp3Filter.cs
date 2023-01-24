@@ -54,8 +54,8 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		{
 			if (disposing && !Disposed)
 			{
-				lameMp3Encoder.Close();
-				lameMp3Encoder.Dispose();
+				lameMp3Encoder?.Close();
+				lameMp3Encoder?.Dispose();
 			}
 			base.Dispose(disposing);
 		}
