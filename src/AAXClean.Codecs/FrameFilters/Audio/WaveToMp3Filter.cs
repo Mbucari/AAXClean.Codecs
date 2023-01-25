@@ -7,11 +7,11 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 {
 	internal class WaveToMp3Filter : FrameFinalBase<WaveEntry>
 	{
-		private readonly LameMP3FileWriter lameMp3Encoder;
-		private readonly Stream OutputStream;
+		public bool Closed { get; private set; }
 		protected override int InputBufferSize => 100;
 
-		public bool Closed { get; private set; }
+		private readonly LameMP3FileWriter lameMp3Encoder;
+		private readonly Stream OutputStream;
 
 		public WaveToMp3Filter(Stream mp3Output, WaveFormat waveFormat, LameConfig lameConfig)
 		{
@@ -50,6 +50,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			lameMp3Encoder.Write(input.FrameData.Span);
 			return Task.CompletedTask;
 		}
+
 		protected override void Dispose(bool disposing)
 		{
 			if (disposing && !Disposed)

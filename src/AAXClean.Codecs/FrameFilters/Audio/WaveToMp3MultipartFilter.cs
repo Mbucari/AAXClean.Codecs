@@ -7,9 +7,9 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 {
 	internal sealed class WaveToMp3MultipartFilter : MultipartFilterBase<WaveEntry, NewMP3SplitCallback>
 	{
-		private Action<NewMP3SplitCallback> NewFileCallback { get; }
 		protected override int InputBufferSize => 100;
 
+		private readonly Action<NewMP3SplitCallback> newFileCallback;
 		private bool CurrentWriterOpen;
 		private readonly WaveFormat WaveFormat;
 		private LameMP3FileWriter Writer;
@@ -21,7 +21,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		{
 			WaveFormat = waveFormat;
 			LameConfig = lameConfig;
-			NewFileCallback = newFileCallback;
+			this.newFileCallback = newFileCallback;
 		}
 
 		protected override void CloseCurrentWriter()
@@ -42,7 +42,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		protected override void CreateNewWriter(NewMP3SplitCallback callback)
 		{
 			callback.LameConfig = LameConfig;
-			NewFileCallback(callback);
+			newFileCallback(callback);
 			LameConfig = callback.LameConfig;
 			CurrentWriterOpen = true;
 
@@ -51,6 +51,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			OutputStream = callback.OutputFile;
 			Writer = new LameMP3FileWriter(OutputStream, WaveFormat, LameConfig);
 		}
+
 		protected override void Dispose(bool disposing)
 		{
 			if (disposing && !Disposed && CurrentWriterOpen)

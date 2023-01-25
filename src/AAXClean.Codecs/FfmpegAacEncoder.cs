@@ -104,16 +104,29 @@ namespace AAXClean.Codecs
 			return encAud;
 		}
 
-		private bool disposed = false;
+		#region IDisposable
+		private bool disposed = false;		
 		public void Dispose()
 		{
-			if (!disposed)
-			{
-				aacEncoder?.Close();
-				disposed = true;
-			}
+			Dispose(disposing: true);
 			GC.SuppressFinalize(this);
 		}
+
+		~FfmpegAacEncoder()
+		{
+			Dispose(disposing: false);
+		}
+
+		private void Dispose(bool disposing)
+		{
+			if (disposing && !disposed)
+			{
+				aacEncoder?.Close();
+			}
+
+			disposed = true;
+		}
+		#endregion
 
 		private class NativeAacEncode
 		{
