@@ -128,29 +128,11 @@ namespace AAXClean.Codecs
 
 		private int GetMaxAvaliableDecodeSize() => aacDecoder.ReceiveDecodedFrame(null, null, 0);
 
-		#region IDisposable
-		private bool disposed = false;
 		public void Dispose()
 		{
-			Dispose(disposing: true);
-			GC.SuppressFinalize(this);
+			aacDecoder?.Close();
 		}
 
-		~FfmpegAacDecoder()
-		{
-			Dispose(disposing: false);
-		}
-
-		private void Dispose(bool disposing)
-		{
-			if (disposing && !disposed)
-			{
-				aacDecoder?.Close();
-			}
-
-			disposed = true;
-		}
-		#endregion
 
 		private class NativeAacDecode
 		{
