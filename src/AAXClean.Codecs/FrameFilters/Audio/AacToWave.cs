@@ -18,7 +18,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		}
 
 		protected override WaveEntry PerformFinalFiltering() => AacDecoder.DecodeFlush();
-		protected override WaveEntry PerformFiltering(FrameEntry input) => AacDecoder.DecodeWave(input);
+		public override WaveEntry PerformFiltering(FrameEntry input) => AacDecoder.DecodeWave(input);
 
 		protected override void Dispose(bool disposing)
 		{

@@ -19,8 +19,15 @@ namespace AAXClean.Codecs
 				if (ffmpegaac != IntPtr.Zero)
 					return ffmpegaac;
 
+				var architecture = RuntimeInformation.OSArchitecture.ToString().ToLower();
+
+				var extension
+					= RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll"
+					: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "so"
+					: "dylib";
+
 				if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-					libraryName = $"{libraryName}.{(Environment.Is64BitProcess ? "x64" : "x86")}.dll";
+					libraryName = $"{libraryName}.{architecture}.{extension}";
 
 				if (NativeLibrary.TryLoad(libraryName, assembly, searchPath, out ffmpegaac))
 					return ffmpegaac;
@@ -36,6 +43,10 @@ namespace AAXClean.Codecs
 		{
 			NativeLibrary.SetDllImportResolver(System.Reflection.Assembly.GetExecutingAssembly(), DllImportResolver);
 		}
+
+		public static AacWaveStream GetWaveStream(this Mp4File mp4File, TimeSpan bufferTime)
+			=> new(new AacDecodeBuffer(mp4File, bufferTime));
+
 
 		public static Mp4Operation<List<SilenceEntry>> DetectSilenceAsync(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null)
 		{

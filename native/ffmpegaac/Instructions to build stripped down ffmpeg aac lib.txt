@@ -8,12 +8,25 @@ install yasm
 
 make
 
+
+--Linux
+
 gcc -fPIC -c aacDecoder.c -c aacEncoder.c -I/home/mbucari/ffmpeg-5.1.2 -I/home/mbucari/ffmpegaac
 
 gcc -shared -fPIC -Wl,-Bsymbolic -Wl,-soname,ffmpegaac.so.1  -o ffmpegaac.so aacEncoder.o aacDecoder.o -L/home/mbucari/ffmpeg-5.1.2/libavutil -L/home/mbucari/ffmpeg-5.1.2/libswscale -L/home/mbucari/ffmpeg-5.1.2/libswresample -L/home/mbucari/ffmpeg-5.1.2/libavcodec -L/home/mbucari/ffmpeg-5.1.2/libavformat -L/home/mbucari/ffmpeg-5.1.2/libavfilter -L/home/mbucari/ffmpeg-5.1.2/libavdevice -lc -lswresample -lavformat -lavcodec -lavutil -lm
 
+--MacOS
 
+gcc-12 -fPIC -c aacDecoder.c -c aacEncoder.c -I/Users/mbucari/Downloads/ffmpeg-5.1.2 -I/Users/mbucari/Downloads/ffmpegaac
 
+gcc-12 -dynamiclib -shared -fPIC -Wl,-v -o ffmpegaac.dylib aacEncoder.o aacDecoder.o -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libavutil -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libswscale -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libswresample -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libavcodec -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libavformat -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libavfilter -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libavdevice -lc -lswresample -lavformat -lavcodec -lavutil -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices -liconv
+
+--Make libmp3lame on MacOS
+
+./configure --disable-decoder --disable-frontend --host="x86_64"
+make
+cd libmp3lame/.libs
+gcc-12 -dynamiclib -shared -fPIC -Wl,-v,-force_load libmp3lame.a -o libmp3lame.dylib
 
 #!/bin/bash
 
