@@ -26,8 +26,7 @@ namespace AAXClean.Codecs
 					: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "so"
 					: "dylib";
 
-				if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-					libraryName = $"{libraryName}.{architecture}.{extension}";
+				libraryName = $"{libraryName}.{architecture}.{extension}";
 
 				if (NativeLibrary.TryLoad(libraryName, assembly, searchPath, out ffmpegaac))
 					return ffmpegaac;
