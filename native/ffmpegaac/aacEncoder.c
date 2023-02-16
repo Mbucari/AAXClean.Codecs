@@ -53,7 +53,7 @@ int32_t aacEncoder_ReceiveEncodedFrame(PAacEncoder config, uint8_t* outBuff, int
 
 int32_t aacEncoder_EncodeFrame(PAacEncoder config, uint8_t* pDecodedAudio0, uint8_t* pDecodedAudio1, int32_t nbSamples) {
 
-    int ret;
+    int i, ret;
     int nb_available_samples = nbSamples + config->current_frame_nb_samples;
     int remain_to_fill = AAC_FRAME_SIZE - config->current_frame_nb_samples;
     int to_copy = min(nbSamples, remain_to_fill);
@@ -62,7 +62,7 @@ int32_t aacEncoder_EncodeFrame(PAacEncoder config, uint8_t* pDecodedAudio0, uint
 
 
     //Copy audio into the frame buffer from where we left off last time
-    for (int i = 0; i < config->frame->ch_layout.nb_channels; i++) {
+    for (i = 0; i < config->frame->ch_layout.nb_channels; i++) {
         memcpy(
             config->frame->data[i] + config->current_frame_nb_samples * sizeof(float),
             inputBuff[i],
@@ -85,7 +85,7 @@ int32_t aacEncoder_EncodeFrame(PAacEncoder config, uint8_t* pDecodedAudio0, uint
     //Copy the rest of the partial frame to the beginning of the frame buffer
     if (nb_available_samples > 0) {
 
-        for (int i = 0; i < config->frame->ch_layout.nb_channels; i++) {
+        for (i = 0; i < config->frame->ch_layout.nb_channels; i++) {
             memcpy(
                 config->frame->data[i],
                 inputBuff[i] + to_copy * sizeof(float),

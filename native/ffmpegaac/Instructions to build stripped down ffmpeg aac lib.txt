@@ -2,24 +2,36 @@ install gcc
 install make
 install perl
 install pkg-config
+install nasm
 install yasm
 
-./configure --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=aac --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=aac --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-parser=aac --enable-demuxer=aac --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples
+nasm version >= 2.13
+yasm version >= 1.3
+
+./configure --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=aac --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=aac --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-parser=aac --enable-demuxer=aac --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples
 
 make
 
 
 --Linux
 
-gcc -fPIC -c aacDecoder.c -c aacEncoder.c -I/home/mbucari/ffmpeg-5.1.2 -I/home/mbucari/ffmpegaac
+gcc -fPIC -c aacDecoder.c -c aacEncoder.c -I../ffmpeg-5.1.2 -I./
 
-gcc -shared -fPIC -Wl,-Bsymbolic -Wl,-soname,ffmpegaac.so.1  -o ffmpegaac.so aacEncoder.o aacDecoder.o -L/home/mbucari/ffmpeg-5.1.2/libavutil -L/home/mbucari/ffmpeg-5.1.2/libswscale -L/home/mbucari/ffmpeg-5.1.2/libswresample -L/home/mbucari/ffmpeg-5.1.2/libavcodec -L/home/mbucari/ffmpeg-5.1.2/libavformat -L/home/mbucari/ffmpeg-5.1.2/libavfilter -L/home/mbucari/ffmpeg-5.1.2/libavdevice -lc -lswresample -lavformat -lavcodec -lavutil -lm
+gcc -pthread -shared -fPIC -Wl,-Bsymbolic -Wl,-soname,ffmpegaac.so.1  -o ffmpegaac.so aacEncoder.o aacDecoder.o -L../ffmpeg-5.1.2/libavutil -L../ffmpeg-5.1.2/libswscale -L../ffmpeg-5.1.2/libswresample -L../ffmpeg-5.1.2/libavcodec -L../ffmpeg-5.1.2/libavformat -L../ffmpeg-5.1.2/libavfilter -L../ffmpeg-5.1.2/libavdevice -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lm -lrt
 
 --MacOS
 
-gcc-12 -fPIC -c aacDecoder.c -c aacEncoder.c -I/Users/mbucari/Downloads/ffmpeg-5.1.2 -I/Users/mbucari/Downloads/ffmpegaac
+gcc-12 -fPIC -c aacDecoder.c -c aacEncoder.c -I../ffmpeg-5.1.2 -I./
 
-gcc-12 -dynamiclib -shared -fPIC -Wl,-v -o ffmpegaac.dylib aacEncoder.o aacDecoder.o -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libavutil -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libswscale -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libswresample -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libavcodec -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libavformat -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libavfilter -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libavdevice -lc -lswresample -lavformat -lavcodec -lavutil -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices -liconv
+gcc-12 -dynamiclib -shared -fPIC -Wl,-v -o ffmpegaac.dylib aacEncoder.o aacDecoder.o -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libavutil -L/Users/mbucari/Downloads/ffmpeg-5.1.2/libswscale -L../ffmpeg-5.1.2/libswresample -L../ffmpeg-5.1.2/libavcodec -L../ffmpeg-5.1.2/libavformat -L../ffmpeg-5.1.2/libavfilter -L../ffmpeg-5.1.2/libavdevice -lc -lswresample -lavformat -lavcodec -lavutil -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices -liconv
+
+--Make libmp3lame on Linix
+
+cd lame-3.100
+./configure --enable-nasm --disable-frontend --host="x86_64"
+make CFLAGS='-fPIC -O3' CPPFLAGS="-DNDEBUG"
+cd libmp3lame/.libs
+gcc -shared -fPIC -Wl,-v -Wl,--whole-archive libmp3lame.a -o libmp3lame.so  -Wl,--no-whole-archive -lm
 
 --Make libmp3lame on MacOS
 
@@ -52,6 +64,6 @@ cd ${THIS_DIR}
 
 gcc -fPIC -c aacDecoder.c -c aacEncoder.c -I${FOLDER_MAIN} -I./
 
-gcc -shared -fPIC -Wl,-Bsymbolic -Wl,-soname,ffmpegaac.so.1 -o ffmpegaac.so aacEncoder.o aacDecoder.o -L${FOLDER_MAIN}/libavutil -L${FOLDER_MAIN}/libswscale -L${FOLDER_MAIN}/libswresample -L${FOLDER_MAIN}/libavcodec -L${FOLDER_MAIN}/libavformat -L${FOLDER_MAIN}/libavfilter -L${FOLDER_MAIN}/libavdevice -lc -lswresample -lavformat -lavcodec -lavutil -lm
+gcc -pthread -shared -fPIC -Wl,-Bsymbolic -Wl,-soname,ffmpegaac.so.1 -o ffmpegaac.so aacEncoder.o aacDecoder.o -L${FOLDER_MAIN}/libavutil -L${FOLDER_MAIN}/libswscale -L${FOLDER_MAIN}/libswresample -L${FOLDER_MAIN}/libavcodec -L${FOLDER_MAIN}/libavformat -L${FOLDER_MAIN}/libavfilter -L${FOLDER_MAIN}/libavdevice -lc -lswresample -lavformat -lavcodec -lavutil -lm -lrt
 
 ldd -v ffmpegaac.so
