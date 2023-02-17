@@ -24,7 +24,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		public WaveToAacFilter(Stream mp4Output, FtypBox ftyp, MoovBox moov, WaveFormat waveFormat, long? bitrate, double? quality)
 		{
 			outputFile = mp4Output;
-			long audioSize = moov.AudioTrack.Mdia.Minf.Stbl.Stsz.SampleSizes.Sum(s => (long)s);
+			long audioSize = moov.AudioTrack.Mdia.Minf.Stbl.Stsz.SampleSizes.Cast<long>().Sum();
 			Mp4AWriter = new Mp4aWriter(mp4Output, ftyp, moov, audioSize > uint.MaxValue, waveFormat.SampleRate, waveFormat.Channels);
 			aacEncoder = new FfmpegAacEncoder(waveFormat, bitrate, quality);
 		}

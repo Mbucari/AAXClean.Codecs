@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AAXClean.Codecs.Test", "AAX
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B02FC7EE-FCEA-49BA-B7E0-5DECF9BDD0FE}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NAudio.Lame_SA", "NAudio.Lame_SA\NAudio.Lame_SA.csproj", "{CC519235-B9D4-4561-A276-D4C6DF752617}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +25,10 @@ Global
 		{18923356-9ED4-4FBA-A430-432753DE0E16}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18923356-9ED4-4FBA-A430-432753DE0E16}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18923356-9ED4-4FBA-A430-432753DE0E16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC519235-B9D4-4561-A276-D4C6DF752617}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC519235-B9D4-4561-A276-D4C6DF752617}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC519235-B9D4-4561-A276-D4C6DF752617}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC519235-B9D4-4561-A276-D4C6DF752617}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
