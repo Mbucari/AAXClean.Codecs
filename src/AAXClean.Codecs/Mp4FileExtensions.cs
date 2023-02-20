@@ -28,7 +28,8 @@ namespace AAXClean.Codecs
 
 				libraryName = $"{libraryName}.{architecture}.{extension}";
 
-				if (NativeLibrary.TryLoad(libraryName, assembly, searchPath, out ffmpegaac))
+				if (NativeLibrary.TryLoad(libraryName, assembly, searchPath, out ffmpegaac) ||
+					NativeLibrary.TryLoad($"{libraryName}.{architecture}.{extension}", assembly, searchPath, out ffmpegaac))
 					return ffmpegaac;
 				else
 					throw new PlatformNotSupportedException();

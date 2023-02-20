@@ -58,7 +58,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			callback.EncodingOptions = encodingOptions;
 			NewFileCallback(callback);
 			encodingOptions = callback.EncodingOptions;
-			mp4writer = new Mp4aWriter(callback.OutputFile, ftyp, moov, false, waveFormat.SampleRate, waveFormat.Channels);
+			mp4writer = new Mp4aWriter(callback.OutputFile, ftyp, moov, waveFormat.SampleRate, waveFormat.Channels);
 			currentWriterOpen = true;
 			framesInCurrentChunk = 0;
 			mp4writer.RemoveTextTrack();

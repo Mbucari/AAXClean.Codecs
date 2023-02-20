@@ -1,5 +1,6 @@
 ﻿using AAXClean.FrameFilters;
 using NAudio.Lame;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -31,8 +32,22 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 				Comment = appleTags.Comment,
 				Genre = appleTags.Generes,
 				Title = appleTags.Title,
-				Year = appleTags.ReleaseDate
 			};
+
+			if (DateTime.TryParse(appleTags.ReleaseDate, out var releaseDate))
+				tags.Year = releaseDate.Year.ToString();
+
+			tags.UserDefinedText.Add("ARTIST", appleTags.Artist);
+			tags.UserDefinedText.Add("TDA", appleTags.ReleaseDate);
+			tags.UserDefinedText.Add("COPYRIGHT", appleTags.Copyright);
+			tags.UserDefinedText.Add("COMPOSER", appleTags.Narrator);
+			tags.UserDefinedText.Add("TPB", appleTags.Publisher);
+			tags.UserDefinedText.Add("TDES", appleTags.LongDescription);
+			tags.UserDefinedText.Add("TACR", appleTags.Acr);
+			tags.UserDefinedText.Add("TVER", appleTags.Version);
+			tags.UserDefinedText.Add("ASIN", appleTags.Asin);
+			tags.UserDefinedText.Add("TPID", appleTags.ProductID);
+
 
 			return tags;
 		}
