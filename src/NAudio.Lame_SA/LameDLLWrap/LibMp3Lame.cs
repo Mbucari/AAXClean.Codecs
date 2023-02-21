@@ -599,14 +599,12 @@ namespace LameDLLWrap
 			NativeMethods.id3tag_set_year(context, year.ToString());
 		}
 
-		public bool ID3SetComment(string comment)
+		public bool ID3SetComment(string comment, string description = "")
 		{
-			if (Encoding.UTF8.GetByteCount(comment) == comment.Length)
-				return CheckResult(NativeMethods.id3tag_set_comment(context, comment));
-
-			// Comment is Unicode.  Encode as UCS2 with BOM and terminator.
+			byte[] descBts = UCS2.GetBytes(string.Empty);
 			byte[] data = UCS2.GetBytes(comment);
-			return CheckResult(NativeMethods.id3tag_set_comment_utf16(context, "zxx", (byte[])null, data));
+
+			return CheckResult(NativeMethods.id3tag_set_comment_utf16(context, "zxx", descBts, data));
 		}
 
 		public bool ID3SetTrack(string track)

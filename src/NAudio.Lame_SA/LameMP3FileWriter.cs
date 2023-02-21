@@ -305,9 +305,6 @@ namespace NAudio.Lame
 					_outputByteCount += rc;
 				}
 
-				// report progress
-				RaiseProgress(true);
-
 				if (_lame.WriteVBRTag)
 				{
 					UpdateLameTagFrame();
@@ -318,6 +315,9 @@ namespace NAudio.Lame
 					_outStream.Dispose();
 				_outStream = null;
 			}
+
+			// report progress
+			RaiseProgress(true);
 		}
 
 		/// <summary>Get the VBR tag frame from LAME and write to stream if possible</summary>
@@ -450,15 +450,36 @@ namespace NAudio.Lame
 			{
 				_lame.ID3SetFieldValue($"TXXX={kv.Key}={kv.Value}");
 			}
+
+			foreach (var kv in tag.AdditionalTags)
+			{
+				_lame.ID3SetFieldValue($"{kv.Key}={kv.Value}");
+			}
 			// Set the album art if supplied
 			if (tag.AlbumArt?.Length > 0)
 				_lame.ID3SetAlbumArt(tag.AlbumArt);
 
-			// check size of ID3 tag, if too large write it ourselves.
 			byte[] data = _lame.ID3GetID3v2Tag();
-
 			_lame.ID3WriteTagAutomatic = false;
-			_outStream.Write(data, 0, data.Length);
+
+			//Write chapters if any
+			if (tag.Chapters.Count > 0)
+			{
+				var toc = new ID3.CTOC(ID3.ChapterFlags.TopLevel | ID3.ChapterFlags.Ordered);
+
+				for (int i = 0; i < tag.Chapters.Count; i++)
+					toc.Add(new ID3.CHAP(tag.Chapters[i].start, tag.Chapters[i].end, i, tag.Chapters[i].title));
+
+				using MemoryStream id3Stream = new(data);
+
+				var tag1 = new ID3.Id3Tag(id3Stream);
+				tag1.AddToc(toc);
+				tag1.Save(_outStream);
+			}
+			else
+			{
+				_outStream.Write(data);
+			}
 		}
 
 		/// <summary>

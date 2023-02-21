@@ -4,6 +4,7 @@ using AAXClean.FrameFilters.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
@@ -79,6 +80,13 @@ namespace AAXClean.Codecs
 		{
 			lameConfig ??= GetDefaultLameConfig(mp4File);
 			lameConfig.ID3 ??= WaveToMp3Filter.GetDefaultMp3Tags(mp4File.AppleTags);
+			
+			if (!lameConfig.ID3.Chapters.Any() && userChapters is not null)
+			{
+				var startOffset = trimOutputToChapters ? userChapters.StartOffset : TimeSpan.Zero;
+				foreach (var ch in userChapters)
+					lameConfig.ID3.Chapters.Add((ch.StartOffset - startOffset, ch.EndOffset - startOffset, ch.Title));
+			}
 
 			var stereo = lameConfig.Mode is not NAudio.Lame.MPEGMode.Mono;
 			var sampleRate = (SampleRate)mp4File.TimeScale;
@@ -95,7 +103,7 @@ namespace AAXClean.Codecs
 
 			var start = userChapters?.StartOffset ?? TimeSpan.Zero;
 			var end = userChapters?.EndOffset ?? TimeSpan.Zero;
-
+			
 			if (mp4File.Moov.TextTrack is null)
 			{
 				void completion(Task t)

@@ -33,21 +33,19 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 				Genre = appleTags.Generes,
 				Title = appleTags.Title,
 			};
-
+			
 			if (DateTime.TryParse(appleTags.ReleaseDate, out var releaseDate))
 				tags.Year = releaseDate.Year.ToString();
 
-			tags.UserDefinedText.Add("ARTIST", appleTags.Artist);
-			tags.UserDefinedText.Add("TDA", appleTags.ReleaseDate);
-			tags.UserDefinedText.Add("COPYRIGHT", appleTags.Copyright);
-			tags.UserDefinedText.Add("COMPOSER", appleTags.Narrator);
-			tags.UserDefinedText.Add("TPB", appleTags.Publisher);
-			tags.UserDefinedText.Add("TDES", appleTags.LongDescription);
-			tags.UserDefinedText.Add("TACR", appleTags.Acr);
-			tags.UserDefinedText.Add("TVER", appleTags.Version);
-			tags.UserDefinedText.Add("ASIN", appleTags.Asin);
-			tags.UserDefinedText.Add("TPID", appleTags.ProductID);
-
+			tags.AdditionalTags.Add("ARTIST", appleTags.Artist);
+			tags.AdditionalTags.Add("TDAT", appleTags.ReleaseDate);
+			tags.AdditionalTags.Add("TCOP", appleTags.Copyright);
+			tags.AdditionalTags.Add("TCOM", appleTags.Narrator);
+			tags.AdditionalTags.Add("TPUB", appleTags.Publisher);
+			tags.UserDefinedText.Add("LONG_COMMENT", appleTags.LongDescription);
+			tags.UserDefinedText.Add("AUDIBLE_ACR", appleTags.Acr);
+			tags.UserDefinedText.Add("AUDIBLE_VERSION", appleTags.Version);
+			tags.UserDefinedText.Add("AUDIBLE_ASIN", appleTags.Asin);
 
 			return tags;
 		}
