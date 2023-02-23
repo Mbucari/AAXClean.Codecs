@@ -11,44 +11,51 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 	internal class WaveToAacFilter : FrameFinalBase<WaveEntry>
 	{
 		private readonly FfmpegAacEncoder aacEncoder;
-		private readonly Mp4aWriter Mp4AWriter;
-		private readonly Stream outputFile;
-		private Func<ChapterInfo> GetChapterDelegate;
-		public ChapterInfo Chapters => GetChapterDelegate?.Invoke();
+		private readonly Mp4aWriter Mp4aWriter;
+		private readonly ChapterQueue ChapterQueue;
 		protected override int InputBufferSize => 200;
 
 		private const int FRAMES_PER_CHUNK = 20;
 		private int FramesInCurrentChunk = 0;
 		public bool Closed { get; private set; }
 
-		public WaveToAacFilter(Stream mp4Output, FtypBox ftyp, MoovBox moov, WaveFormat waveFormat, long? bitrate, double? quality)
+		public WaveToAacFilter(Stream mp4Output, Mp4File mp4File, ChapterQueue chapterQueue, WaveFormat waveFormat, long? bitrate, double? quality)
 		{
-			outputFile = mp4Output;
-			Mp4AWriter = new Mp4aWriter(mp4Output, ftyp, moov, waveFormat.SampleRate, waveFormat.Channels);
+			ChapterQueue = chapterQueue;
+			Mp4aWriter = new Mp4aWriter(mp4Output, mp4File.Ftyp, mp4File.Moov, waveFormat.SampleRate, waveFormat.Channels);
 			aacEncoder = new FfmpegAacEncoder(waveFormat, bitrate, quality);
 		}
 		protected override Task PerformFilteringAsync(WaveEntry input)
 		{
 			foreach (var encodedAac in aacEncoder.EncodeWave(input))
 			{
-				Mp4AWriter.AddFrame(encodedAac.FrameData.Span, FramesInCurrentChunk++ == 0);
+				bool newChunk = FramesInCurrentChunk++ == 0;
+
+				//Write chapters as soon as they're available.
+				while (ChapterQueue.TryGetNextChapter(out var chapterEntry))
+				{
+					Mp4aWriter.WriteChapter(chapterEntry);
+					newChunk = true;
+				}
+
+				Mp4aWriter.AddFrame(encodedAac.FrameData.Span, newChunk);
 				FramesInCurrentChunk %= FRAMES_PER_CHUNK;
 			}
 
 			return Task.CompletedTask;
 		}
 
-		public void SetChapterDelegate(Func<ChapterInfo> getChapterDelegate)
-		{
-			GetChapterDelegate = getChapterDelegate;
-		}
-
 		protected override Task FlushAsync()
 		{
 			foreach (var flushedFrame in aacEncoder.EncodeFlush())
 			{
-				Mp4AWriter.AddFrame(flushedFrame.FrameData.Span, newChunk: false);
+				Mp4aWriter.AddFrame(flushedFrame.FrameData.Span, newChunk: false);
 			}
+
+			//Write any remaining chapters
+			while (ChapterQueue.TryGetNextChapter(out var chapterEntry))
+				Mp4aWriter.WriteChapter(chapterEntry);
+
 			CloseWriter();
 			return Task.CompletedTask;
 		}
@@ -56,13 +63,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		private void CloseWriter()
 		{
 			if (Closed) return;
-			ChapterInfo chinf = Chapters;
-			if (chinf is not null)
-			{
-				Mp4AWriter.WriteChapters(chinf);
-			}
-			Mp4AWriter.Close();
-			outputFile.Close();
+			Mp4aWriter.Close();
 			Closed = true;
 		}
 
@@ -71,7 +72,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			if (disposing && !Disposed)
 			{
 				aacEncoder?.Dispose();
-				Mp4AWriter?.Dispose();
+				Mp4aWriter?.Dispose();
 			}
 			base.Dispose(disposing);
 		}

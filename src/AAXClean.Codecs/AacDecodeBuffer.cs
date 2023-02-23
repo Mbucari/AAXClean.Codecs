@@ -66,7 +66,7 @@ namespace AAXClean.Codecs
 			WaveFormat = _aacToWave.WaveFormat;
 			BytesPerFrame = WaveFormat.BlockAlign * 1024;
 			Length = WaveFormat.BlockAlign * (long)mp4File.Moov.AudioTrack.Mdia.Mdhd.Duration;
-			TimeScale = (int)Mp4File.TimeScale;
+			TimeScale = (int)Mp4File.SampleRate;
 			Duration = TimeSpan.FromSeconds(Mp4File.Moov.AudioTrack.Mdia.Mdhd.Duration / (double)TimeScale);
 			BufferTime = bufferTime;
 

@@ -68,12 +68,13 @@ namespace LameDLLWrap
 					: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "so"
 					: "dylib";
 
-				libraryName = $"{libraryName}.{architecture}.{extension}";
+				var platformLibName = $"{libraryName}.{architecture}.{extension}";
 
-				if (NativeLibrary.TryLoad(libraryName, assembly, searchPath, out libmp3lame))
+				if (NativeLibrary.TryLoad(platformLibName, assembly, searchPath, out libmp3lame) ||
+					NativeLibrary.TryLoad(libraryName, assembly, searchPath, out libmp3lame))
 					return libmp3lame;
 				else
-					throw new PlatformNotSupportedException();
+					throw new PlatformNotSupportedException($"Could not load {libraryName} or {platformLibName}");
 			}
 
 			// Otherwise, fallback to default import resolver.
