@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<metadata>
 		<id>AAXClean.Codecs</id>
-		<version>0.6.1</version>
+		<version>1.0.0</version>
 		<description>Decrypts Audible aax and aaxc files to mp4.</description>
 		<authors>MrGneissGuy</authors>
 		<repository type="git" url="https://github.com/Mbucari/AAXClean.git" branch="master" />
@@ -10,7 +10,7 @@
 		<Tags>Audible AAC AAXC m4b audiobook</Tags>
 		<language>en-US</language>
 		<dependencies>
-			<dependency id="AAXClean" version="0.6.1" />
+			<dependency id="AAXClean" version="1.0.0" />
 			<dependency id="NAudio.Core" version="2.0.0" />
 		</dependencies>
 	</metadata>

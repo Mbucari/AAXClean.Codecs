@@ -258,6 +258,7 @@ namespace AAXClean.Codecs
 				ABRRateKbps = (int)Math.Round(mp4File.AverageBitrate / 1024d / mp4File.AudioChannels),
 				Mode = NAudio.Lame.MPEGMode.Mono,
 				VBR = NAudio.Lame.VBRMode.ABR,
+				ID3 = mp4File.AppleTags.ToIDTags()
 			};
 			return lameConfig;
 		}
