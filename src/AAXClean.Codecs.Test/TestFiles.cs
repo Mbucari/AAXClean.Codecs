@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 
 namespace AAXClean.Codecs.Test
@@ -26,7 +27,7 @@ namespace AAXClean.Codecs.Test
 
 		public static void CloseAllFiles()
 		{
-			foreach (FileStream fs in OpenTempFiles)
+			foreach (FileStream fs in OpenTempFiles.ToList())
 			{
 				fs.Close();
 				File.Delete(fs.Name);

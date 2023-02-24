@@ -62,7 +62,7 @@ namespace AAXClean.Codecs.Test
 			}
 			finally
 			{
-				Aax.Close();
+				Aax.InputStream.Close();
 			}
 		}
 
@@ -93,7 +93,7 @@ namespace AAXClean.Codecs.Test
 			finally
 			{
 				TestFiles.CloseAllFiles();
-				Aax.Close();
+				Aax.InputStream.Close();
 			}
 		}
 
@@ -106,12 +106,12 @@ namespace AAXClean.Codecs.Test
 				FileStream mp3File = TestFiles.NewTempFile();
 
 				await Aax.ConvertToMp4aAsync(m4bfile);
-				Aax.Close();
+				Aax.InputStream.Close();
 
 				Mp4File mp4 = new Mp4File(m4bfile.Name);
 
 				await mp4.ConvertToMp3Async(mp3File, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
-				mp4.Close();
+				mp4.InputStream.Close();
 
 				using SHA1 sha = SHA1.Create();
 
@@ -176,7 +176,7 @@ namespace AAXClean.Codecs.Test
 			finally
 			{
 				TestFiles.CloseAllFiles();
-				Aax.Close();
+				Aax.InputStream.Close();
 			}
 		}
 
@@ -192,7 +192,7 @@ namespace AAXClean.Codecs.Test
 					Stereo = false,
 					SampleRate = SampleRate.Hz_16000
 				};
-				await Aax.ConvertToMp4aAsync(tempfile, options);
+				await Aax.ConvertToMp4aAsync(tempfile, options, Aax.GetChaptersFromMetadata());
 
 				using SHA1 sha = SHA1.Create();
 
@@ -213,7 +213,7 @@ namespace AAXClean.Codecs.Test
 			finally
 			{
 				TestFiles.CloseAllFiles();
-				Aax.Close();
+				Aax.InputStream.Close();
 			}
 		}
 		[TestMethod]
@@ -257,7 +257,7 @@ namespace AAXClean.Codecs.Test
 			finally
 			{
 				TestFiles.CloseAllFiles();
-				Aax.Close();
+				Aax.InputStream.Close();
 			}
 		}
 		[TestMethod]
@@ -277,12 +277,12 @@ namespace AAXClean.Codecs.Test
 				Assert.IsTrue(convertTask.IsCanceled);
 
 				TestFiles.CloseAllFiles();
-				Aax.Close();
+				Aax.InputStream.Close();
 			}
 			finally
 			{
 				TestFiles.CloseAllFiles();
-				aaxFile.Close();
+				aaxFile.InputStream.Close();
 			}
 		}
 
@@ -308,12 +308,12 @@ namespace AAXClean.Codecs.Test
 				Assert.IsTrue(convertTask.IsCanceled);
 
 				TestFiles.CloseAllFiles();
-				Aax.Close();
+				Aax.InputStream.Close();
 			}
 			finally
 			{
 				TestFiles.CloseAllFiles();
-				aaxFile.Close();
+				aaxFile.InputStream.Close();
 			}
 		}
 	}
