@@ -11,6 +11,8 @@ namespace NAudio.Lame
 		public string Title;
 		/// <summary>Artist (TPE1)</summary>
 		public string Artist;
+		/// <summary>Composer (TCOM)</summary>
+		public string Composer;
 		/// <summary>Album (TALB)</summary>
 		public string Album;
 		/// <summary>Year (TYER)</summary>

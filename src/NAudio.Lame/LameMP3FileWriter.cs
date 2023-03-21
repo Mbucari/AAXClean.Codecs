@@ -425,17 +425,19 @@ namespace NAudio.Lame
 
 			// Apply standard ID3 fields
 			if (!string.IsNullOrEmpty(tag.Title))
-				_lame.ID3SetTitle(tag.Title);
+				_lame.ID3SetFieldValue($"TIT2={tag.Title}");
 			if (!string.IsNullOrEmpty(tag.Artist))
-				_lame.ID3SetArtist(tag.Artist);
+				_lame.ID3SetFieldValue($"TPE1={tag.Artist}");
+			if (!string.IsNullOrEmpty(tag.Composer))
+				_lame.ID3SetFieldValue($"TCOM={tag.Composer}");
 			if (!string.IsNullOrEmpty(tag.Album))
-				_lame.ID3SetAlbum(tag.Album);
+				_lame.ID3SetFieldValue($"TALB={tag.Album}");
 			if (!string.IsNullOrEmpty(tag.Year))
 				_lame.ID3SetYear(tag.Year);
 			if (!string.IsNullOrEmpty(tag.Comment))
 				_lame.ID3SetComment(tag.Comment);
 			if (!string.IsNullOrEmpty(tag.Genre))
-				_lame.ID3SetGenre(tag.Genre);
+				_lame.ID3SetFieldValue($"TCON={tag.Genre}");
 			if (!string.IsNullOrEmpty(tag.Track))
 				_lame.ID3SetTrack(tag.Track);
 

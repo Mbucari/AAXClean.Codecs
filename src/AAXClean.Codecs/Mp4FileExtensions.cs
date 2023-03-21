@@ -278,14 +278,15 @@ namespace AAXClean.Codecs
 			{
 				Album = appleTags.Album,
 				AlbumArt = appleTags.Cover,
+				Artist = appleTags.Artist,
 				AlbumArtist = appleTags.AlbumArtists,
 				Comment = appleTags.Comment,
 				Genre = appleTags.Generes,
+				Composer = appleTags.Narrator,
 				Title = appleTags.Title,
 				AdditionalTags =
 				{
 					{ "TEXT", appleTags.Artist },
-					{ "TCOM", appleTags.Narrator },
 					{ "TPUB", appleTags.Publisher },
 					{ "TCOP", appleTags.Copyright.Replace("(P)", "℗").Replace("&#169;", "©") }
 				},
