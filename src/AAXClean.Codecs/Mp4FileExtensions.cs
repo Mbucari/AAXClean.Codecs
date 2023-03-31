@@ -288,7 +288,7 @@ namespace AAXClean.Codecs
 				{
 					{ "TEXT", appleTags.Artist },
 					{ "TPUB", appleTags.Publisher },
-					{ "TCOP", appleTags.Copyright.Replace("(P)", "℗").Replace("&#169;", "©") }
+					{ "TCOP", appleTags.Copyright?.Replace("(P)", "℗")?.Replace("&#169;", "©") }
 				},
 				UserDefinedText =
 				{
