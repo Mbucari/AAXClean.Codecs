@@ -45,6 +45,8 @@ namespace AAXClean.Codecs
 			NativeLibrary.SetDllImportResolver(System.Reflection.Assembly.GetExecutingAssembly(), DllImportResolver);
 		}
 
+		public static void Load() { }
+
 		public static AacWaveStream GetWaveStream(this Mp4File mp4File, TimeSpan bufferTime)
 			=> new(new AacDecodeBuffer(mp4File, bufferTime));
 

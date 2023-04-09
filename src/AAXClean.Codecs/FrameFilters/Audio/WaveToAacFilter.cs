@@ -1,14 +1,11 @@
 ﻿using AAXClean.FrameFilters;
 using AAXClean.FrameFilters.Audio;
-using Mpeg4Lib.Boxes;
-using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
-	internal class WaveToAacFilter : FrameFinalBase<WaveEntry>
+	public class WaveToAacFilter : FrameFinalBase<WaveEntry>
 	{
 		private readonly FfmpegAacEncoder aacEncoder;
 		private readonly Mp4aWriter Mp4aWriter;
@@ -19,12 +16,20 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		private int FramesInCurrentChunk = 0;
 		public bool Closed { get; private set; }
 
-		public WaveToAacFilter(Stream mp4Output, Mp4File mp4File, ChapterQueue chapterQueue, WaveFormat waveFormat, long? bitrate, double? quality)
+		internal WaveToAacFilter(Stream mp4Output, Mp4File mp4File, ChapterQueue chapterQueue, WaveFormat waveFormat, long? bitrate, double? quality)
 		{
 			ChapterQueue = chapterQueue;
 			Mp4aWriter = new Mp4aWriter(mp4Output, mp4File.Ftyp, mp4File.Moov, waveFormat.SampleRate, waveFormat.Channels);
 			aacEncoder = new FfmpegAacEncoder(waveFormat, bitrate, quality);
 		}
+
+		public WaveToAacFilter(Mp4aWriter mp4aWriter, ChapterQueue chapterQueue, WaveFormat waveFormat, long? bitrate, double? quality)
+		{
+			ChapterQueue = chapterQueue;
+			Mp4aWriter = mp4aWriter;
+			aacEncoder = new FfmpegAacEncoder(waveFormat, bitrate, quality);
+		}
+
 		protected override Task PerformFilteringAsync(WaveEntry input)
 		{
 			foreach (var encodedAac in aacEncoder.EncodeWave(input))
@@ -32,7 +37,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 				bool newChunk = FramesInCurrentChunk++ == 0;
 
 				//Write chapters as soon as they're available.
-				while (ChapterQueue.TryGetNextChapter(out var chapterEntry))
+				while (ChapterQueue?.TryGetNextChapter(out var chapterEntry) is true)
 				{
 					Mp4aWriter.WriteChapter(chapterEntry);
 					newChunk = true;
@@ -53,7 +58,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			}
 
 			//Write any remaining chapters
-			while (ChapterQueue.TryGetNextChapter(out var chapterEntry))
+			while (ChapterQueue?.TryGetNextChapter(out var chapterEntry) is true)
 				Mp4aWriter.WriteChapter(chapterEntry);
 
 			CloseWriter();

@@ -7,7 +7,7 @@
 		Dts = 8
 	}
 
-	internal class WaveFormat : NAudio.Wave.WaveFormat
+	public class WaveFormat : NAudio.Wave.WaveFormat
 	{
 		public SampleRate SampleRateEnum { get; }
 		public WaveFormat(SampleRate sampleRate, WaveFormatEncoding format, bool stereo)
