@@ -13,7 +13,7 @@ namespace NAudio.Lame.ID3
 			file.Read(Blob);
 		}
 		public override void Render(Stream file) => file.Write(Blob);
-		public string DataText => Encoding.ASCII.GetString(Blob);
+		public string DataText => (Blob[0] == 0 ? Encoding.ASCII : Encoding.Unicode).GetString(Blob, 1, Blob.Length - 1);
 		public override string ToString() => Header.FrameID;
 	}
 }
