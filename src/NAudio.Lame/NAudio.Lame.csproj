@@ -2,7 +2,7 @@
   <PropertyGroup>
 	<TargetFramework>net6.0</TargetFramework>
 	<Platforms>AnyCPU</Platforms>
-	<Version>1.0.14</Version>
+	<Version>1.0.15</Version>
 	<Description>Uses libmp3lame from the Lame project to provide MP3 encoding support to NAudio.  Both 64-bit and 32-bit versions of libmp3lame.dll are provided, as well as the 64-bit version of libmp3lame.so for linux, with platform detection to determine which to use.</Description>
 	<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -10,6 +10,6 @@
 	<DebugType>embedded</DebugType>
   </PropertyGroup>
   <ItemGroup>
-	<PackageReference Include="NAudio.Core" Version="2.0.0" />
+	<PackageReference Include="NAudio.Core" Version="2.1.0" />
   </ItemGroup>
 </Project>
