@@ -8,9 +8,14 @@
 		<repository type="git" url="https://github.com/Mbucari/AAXClean.Codecs.git" branch="master" />
 		<RepositoryType>Git</RepositoryType>
 		<projectUrl>https://github.com/Mbucari/AAXClean.Codecs</projectUrl>
-		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<Tags>Audible AAC AAXC m4b mp3 audiobook</Tags>
 		<language>en-US</language>
+		<readme>docs\README.md</readme>	
+		<license type="file">LICENSE.txt</license>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+	<dependencies>
+		<group targetFramework="net6.0" />
+	</dependencies>
 		<dependencies>
 			<dependency id="AAXClean" version="1.0.3" />
 			<dependency id="NAudio.Core" version="2.1.0" />
@@ -35,5 +40,8 @@
 		<file src="AAXClean.Codecs.targets" target="build\AAXClean.Codecs.targets" />
 		<file src="src\AAXClean.Codecs\bin\Release\net6.0\NAudio.Lame.dll" target="lib\net6.0\NAudio.Lame.dll" />
 		<file src="src\AAXClean.Codecs\bin\Release\net6.0\AAXClean.Codecs.dll" target="lib\net6.0\AAXClean.Codecs.dll" />
+		
+		<file src="README.md" target="docs\" />
+		<file src="LICENSE.txt" target="LICENSE.txt" />
 	</files>
 </Project>
