@@ -12,6 +12,7 @@ namespace NAudio.Lame.ID3
 		public ushort Version { get; }
 		public int Flags { get; }
 		public int Size { get; }
+		public int RenderSize => 10 + Frames.Sum(f => f.Size + 10);
 
 		public List<Frame> Frames { get; } = new();
 		public Id3Tag(Stream file)

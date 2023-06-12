@@ -15,7 +15,7 @@ namespace NAudio.Lame.ID3
 				if (nameSz == FieldName.Length && valueSz == FieldValue.Length)
 					return 1 + nameSz + 1 + valueSz;
 				else
-					return 1 + 2 + 2 * FieldName.Length + 2 + 2 + 2 * FieldValue.Length;
+					return 1 + UnicodeLength(FieldName) + 2 + UnicodeLength(FieldValue);
 			}
 		}
 
@@ -46,13 +46,10 @@ namespace NAudio.Lame.ID3
 			}
 			else
 			{
-
 				file.WriteByte(1);
-				file.Write(Encoding.Unicode.GetPreamble());
-				file.Write(Encoding.Unicode.GetBytes(FieldName));
+				file.Write(UnicodeBytes(FieldName));
 				file.Write(new byte[2]);
-				file.Write(Encoding.Unicode.GetPreamble());
-				file.Write(Encoding.Unicode.GetBytes(FieldValue));
+				file.Write(UnicodeBytes(FieldValue));
 			}
 		}
 	}

@@ -9,9 +9,11 @@ namespace NAudio.Lame.ID3
 		public string FrameID { get; }
 		public ushort Flags { get; set; }
 		public int Size { get; }
+		public long OriginalPosition { get; }
 
 		public FrameHeader(Stream file)
 		{
+			OriginalPosition = file.Position;
 			Span<byte> title = new byte[4];
 			file.Read(title);
 

@@ -1,5 +1,4 @@
-﻿using LameDLLWrap;
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -46,31 +45,5 @@ namespace NAudio.Lame.ID3
 
 		private void WriteUInt32BE(Stream stream, uint value)
 			=> stream.Write(stackalloc byte[] { (byte)(value >> 24), (byte)(value >> 16), (byte)(value >> 8), (byte)value });
-	}
-
-	public class TIT2 : Frame
-	{
-		public override int Size => 1 + Encoding.Unicode.Preamble.Length + Encoding.Unicode.GetByteCount(Title) + 2;
-		public byte EncodingFlag { get; set; }
-		public string Title { get; set; }
-		public TIT2(FrameHeader header, Frame parent) : base(header, parent) { }
-
-		public static TIT2 Create(Frame parent, string title)
-		{
-			var tit2 = new TIT2(new FrameHeader("TIT2", 0), parent)
-			{
-				EncodingFlag = 1,
-				Title = title
-			};
-
-			parent?.Children.Add(tit2);
-			return tit2;
-		}
-
-		public override void Render(Stream file)
-		{
-			file.WriteByte(EncodingFlag);
-			file.Write(UCS2.GetBytes(Title));
-		}
 	}
 }
