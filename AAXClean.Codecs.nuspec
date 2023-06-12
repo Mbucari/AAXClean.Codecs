@@ -13,12 +13,11 @@
 		<readme>docs\README.md</readme>	
 		<license type="file">LICENSE.txt</license>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
-	<dependencies>
-		<group targetFramework="net6.0" />
-	</dependencies>
 		<dependencies>
-			<dependency id="AAXClean" version="1.0.3" />
-			<dependency id="NAudio.Core" version="2.1.0" />
+			<group targetFramework="net6.0">
+				<dependency id="AAXClean" version="1.0.3" />
+				<dependency id="NAudio.Core" version="2.1.0" />
+			</group>
 		</dependencies>
 	</metadata>
 	<dependencies>
