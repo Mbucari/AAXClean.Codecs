@@ -8,12 +8,12 @@ namespace NAudio.Lame.ID3
 {
 	public abstract class Frame
 	{
-		public FrameHeader Header { get; }
+		public Header Header { get; }
 		public Frame Parent { get; }
 		public virtual int Size => Children.Sum(b => b.Size);
 		public List<Frame> Children { get; } = new();
 
-		public Frame(FrameHeader header, Frame parent)
+		public Frame(Header header, Frame parent)
 		{
 			Header = header;
 			Parent = parent;
@@ -21,14 +21,30 @@ namespace NAudio.Lame.ID3
 
 		public void Save(Stream file)
 		{
-			file.Write(Encoding.ASCII.GetBytes(Header.FrameID));
-			Id3Tag.WriteUInt32BE(file, (uint)Size);
-			Id3Tag.WriteUInt16BE(file, Header.Flags);
+			Header.Render(file, Size);
 
 			Render(file);
 
 			foreach (var child in Children)
 				child.Save(file);
+		}
+
+		public override string ToString() => Header.ToString();
+
+		protected void LoadChildren(Stream file)
+		{
+			long endPos = Header.OriginalPosition + Header.Size + Header.HeaderSize;
+
+			while (file.Position < endPos)
+			{
+				var child = TagFactory.CreateTag(file, this);
+
+				if (child.Header.Identifier == "\0\0\0\0")
+					break;
+				Children.Add(child);
+				if (child.Header.OriginalPosition + child.Header.Size + Header.HeaderSize != file.Position)
+					break;
+			}
 		}
 
 		public static string ReadSizeString(Stream file, bool unicode, int bytes)
@@ -67,11 +83,12 @@ namespace NAudio.Lame.ID3
 
 		public abstract void Render(Stream file);
 
+		public static bool IsUnicode(string str) => Encoding.UTF8.GetByteCount(str) != str.Length;
 
 		/// <summary>
 		/// String length without null terminator
 		/// </summary>
-		public int UnicodeLength(string str)
+		public static int UnicodeLength(string str)
 		{
 			if (str.Length == 0) return 4;
 
@@ -87,7 +104,7 @@ namespace NAudio.Lame.ID3
 		/// <summary>
 		/// String without null terminator
 		/// </summary>
-		public byte[] UnicodeBytes(string str)
+		public static byte[] UnicodeBytes(string str)
 		{
 			int strLen = str.Length;
 			if (strLen == 0) return Encoding.Unicode.GetPreamble();

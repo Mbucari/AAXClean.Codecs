@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Text;
 
 namespace NAudio.Lame.ID3
@@ -10,21 +9,20 @@ namespace NAudio.Lame.ID3
 		{
 			get
 			{
-				var descSize = Encoding.UTF8.GetByteCount(Description);
-
 				var fixedSize = 1 + ImageFormat.Length + 1 + 1 + Image.Length;
 
-				if (descSize == Description.Length)
-					return descSize + 1 + fixedSize;
-				else
+				if (IsUnicode(Description))
 					return UnicodeLength(Description) + 2 + fixedSize;
+				else
+					return Description.Length + 1 + fixedSize;
 			}
 		}
 		public string ImageFormat { get; set; }
 		public string Description { get; set; }
 		public byte Type { get; set; }
 		public byte[] Image { get; set; }
-		public APICFrame(Stream file, FrameHeader header, Frame parent) : base(header, parent)
+
+		public APICFrame(Stream file, Header header, Frame parent) : base(header, parent)
 		{
 			var startPos = file.Position;
 			var textEncoding = file.ReadByte();
@@ -35,20 +33,17 @@ namespace NAudio.Lame.ID3
 			file.Read(Image);
 		}
 
-
 		public override void Render(Stream file)
 		{
-			var descSize = Encoding.UTF8.GetByteCount(Description);
-			if (descSize == Description.Length)
-				file.WriteByte(0);
-			else
-				file.WriteByte(1);
+			int txtFormat = IsUnicode(Description) ? 1 : 0;
+
+			file.WriteByte((byte)txtFormat);
 
 			file.Write(Encoding.ASCII.GetBytes(ImageFormat));
 			file.WriteByte(0);
 			file.WriteByte(Type);
 
-			if (descSize == Description.Length)
+			if (txtFormat == 0)
 			{
 				file.Write(Encoding.ASCII.GetBytes(Description));
 				file.WriteByte(0);
@@ -56,7 +51,7 @@ namespace NAudio.Lame.ID3
 			else
 			{
 				file.Write(UnicodeBytes(Description));
-				file.Write(new byte[2]);
+				file.Write(stackalloc byte[2]);
 			}
 			file.Write(Image);
 		}

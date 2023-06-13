@@ -1,33 +1,25 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Text;
 
 namespace NAudio.Lame.ID3
 {
-	public class FrameHeader
+	public class FrameHeader : Header
 	{
-		public string FrameID { get; }
+		public override string Identifier { get; }
 		public ushort Flags { get; set; }
-		public int Size { get; }
-		public long OriginalPosition { get; }
-
-		public FrameHeader(Stream file)
-		{
-			OriginalPosition = file.Position;
-			Span<byte> title = new byte[4];
-			file.Read(title);
-
-			FrameID = Encoding.ASCII.GetString(title);
-			Size = (int)Id3Tag.ReadUInt32BE(file);
-			Flags = Id3Tag.ReadUInt16BE(file);
-		}
+		public override int HeaderSize => 10;
 
 		public FrameHeader(string frameID, ushort flags)
 		{
-			FrameID = frameID;
+			Identifier = frameID;
 			Flags = flags;
 		}
 
-		public override string ToString() => FrameID;
+		public override void Render(Stream stream, int renderSize)
+		{
+			stream.Write(Encoding.ASCII.GetBytes(Identifier));
+			WriteUInt32BE(stream, (uint)renderSize);
+			WriteUInt16BE(stream, Flags);
+		}
 	}
 }

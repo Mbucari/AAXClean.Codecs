@@ -464,24 +464,28 @@ namespace NAudio.Lame
 			byte[] data = _lame.ID3GetID3v2Tag();
 			_lame.ID3WriteTagAutomatic = false;
 
+
+			using MemoryStream id3Stream = new(data);
+			var tag1 = ID3.Id3Tag.Create(id3Stream);
+
 			//Write chapters if any
 			if (tag.Chapters.Count > 0)
 			{
-				var toc = new ID3.CTOC(ID3.ChapterFlags.TopLevel | ID3.ChapterFlags.Ordered);
-
-				for (int i = 0; i < tag.Chapters.Count; i++)
-					toc.Add(new ID3.CHAP(tag.Chapters[i].start, tag.Chapters[i].end, i, tag.Chapters[i].title));
-
-				using MemoryStream id3Stream = new(data);
-
-				var tag1 = new ID3.Id3Tag(id3Stream);
-				tag1.AddToc(toc);
-				tag1.Save(_outStream);
+				int i = 0;
+				List<ID3.CHAPFrame> chaps = new();
+				var toc = new ID3.CTOCFrame(ID3.ChapterFlags.TopLevel | ID3.ChapterFlags.Ordered);
+				foreach (var c in tag.Chapters)
+				{
+					var chap = new ID3.CHAPFrame(c.start, c.end, i++, tag.Title);
+					toc.Add(chap);
+					chaps.Add(chap);
+				}
+				
+				tag1.Children.Add(toc);
+				tag1.Children.AddRange(chaps);
 			}
-			else
-			{
-				_outStream.Write(data);
-			}
+
+			tag1.Save(_outStream);
 		}
 
 		/// <summary>
