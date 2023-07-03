@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
-		<Version>1.0.4</Version>
+		<Version>1.1.0</Version>
 		<Authors>MrGneissGuy</Authors>
 		<Company>Just Me, Inc.</Company>
 		<Description>Filter and convert aac audio from AAXClean</Description>
@@ -32,7 +32,7 @@
 	</ItemGroup>
 	
 	<ItemGroup Condition="'$(Configuration)'=='Release'">
-	  <PackageReference Include="AAXClean" Version="1.0.3" />
+	  <PackageReference Include="AAXClean" Version="1.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>

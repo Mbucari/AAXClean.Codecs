@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<metadata>
 		<id>AAXClean.Codecs</id>
-		<version>1.0.3</version>
+		<version>1.1.0</version>
 		<description>Filter and convert aac audio from AAXClean</description>
 		<Summary>An add-on module for AAXClean to filter aac audio. </Summary>
 		<authors>MrGneissGuy</authors>
@@ -15,7 +15,7 @@
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<dependencies>
 			<group targetFramework="net6.0">
-				<dependency id="AAXClean" version="1.0.3" />
+				<dependency id="AAXClean" version="1.1.0" />
 				<dependency id="NAudio.Core" version="2.1.0" />
 			</group>
 		</dependencies>
