@@ -46,7 +46,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			LameConfig = callback.LameConfig;
 			CurrentWriterOpen = true;
 
-			LameConfig.ID3.Track = callback.TrackNumber?.ToString();
+			LameConfig.ID3.Track = $"{callback.TrackNumber}/{callback.TrackCount}";
 			LameConfig.ID3.Title = callback.TrackTitle ?? LameConfig.ID3.Title;
 			OutputStream = callback.OutputFile;
 			Writer = new LameMP3FileWriter(OutputStream, WaveFormat, LameConfig);

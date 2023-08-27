@@ -10,6 +10,10 @@
 	<DebugType>embedded</DebugType>
   </PropertyGroup>
   <ItemGroup>
-	<PackageReference Include="NAudio.Core" Version="2.1.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="NAudio.Core" Version="2.1.0" />
   </ItemGroup>
 </Project>

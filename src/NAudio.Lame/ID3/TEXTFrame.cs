@@ -15,7 +15,7 @@ namespace NAudio.Lame.ID3
 			Text = ReadSizeString(file, EncodingFlag == 1, Header.Size - 1);
 		}
 
-		public static TEXTFrame Create(Frame parent, string frameId,  string text)
+		public static TEXTFrame Create(Frame parent, string frameId, string text)
 		{
 			var tit2 = new TEXTFrame(new FrameHeader(frameId, 0), parent)
 			{
