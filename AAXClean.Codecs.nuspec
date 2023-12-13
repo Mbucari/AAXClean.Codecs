@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<metadata>
 		<id>AAXClean.Codecs</id>
-		<version>1.1.1</version>
+		<version>1.1.2</version>
 		<description>Filter and convert aac audio from AAXClean</description>
 		<Summary>An add-on module for AAXClean to filter aac audio. </Summary>
 		<authors>MrGneissGuy</authors>
@@ -14,15 +14,20 @@
 		<license type="file">LICENSE.txt</license>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<dependencies>
-			<group targetFramework="net6.0">
-				<dependency id="AAXClean" version="1.1.1" />
-				<dependency id="NAudio.Core" version="2.1.0" />
-			</group>
+			<group targetFramework="net6.0" />
+			<group targetFramework="net8.0" />
 		</dependencies>
 	</metadata>
 	<dependencies>
 		<group targetFramework="net6.0">
-			<dependency id="NAudio.Lame" version="1.0.16" />
+			<dependency id="AAXClean" version="1.1.2" />
+			<dependency id="NAudio.Core" version="2.2.1" />
+			<dependency id="Microsoft.SourceLink.GitHub" version="8.0.0" />
+		</group>
+		<group targetFramework="net8.0">
+			<dependency id="AAXClean" version="1.1.2" />
+			<dependency id="NAudio.Core" version="2.2.1" />
+			<dependency id="Microsoft.SourceLink.GitHub" version="8.0.0" />
 		</group>
 	</dependencies>
 	<files>
@@ -39,6 +44,8 @@
 		<file src="AAXClean.Codecs.targets" target="build\AAXClean.Codecs.targets" />
 		<file src="src\AAXClean.Codecs\bin\Release\net6.0\NAudio.Lame.dll" target="lib\net6.0\NAudio.Lame.dll" />
 		<file src="src\AAXClean.Codecs\bin\Release\net6.0\AAXClean.Codecs.dll" target="lib\net6.0\AAXClean.Codecs.dll" />
+		<file src="src\AAXClean.Codecs\bin\Release\net8.0\NAudio.Lame.dll" target="lib\net8.0\NAudio.Lame.dll" />
+		<file src="src\AAXClean.Codecs\bin\Release\net8.0\AAXClean.Codecs.dll" target="lib\net8.0\AAXClean.Codecs.dll" />
 		
 		<file src="README.md" target="docs\" />
 		<file src="LICENSE.txt" target="LICENSE.txt" />
