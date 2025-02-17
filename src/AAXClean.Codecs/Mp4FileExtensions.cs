@@ -20,7 +20,7 @@ namespace AAXClean.Codecs
 				if (ffmpegaac != IntPtr.Zero)
 					return ffmpegaac;
 
-				var architecture = RuntimeInformation.OSArchitecture.ToString().ToLower();
+				var architecture = RuntimeInformation.ProcessArchitecture.ToString().ToLower();
 
 				var extension
 					= RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll"

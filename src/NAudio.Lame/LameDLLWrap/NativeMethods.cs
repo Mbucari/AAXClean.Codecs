@@ -61,7 +61,7 @@ namespace LameDLLWrap
 				if (libmp3lame != IntPtr.Zero)
 					return libmp3lame;
 
-				var architecture = RuntimeInformation.OSArchitecture.ToString().ToLower();
+				var architecture = RuntimeInformation.ProcessArchitecture.ToString().ToLower();
 
 				var extension
 					= RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll"
