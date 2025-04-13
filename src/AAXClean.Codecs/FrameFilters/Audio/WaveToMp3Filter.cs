@@ -1,6 +1,5 @@
 ﻿using AAXClean.FrameFilters;
 using NAudio.Lame;
-using System;
 using System.IO;
 using System.Threading.Tasks;
 

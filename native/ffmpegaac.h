@@ -52,6 +52,7 @@ typedef struct _AacEncoder {
     AVPacket* packet;
     AVFrame* frame;
     int32_t current_frame_nb_samples;
+    int32_t sample_size;
 }AacEncoder, * PAacEncoder;
 
 typedef struct _AacEncoderOptions {
@@ -83,9 +84,25 @@ audio in mono or stereo.
 * 
 * @return handle to the encoder instance, otherwise a negative error code.
 */
-EXPORT PVOID aacEncoder_Open(PAacEncoderOptions encoder_options);
+EXPORT PVOID AacEncoder_Open(PAacEncoderOptions encoder_options);
 
-EXPORT int32_t aacEncoder_Close(PAacEncoder config);
+/**
+* Get the audio specific config for the current encoder.
+*
+* @param config encoder handle
+*
+* @param ascBuffer a pointer to caller-allocated buffer to receive the ASC.
+*
+* @param pSize a pointer to the size of ascBuffer. On return, contains the size of the ASC blob
+*
+* @return 0 if ASC was successfully copied to the buffer. Returns the ASC size if the buffer was null or too small.
+*/
+
+EXPORT int32_t AacEncoder_GetExtraData(PAacEncoder config, uint8_t* ascBuffer, uint32_t* pSize);
+
+
+
+EXPORT int32_t AacEncoder_Close(PAacEncoder config);
 
 /**
 * Send AV_SAMPLE_FMT_FLTP audio samples to the encoder up to AAC_FRAME_SIZE samples.
@@ -102,7 +119,7 @@ EXPORT int32_t aacEncoder_Close(PAacEncoder config);
 samples before sending a full frame, returns the number of samples needed.
 Otherwise a negative error code.
 */
-EXPORT int32_t aacEncoder_EncodeFrame(PAacEncoder config, uint8_t* pDecodedAudio0, uint8_t* pDecodedAudio1, int32_t nbSamples);
+EXPORT int32_t AacEncoder_EncodeFrame(PAacEncoder config, uint8_t* pDecodedAudio0, uint8_t* pDecodedAudio1, int32_t nbSamples);
 
 /**
 * Receive and AAC-encoded audio frame. Must call first with outBuff null and
@@ -119,7 +136,7 @@ with NULL/0 then with an empty buffer to drain the encoder buffer.
 otherwise 0 if success or a negative error code.
 * 
 */
-EXPORT int32_t aacEncoder_ReceiveEncodedFrame(PAacEncoder config, uint8_t* outBuff, int32_t cbOutBuff);
+EXPORT int32_t AacEncoder_ReceiveEncodedFrame(PAacEncoder config, uint8_t* outBuff, int32_t cbOutBuff);
 /**
 * Flush all data in the encoder buffer and signal the end of encoding.
 * 
@@ -127,7 +144,7 @@ EXPORT int32_t aacEncoder_ReceiveEncodedFrame(PAacEncoder config, uint8_t* outBu
 * 
 * @return 0 is fuccess, otherwise a negative error code.
 */
-EXPORT int32_t aacEncoder_EncodeFlush(PAacEncoder config);
+EXPORT int32_t AacEncoder_EncodeFlush(PAacEncoder config);
 
 /**
 * Open an AAC-LC audio decoder instance.
@@ -136,8 +153,8 @@ EXPORT int32_t aacEncoder_EncodeFlush(PAacEncoder config);
 *
 * @return handle to the decoder instance
 */
-EXPORT PVOID aacDecoder_Open(PAacDecoderOptions decoder_options);
-EXPORT int32_t aacDecoder_Close(PAacDecoder config);
+EXPORT PVOID AacDecoder_Open(PAacDecoderOptions decoder_options);
+EXPORT int32_t AacDecoder_Close(PAacDecoder config);
 
 /**
 * Send a frame of AAC-LC audio to the decoder.
@@ -153,7 +170,7 @@ EXPORT int32_t aacDecoder_Close(PAacDecoder config);
 * @return 0 is success, otherwise a negative error code.
 * 
 */
-EXPORT int32_t aacDecoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize);
+EXPORT int32_t AacDecoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize);
 /**
 * Receive a decoded audio frame. Must call first with outBuff0 null and cbOutBuff 0
 to retrieve the size of the decoded frame. Call repeatedly, first with NULL/0 then
@@ -175,7 +192,7 @@ audio samples) of the decoded frame. Otherwise the number of samples actually
 decoded if positive, or a negative error code.
 *
 */
-EXPORT int32_t aacDecoder_ReceiveDecodedFrame(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, int32_t numSamples);
+EXPORT int32_t AacDecoder_ReceiveDecodedFrame(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, int32_t numSamples);
 /**
 * Flush all data in the decoder buffer and signal the end of decoding. Call aacDecoder_ReceiveDecodedFrame()
 with NULL/0 to get the maximum size of the buffer needed to drain the decoder.
@@ -191,4 +208,4 @@ audio. Unused for packet audio.
 *
 * @return the number of samples decoded, otherwise a negative error code.
 */
-EXPORT int32_t aacDecoder_DecodeFlush(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, uint32_t cbOutBuff);
+EXPORT int32_t AacDecoder_DecodeFlush(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, uint32_t cbOutBuff);

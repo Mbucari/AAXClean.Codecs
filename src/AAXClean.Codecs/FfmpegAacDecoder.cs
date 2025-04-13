@@ -140,16 +140,16 @@ namespace AAXClean.Codecs
 			private NativeAacDecode(DecoderHandle handle) => Handle = handle;
 
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern DecoderHandle aacDecoder_Open(AacDecoderOptions* decoder_options);
+			private static extern DecoderHandle AacDecoder_Open(AacDecoderOptions* decoder_options);
 
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int aacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize);
+			private static extern int AacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize);
 
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int aacDecoder_ReceiveDecodedFrame(DecoderHandle self, byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInBufferSize);
+			private static extern int AacDecoder_ReceiveDecodedFrame(DecoderHandle self, byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInBufferSize);
 
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int aacDecoder_DecodeFlush(DecoderHandle self, byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInBufferSize);
+			private static extern int AacDecoder_DecodeFlush(DecoderHandle self, byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInBufferSize);
 
 			public static NativeAacDecode Open(byte[] ASC, WaveFormat waveFormat)
 			{
@@ -164,10 +164,10 @@ namespace AAXClean.Codecs
 						sample_fmt = (int)waveFormat.Encoding,
 						ASC = asc
 					};
-					handle = aacDecoder_Open(&options);
+					handle = AacDecoder_Open(&options);
 				}
 
-				long err = (long)handle.DangerousGetHandle();
+				long err = handle.DangerousGetHandle();
 
 				if (err < 0)
 				{
@@ -179,21 +179,21 @@ namespace AAXClean.Codecs
 
 			public void Close() => Handle.Close();
 			public int DecodeFrame(byte* pCompressedAudio, int cbInputSize)
-				=> aacDecoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize);
+				=> AacDecoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize);
 			public int ReceiveDecodedFrame(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
-				=> aacDecoder_ReceiveDecodedFrame(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
+				=> AacDecoder_ReceiveDecodedFrame(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
 			public int DecodeFlush(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
-				=> aacDecoder_DecodeFlush(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
+				=> AacDecoder_DecodeFlush(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
 
 			private class DecoderHandle : SafeHandle
 			{
 				[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-				private static extern int aacDecoder_Close(IntPtr self);
+				private static extern int AacDecoder_Close(IntPtr self);
 				private DecoderHandle() : base(IntPtr.Zero, true) { }
 				public override bool IsInvalid => IsClosed || handle == IntPtr.Zero;
 				protected override bool ReleaseHandle()
 				{
-					aacDecoder_Close(handle);
+					AacDecoder_Close(handle);
 					return true;
 				}
 			}

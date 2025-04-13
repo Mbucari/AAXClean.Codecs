@@ -1,8 +1,8 @@
 #include "ffmpegaac.h"
 
-int32_t aacEncoder_EncodeFlush(PAacEncoder config) {
+int32_t AacEncoder_EncodeFlush(PAacEncoder config) {
 
-    int ret;
+    int32_t ret;
 
     if (config->current_frame_nb_samples) {
         //Send last partial frame
@@ -21,9 +21,9 @@ int32_t aacEncoder_EncodeFlush(PAacEncoder config) {
     else return ret;
 }
 
-int32_t aacEncoder_ReceiveEncodedFrame(PAacEncoder config, uint8_t* outBuff, int32_t cbOutBuff) {
+int32_t AacEncoder_ReceiveEncodedFrame(PAacEncoder config, uint8_t* outBuff, int32_t cbOutBuff) {
 
-    int ret;
+    int32_t ret;
 
     if (!outBuff && !cbOutBuff) {
         //Called with null, so receive packet and report size;
@@ -48,25 +48,25 @@ int32_t aacEncoder_ReceiveEncodedFrame(PAacEncoder config, uint8_t* outBuff, int
 
         return 0;
     }
-
 }
 
-int32_t aacEncoder_EncodeFrame(PAacEncoder config, uint8_t* pDecodedAudio0, uint8_t* pDecodedAudio1, int32_t nbSamples) {
+int32_t AacEncoder_EncodeFrame(PAacEncoder config, uint8_t* pDecodedAudio0, uint8_t* pDecodedAudio1, int32_t nbSamples) {
 
-    int i, ret;
-    int nb_available_samples = nbSamples + config->current_frame_nb_samples;
-    int remain_to_fill = AAC_FRAME_SIZE - config->current_frame_nb_samples;
-    int to_copy = min(nbSamples, remain_to_fill);
+    int32_t i, ret;
+    int32_t nb_available_samples = nbSamples + config->current_frame_nb_samples;
+    int32_t remain_to_fill = AAC_FRAME_SIZE - config->current_frame_nb_samples;
+    int32_t to_copy = min(nbSamples, remain_to_fill);
 
     uint8_t* inputBuff[2] = { pDecodedAudio0 , pDecodedAudio1 };
-
+    const int32_t num_planes = pDecodedAudio1 ? 2 : 1;
+	const int32_t bytes_per_sample = config->sample_size * config->context->ch_layout.nb_channels / num_planes;
 
     //Copy audio into the frame buffer from where we left off last time
-    for (i = 0; i < config->frame->ch_layout.nb_channels; i++) {
+    for (i = 0; i < num_planes; i++) {
         memcpy(
-            config->frame->data[i] + config->current_frame_nb_samples * sizeof(float),
+            config->frame->data[i] + config->current_frame_nb_samples * bytes_per_sample,
             inputBuff[i],
-            to_copy * sizeof(float));
+            to_copy * bytes_per_sample);
     }
 
     config->current_frame_nb_samples += to_copy;
@@ -85,11 +85,11 @@ int32_t aacEncoder_EncodeFrame(PAacEncoder config, uint8_t* pDecodedAudio0, uint
     //Copy the rest of the partial frame to the beginning of the frame buffer
     if (nb_available_samples > 0) {
 
-        for (i = 0; i < config->frame->ch_layout.nb_channels; i++) {
+        for (i = 0; i < num_planes; i++) {
             memcpy(
                 config->frame->data[i],
-                inputBuff[i] + to_copy * sizeof(float),
-                nb_available_samples * sizeof(float));
+                inputBuff[i] + to_copy * bytes_per_sample,
+                nb_available_samples * bytes_per_sample);
         }
 
         config->current_frame_nb_samples = nb_available_samples;
@@ -98,12 +98,11 @@ int32_t aacEncoder_EncodeFrame(PAacEncoder config, uint8_t* pDecodedAudio0, uint
     return 0;
 }
 
-int32_t aacEncoder_Close(PAacEncoder config) {
+int32_t AacEncoder_Close(PAacEncoder config) {
 
     if (config) {
         if (config->context) {
-            avcodec_close(config->context);
-            av_free(config->context);
+            avcodec_free_context(&config->context);
         }
         if (config->packet) {
             av_packet_free(&config->packet);
@@ -116,19 +115,35 @@ int32_t aacEncoder_Close(PAacEncoder config) {
     return ERR_SUCCESS;
 }
 
-PVOID aacEncoder_Open(PAacEncoderOptions encoder_options) {
+EXPORT int32_t AacEncoder_GetExtraData(PAacEncoder config, uint8_t* ascBuffer, uint32_t* pSize) {
+
+    int32_t ret;
+
+    if (!ascBuffer || !pSize || *pSize < config->context->extradata_size) {
+        ret = config->context->extradata_size;
+        goto failed;
+    }
+     memcpy(
+		ascBuffer,
+        config->context->extradata,
+		config->context->extradata_size);
+
+     *pSize = config->context->extradata_size;
+     return ERR_SUCCESS;
+
+failed:
+    if(pSize)
+        *pSize = 0;
+    return ret;
+}
+
+PVOID AacEncoder_Open(PAacEncoderOptions encoder_options) {
 
     PAacEncoder penc = NULL;
     AVCodec* codec;
     int ret = 0;
 
     if (!encoder_options) {
-        ret = -1;
-        goto failed;
-    }
-
-    // Aac encoder only supports AV_SAMPLE_FMT_FLTP
-    if (encoder_options->sample_fmt != AV_SAMPLE_FMT_FLTP) {
         ret = -1;
         goto failed;
     }
@@ -152,6 +167,17 @@ PVOID aacEncoder_Open(PAacEncoderOptions encoder_options) {
         goto failed;
     }
 
+    // Ffmpeg native aac encoder only supports AV_SAMPLE_FMT_FLTP
+    // FDK aac encoder only supports AV_SAMPLE_FMT_S16
+    if (strcmp(codec->name, "libfdk_aac") == 0 && encoder_options->sample_fmt == AV_SAMPLE_FMT_S16) {
+        penc->sample_size = sizeof(uint16_t);
+    } else if (strcmp(codec->name, "aac") == 0 && encoder_options->sample_fmt == AV_SAMPLE_FMT_FLTP) {
+        penc->sample_size = sizeof(float_t);
+    } else {
+        ret = -1;
+        goto failed;
+    }
+
     /*Initialize the codec context*/
     penc->context = avcodec_alloc_context3(codec);
     if (!penc->context) {
@@ -165,6 +191,7 @@ PVOID aacEncoder_Open(PAacEncoderOptions encoder_options) {
     penc->context->sample_rate = encoder_options->sample_rate;
     penc->context->sample_fmt = encoder_options->sample_fmt;
     penc->context->global_quality = encoder_options->global_quality;
+    penc->context->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     penc->context->ch_layout = encoder_options->channels == 2 ? (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO : (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
 
     ret = avcodec_open2(penc->context, codec, NULL);
@@ -202,7 +229,7 @@ PVOID aacEncoder_Open(PAacEncoderOptions encoder_options) {
 
 failed:
 
-    aacEncoder_Close(penc);
+    AacEncoder_Close(penc);
 
     return ret;
 }

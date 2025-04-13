@@ -256,7 +256,7 @@ namespace NAudio.Lame
 		public override long Position
 		{
 			get => 0;
-			set => throw new NotImplementedException(); 
+			set => throw new NotSupportedException(); 
 		}
 
 		/// <summary>Dummy Length.  Always 0.</summary>
@@ -393,24 +393,24 @@ namespace NAudio.Lame
 			return 0;
 		}
 
-		/// <summary>Reading not supported.  Throws NotImplementedException.</summary>
-		/// <param name="buffer"></param>
-		/// <param name="offset"></param>
-		/// <param name="count"></param>
-		/// <returns></returns>
-		public override int Read(byte[] buffer, int offset, int count)
-			=> throw new NotImplementedException();
+        /// <summary>Reading not supported.  Throws NotSupportedException.</summary>
+        /// <param name="buffer"></param>
+        /// <param name="offset"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public override int Read(byte[] buffer, int offset, int count)
+			=> throw new NotSupportedException();
 
-		/// <summary>Setting length not supported.  Throws NotImplementedException.</summary>
-		/// <param name="value">Length value</param>
-		public override void SetLength(long value)
-			=> throw new NotImplementedException();
+        /// <summary>Setting length not supported.  Throws NotSupportedException.</summary>
+        /// <param name="value">Length value</param>
+        public override void SetLength(long value)
+			=> throw new NotSupportedException();
 
-		/// <summary>Seeking not supported.  Throws NotImplementedException.</summary>
-		/// <param name="offset">Seek offset</param>
-		/// <param name="origin">Seek origin</param>
-		public override long Seek(long offset, SeekOrigin origin)
-			=> throw new NotImplementedException();
+        /// <summary>Seeking not supported.  Throws NotSupportedException.</summary>
+        /// <param name="offset">Seek offset</param>
+        /// <param name="origin">Seek origin</param>
+        public override long Seek(long offset, SeekOrigin origin)
+			=> throw new NotSupportedException();
 		#endregion
 
 		#region ID3 support
@@ -462,30 +462,33 @@ namespace NAudio.Lame
 				_lame.ID3SetAlbumArt(tag.AlbumArt);
 
 			byte[] data = _lame.ID3GetID3v2Tag();
-			_lame.ID3WriteTagAutomatic = false;
+			if (data is null)
+				_lame.ID3WriteTagAutomatic = true;
+			else
+            {
+                _lame.ID3WriteTagAutomatic = false;
+                using MemoryStream id3Stream = new(data);
+				var tag1 = ID3.Id3Tag.Create(id3Stream);
 
-
-			using MemoryStream id3Stream = new(data);
-			var tag1 = ID3.Id3Tag.Create(id3Stream);
-
-			//Write chapters if any
-			if (tag.Chapters.Count > 0)
-			{
-				int i = 0;
-				List<ID3.CHAPFrame> chaps = new();
-				var toc = new ID3.CTOCFrame(ID3.ChapterFlags.TopLevel | ID3.ChapterFlags.Ordered);
-				foreach (var c in tag.Chapters)
+				//Write chapters if any
+				if (tag.Chapters.Count > 0)
 				{
-					var chap = new ID3.CHAPFrame(c.start, c.end, i++, tag.Title);
-					toc.Add(chap);
-					chaps.Add(chap);
-				}
-				
-				tag1.Children.Add(toc);
-				tag1.Children.AddRange(chaps);
-			}
+					int i = 0;
+					List<ID3.CHAPFrame> chaps = new();
+					var toc = new ID3.CTOCFrame(ID3.ChapterFlags.TopLevel | ID3.ChapterFlags.Ordered);
+					foreach (var c in tag.Chapters)
+					{
+						var chap = new ID3.CHAPFrame(c.start, c.end, i++, tag.Title);
+						toc.Add(chap);
+						chaps.Add(chap);
+					}
 
-			tag1.Save(_outStream);
+					tag1.Children.Add(toc);
+					tag1.Children.AddRange(chaps);
+				}
+
+				tag1.Save(_outStream);
+			}
 		}
 
 		/// <summary>

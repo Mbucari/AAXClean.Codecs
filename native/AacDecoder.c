@@ -2,7 +2,7 @@
 
 #include <libswresample/swresample_internal.h>
 
-const int sampleFreqTable[13] =
+const uint32_t sampleFreqTable[13] =
 {
 96000,
 88200,
@@ -37,7 +37,7 @@ int32_t decode_audio(AVCodecContext* pAVContext, AVPacket* pavPacket, uint8_t* p
     return ret;
 }
 
-int32_t aacDecoder_ReceiveDecodedFrame(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, int32_t numSamples) {
+int32_t AacDecoder_ReceiveDecodedFrame(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, int32_t numSamples) {
     
     int32_t required_size = swr_get_out_samples(config->swr_ctx, config->frame->nb_samples);
 
@@ -58,7 +58,7 @@ int32_t aacDecoder_ReceiveDecodedFrame(PAacDecoder config, uint8_t* outBuff0, ui
     }
 }
 
-int32_t aacDecoder_DecodeFlush(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, uint32_t cbOutBuff)
+int32_t AacDecoder_DecodeFlush(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, uint32_t cbOutBuff)
 {
     if (!config || !config->context || !config->swr_ctx)
         return ERR_INVALID_HANDLE;
@@ -71,7 +71,7 @@ int32_t aacDecoder_DecodeFlush(PAacDecoder config, uint8_t* outBuff0, uint8_t* o
     return ret;
 }
 
-int32_t aacDecoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize)
+int32_t AacDecoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize)
 {
     if (!config || !config->context)
         return ERR_INVALID_HANDLE; 
@@ -82,7 +82,21 @@ int32_t aacDecoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, ui
     return ret;
 }
 
-PVOID aacDecoder_Open(PAacDecoderOptions decoder_options)
+void getConfigValues(uint8_t *asc, uint8_t* sample_index, uint8_t* channel_layout) {
+
+    const uint8_t AOT_ESCAPE = 0x1F;
+
+    if (*asc >> 3 == AOT_ESCAPE) {
+        *sample_index = (*(asc + 1) >> 1) & 0x1F;
+        *channel_layout = ((*(asc + 1) & 1) << 3) | (*(asc + 1) >> 5);
+    }
+    else {
+        *sample_index = ((*asc & 7) << 1) | (*(asc + 1) >> 7);
+        *channel_layout = (*(asc + 1) >> 3) & 0xF;
+    }
+}
+
+PVOID AacDecoder_Open(PAacDecoderOptions decoder_options)
 {
     PAacDecoder pdec = NULL;
     AVCodec* codec;
@@ -125,7 +139,7 @@ PVOID aacDecoder_Open(PAacDecoderOptions decoder_options)
     }
 
     pdec->context->extradata_size = decoder_options->asc_size;
-    pdec->context->extradata = malloc(pdec->context->extradata_size);
+    pdec->context->extradata = av_malloc(pdec->context->extradata_size);
 
     if (!pdec->context->extradata) {
         ret = ERR_ALLOC_FAIL;
@@ -134,15 +148,14 @@ PVOID aacDecoder_Open(PAacDecoderOptions decoder_options)
 
     memcpy(pdec->context->extradata, decoder_options->ASC, pdec->context->extradata_size);
 
-    uint8_t b1 = (uint8_t)*decoder_options->ASC;
-    uint8_t b2 = (uint8_t) * (decoder_options->ASC + 1);
-    int sample_rate_index = ((b1 & 7) << 1) | (b2 >> 7);
-    if (sample_rate_index < 0 || sample_rate_index > 12) {
+    uint8_t sample_rate_index, channel_layout;
+    getConfigValues(decoder_options->ASC, &sample_rate_index, &channel_layout);
+
+    if (sample_rate_index < 0 || sample_rate_index >= sizeof(sampleFreqTable) / sizeof(uint32_t)
+        || channel_layout > 2) {
         ret = ERR_ASC_INVALID;
         goto failed;
     }
-
-    int input_sample_rate = sampleFreqTable[sample_rate_index];
 
     if (avcodec_open2(pdec->context, pdec->context->codec, NULL) != 0) {
         ret = ERR_AAC_CODEC_OPEN_FAIL;
@@ -150,13 +163,14 @@ PVOID aacDecoder_Open(PAacDecoderOptions decoder_options)
     }
 
     /*Initialize the resampler*/
-
+    AVChannelLayout existingLayout = channel_layout == 2 ? (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO : (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     AVChannelLayout newLayout = decoder_options->channels == 2 ? (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO : (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
+    int input_sample_rate = sampleFreqTable[sample_rate_index];
 
     if (swr_alloc_set_opts2(
         &pdec->swr_ctx,
         &newLayout, decoder_options->sample_fmt, decoder_options->sample_rate,
-        &pdec->context->ch_layout, pdec->context->sample_fmt, input_sample_rate, 0, NULL) < 0) {
+        &existingLayout, pdec->context->sample_fmt, input_sample_rate, 0, NULL) < 0) {
         ret = ERR_SWR_INIT_FAIL;
         goto failed;
     }
@@ -182,16 +196,15 @@ PVOID aacDecoder_Open(PAacDecoderOptions decoder_options)
     return pdec;
 
 failed:
-    aacDecoder_Close(pdec);
+    AacDecoder_Close(pdec);
     return ret;
 }
 
-
-int32_t aacDecoder_Close(PAacDecoder pdec)
+int32_t AacDecoder_Close(PAacDecoder pdec)
 {
     if (pdec) {
         if (pdec->context) {
-            avcodec_close(pdec->context);
+            avcodec_free_context(&pdec->context);
             av_free(pdec->context);
         }
         if (pdec->swr_ctx) {

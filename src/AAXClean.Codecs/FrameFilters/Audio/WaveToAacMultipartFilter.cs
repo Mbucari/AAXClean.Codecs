@@ -58,7 +58,9 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			callback.EncodingOptions = encodingOptions;
 			NewFileCallback(callback);
 			encodingOptions = callback.EncodingOptions;
-			mp4writer = new Mp4aWriter(callback.OutputFile, ftyp, moov, waveFormat.SampleRate, waveFormat.Channels);
+            aacEncoder = new FfmpegAacEncoder(waveFormat, encodingOptions?.BitRate, encodingOptions?.EncoderQuality);
+			var ascBytes = aacEncoder.GetAudioSpecificConfig();
+            mp4writer = new Mp4aWriter(callback.OutputFile, ftyp, moov, ascBytes);
 			currentWriterOpen = true;
 			framesInCurrentChunk = 0;
 			mp4writer.RemoveTextTrack();
@@ -70,7 +72,6 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 					tags.Tracks = (callback.TrackNumber.Value, callback.TrackCount.Value);
 				tags.Title = callback.TrackTitle ?? tags.Title;
 			}
-			aacEncoder = new FfmpegAacEncoder(waveFormat, encodingOptions?.BitRate, encodingOptions?.EncoderQuality);
 		}
 
 		protected override void Dispose(bool disposing)

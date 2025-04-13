@@ -10,40 +10,48 @@
 		<projectUrl>https://github.com/Mbucari/AAXClean.Codecs</projectUrl>
 		<Tags>Audible AAC AAXC m4b mp3 audiobook</Tags>
 		<language>en-US</language>
-		<readme>docs\README.md</readme>	
+		<readme>docs\README.md</readme>
 		<license type="file">LICENSE.txt</license>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<dependencies>
 			<group targetFramework="net9.0">
-				<dependency id="AAXClean" version="1.1.4" />
+				<dependency id="AAXClean" version="2.0.0.1" />
 				<dependency id="NAudio.Core" version="2.2.1" />
 			</group>
 			<group targetFramework="net8.0">
-				<dependency id="AAXClean" version="1.1.4" />
+				<dependency id="AAXClean" version="2.0.0.1" />
 				<dependency id="NAudio.Core" version="2.2.1" />
 			</group>
 		</dependencies>
 	</metadata>
 	<dependencies>
 		<group targetFramework="net9.0">
-			<dependency id="NAudio.Lame" version="1.0.18" />
+			<dependency id="NAudio.Lame" version="1.0.19" />
 		</group>
 		<group targetFramework="net8.0">
-			<dependency id="NAudio.Lame" version="1.0.18" />
+			<dependency id="NAudio.Lame" version="1.0.19" />
 		</group>
 	</dependencies>
 	<files>
-		<file src="native\ffmpegaac.arm64.dylib" target="build\ffmpegaac.arm64.dylib" />
-		<file src="native\ffmpegaac.x64.dylib" target="build\ffmpegaac.x64.dylib" />
-		<file src="native\ffmpegaac.x64.so" target="build\ffmpegaac.x64.so" />
-		<file src="native\ffmpegaac.x64.dll" target="build\ffmpegaac.x64.dll" />
-		<file src="native\ffmpegaac.x86.dll" target="build\ffmpegaac.x86.dll" />
-		<file src="native\libmp3lame.arm64.dylib" target="build\libmp3lame.arm64.dylib" />
-		<file src="native\libmp3lame.x64.dylib" target="build\libmp3lame.x64.dylib" />
-		<file src="native\libmp3lame.x64.so" target="build\libmp3lame.x64.so" />
-		<file src="native\libmp3lame.x64.dll" target="build\libmp3lame.x64.dll" />
-		<file src="native\libmp3lame.x86.dll" target="build\libmp3lame.x86.dll" />
-		<file src="AAXClean.Codecs.targets" target="build\AAXClean.Codecs.targets" />
+		<file src="native/runtimes/linux-x64/native/ffmpegaac.so" target="runtimes/linux-x64/native/ffmpegaac.so" />
+		<file src="native/runtimes/linux-arm64/native/ffmpegaac.so" target="runtimes/linux-arm64/native/ffmpegaac.so" />
+		<file src="native/runtimes/linux-x64/native/libmp3lame.so" target="runtimes/linux-x64/native/libmp3lame.so" />
+		<file src="native/runtimes/linux-arm64/native/libmp3lame.so" target="runtimes/linux-arm64/native/libmp3lame.so" />
+		
+		<file src="native/runtimes/osx-x64/native/ffmpegaac.dylib" target="runtimes/osx-x64/native/ffmpegaac.dylib" />
+		<file src="native/runtimes/osx-arm64/native/ffmpegaac.dylib" target="runtimes/osx-arm64/native/ffmpegaac.dylib" />
+		<file src="native/runtimes/osx-x64/native/libmp3lame.dylib" target="runtimes/osx-x64/native/libmp3lame.dylib" />
+		<file src="native/runtimes/osx-arm64/native/libmp3lame.dylib" target="runtimes/osx-arm64/native/libmp3lame.dylib" />
+		
+		<file src="native/runtimes/win-x64/native/ffmpegaac.dll" target="runtimes/win-x64/native/ffmpegaac.dll" />
+		<file src="native/runtimes/win-x86/native/ffmpegaac.dll" target="runtimes/win-x86/native/ffmpegaac.dll" />
+		<file src="native/runtimes/win-x64/native/libmp3lame.dll" target="runtimes/win-x64/native/libmp3lame.dll" />
+		<file src="native/runtimes/win-x86/native/libmp3lame.dll" target="runtimes/win-x86/native/libmp3lame.dll" />
+		
+		<file src="src\AAXClean.Codecs\bin\Release\net9.0\NAudio.Lame.dll" target="runtimes/any/lib/net9.0/NAudio.Lame.dll" />
+		<file src="src\AAXClean.Codecs\bin\Release\net9.0\AAXClean.Codecs.dll" target="runtimes/any/lib/net9.0/AAXClean.Codecs.dll" />
+		<file src="src\AAXClean.Codecs\bin\Release\net8.0\NAudio.Lame.dll" target="runtimes/any/lib/net8.0/NAudio.Lame.dll" />
+		<file src="src\AAXClean.Codecs\bin\Release\net8.0\AAXClean.Codecs.dll" target="runtimes/any/lib/net8.0/AAXClean.Codecs.dll" />
 		<file src="src\AAXClean.Codecs\bin\Release\net9.0\NAudio.Lame.dll" target="lib\net9.0\NAudio.Lame.dll" />
 		<file src="src\AAXClean.Codecs\bin\Release\net9.0\AAXClean.Codecs.dll" target="lib\net9.0\AAXClean.Codecs.dll" />
 		<file src="src\AAXClean.Codecs\bin\Release\net8.0\NAudio.Lame.dll" target="lib\net8.0\NAudio.Lame.dll" />

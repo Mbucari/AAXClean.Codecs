@@ -52,39 +52,6 @@ namespace LameDLLWrap
 	internal static class NativeMethods
 	{
 		const string libname = @"libmp3lame";
-		private static IntPtr libmp3lame;
-
-		private static IntPtr DllImportResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
-		{
-			if (libraryName == libname)
-			{
-				if (libmp3lame != IntPtr.Zero)
-					return libmp3lame;
-
-				var architecture = RuntimeInformation.ProcessArchitecture.ToString().ToLower();
-
-				var extension
-					= RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll"
-					: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "so"
-					: "dylib";
-
-				var platformLibName = $"{libraryName}.{architecture}.{extension}";
-
-				if (NativeLibrary.TryLoad(platformLibName, assembly, searchPath, out libmp3lame) ||
-					NativeLibrary.TryLoad(libraryName, assembly, searchPath, out libmp3lame))
-					return libmp3lame;
-				else
-					throw new PlatformNotSupportedException($"Could not load {libraryName} or {platformLibName}");
-			}
-
-			// Otherwise, fallback to default import resolver.
-			return IntPtr.Zero;
-		}
-
-		static NativeMethods()
-		{
-			NativeLibrary.SetDllImportResolver(System.Reflection.Assembly.GetExecutingAssembly(), DllImportResolver);
-		}
 
 #pragma warning disable IDE1006 // Naming Styles
 

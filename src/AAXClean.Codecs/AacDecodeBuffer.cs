@@ -150,7 +150,7 @@ namespace AAXClean.Codecs
 						};
 
 						Mp4File.InputStream.Position = frameOffset;
-						Mp4File.InputStream.Read(frameEntry.FrameData.Span);
+                        _ = Mp4File.InputStream.Read(frameEntry.FrameData.Span);
 
 						var decryptedAac = _readAac.PerformFiltering(frameEntry);
 						var waveEntry = _aacToWave.PerformFiltering(decryptedAac);

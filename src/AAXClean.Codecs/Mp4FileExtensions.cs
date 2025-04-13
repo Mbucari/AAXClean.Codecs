@@ -12,38 +12,6 @@ namespace AAXClean.Codecs
 {
 	public static class Mp4FileExtensions
 	{
-		private static IntPtr ffmpegaac;
-		private static IntPtr DllImportResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
-		{
-			if (libraryName == FfmpegAacDecoder.libname)
-			{
-				if (ffmpegaac != IntPtr.Zero)
-					return ffmpegaac;
-
-				var architecture = RuntimeInformation.ProcessArchitecture.ToString().ToLower();
-
-				var extension
-					= RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll"
-					: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "so"
-					: "dylib";
-
-				var platformLibName = $"{libraryName}.{architecture}.{extension}";
-
-				if (NativeLibrary.TryLoad(platformLibName, assembly, searchPath, out ffmpegaac) ||
-					NativeLibrary.TryLoad(libraryName, assembly, searchPath, out ffmpegaac))
-					return ffmpegaac;
-				else
-					throw new PlatformNotSupportedException($"Could not load {libraryName} or {platformLibName}");
-			}
-
-			// Otherwise, fallback to default import resolver.
-			return IntPtr.Zero;
-		}
-
-		static Mp4FileExtensions()
-		{
-			NativeLibrary.SetDllImportResolver(System.Reflection.Assembly.GetExecutingAssembly(), DllImportResolver);
-		}
 
 		public static void Load() { }
 
@@ -83,7 +51,7 @@ namespace AAXClean.Codecs
 			if (outputStream.CanWrite is false) throw new ArgumentException("output stream is not writable", nameof(outputStream));
 
 			lameConfig ??= mp4File.GetDefaultLameConfig();
-			lameConfig.ID3 ??= mp4File.AppleTags.ToIDTags();
+			lameConfig.ID3 ??= mp4File.AppleTags?.ToIDTags() ?? new();
 
 			if (!lameConfig.ID3.Chapters.Any() && userChapters is not null)
 			{
@@ -98,7 +66,7 @@ namespace AAXClean.Codecs
 
 			AacToWave filter2 = new(
 				mp4File.AscBlob,
-				WaveFormatEncoding.IeeeFloat,
+				WaveFormatEncoding.Pcm,
 				sampleRate,
 				stereo);
 
@@ -141,7 +109,7 @@ namespace AAXClean.Codecs
 
 			AacToWave filter2 = new(
 				mp4File.AscBlob,
-				WaveFormatEncoding.Dts,
+				WaveFormatEncoding.Pcm,
 				sampleRate,
 				stereo);
 
@@ -224,7 +192,7 @@ namespace AAXClean.Codecs
 			if (newFileCallback is null) throw new ArgumentNullException(nameof(newFileCallback));
 
 			lameConfig ??= mp4File.GetDefaultLameConfig();
-			lameConfig.ID3 ??= mp4File.AppleTags.ToIDTags();
+			lameConfig.ID3 ??= mp4File.AppleTags?.ToIDTags() ?? new();
 
 			var stereo = lameConfig.Mode is not NAudio.Lame.MPEGMode.Mono;
 			var sampleRate = mp4File.GetMaxSampleRate((SampleRate?)lameConfig.OutputSampleRate);
@@ -255,12 +223,15 @@ namespace AAXClean.Codecs
 		{
 			if (mp4File is null) throw new ArgumentNullException(nameof(mp4File));
 
-			NAudio.Lame.LameConfig lameConfig = new NAudio.Lame.LameConfig
+			//USAC is much more efficient than LC, so allow double the bitrate when transcoding
+			var USAC_Scaler = mp4File.AudioObjectType == 42 ? 2 : 1;
+
+            NAudio.Lame.LameConfig lameConfig = new NAudio.Lame.LameConfig
 			{
-				ABRRateKbps = (int)Math.Round(mp4File.AverageBitrate / 1024d / mp4File.AudioChannels),
+				ABRRateKbps = (int)Math.Round(mp4File.AverageBitrate / 1024d / mp4File.AudioChannels * USAC_Scaler),
 				Mode = NAudio.Lame.MPEGMode.Mono,
 				VBR = NAudio.Lame.VBRMode.ABR,
-				ID3 = mp4File.AppleTags.ToIDTags()
+				ID3 = mp4File.AppleTags?.ToIDTags() ?? new()
 			};
 			return lameConfig;
 		}
