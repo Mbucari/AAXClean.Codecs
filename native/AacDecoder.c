@@ -20,12 +20,9 @@ const uint32_t sampleFreqTable[13] =
 };
 
 
-int32_t decode_audio(AVCodecContext* pAVContext, AVPacket* pavPacket, uint8_t* pCompressedAudio, uint32_t cbInBufferSize, AVFrame* pDecodedFrame)
+int32_t decode_audio(AVCodecContext* pAVContext, AVPacket* pavPacket, AVFrame* pDecodedFrame)
 {
     int ret;
-
-    pavPacket->size = cbInBufferSize; //input buffer size
-    pavPacket->data = pCompressedAudio; // the input bufferra
 
     /* send the packet with the compressed data to the decoder */
     ret = avcodec_send_packet(pAVContext, pavPacket);
@@ -33,24 +30,32 @@ int32_t decode_audio(AVCodecContext* pAVContext, AVPacket* pavPacket, uint8_t* p
         return ret;
 
     ret = avcodec_receive_frame(pAVContext, pDecodedFrame);
-
     return ret;
 }
 
 int32_t AacDecoder_ReceiveDecodedFrame(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, int32_t numSamples) {
     
-    int32_t required_size = swr_get_out_samples(config->swr_ctx, config->frame->nb_samples);
+    int32_t required_size = swr_get_out_samples(config->swr_ctx, config->nb_samples);
 
     if (!outBuff0 && !numSamples)
         return required_size;
-    else if (!config->frame->nb_samples || required_size < numSamples)
+    else if (!config->nb_samples || required_size < numSamples)
         return -1;
     else {
 
         uint8_t* convertedData[2] = { outBuff0 , outBuff1 };
         int decoded = swr_convert(config->swr_ctx,
             convertedData, numSamples,
-            config->frame->data, config->frame->nb_samples);
+            config->data, config->nb_samples);
+
+        if (config->use_temp_buffer) {
+			for (int i = 0; i < AV_NUM_DATA_POINTERS && config->data[i]; i++) {
+				if (config->data[i]) {
+					free(config->data[i]);
+					config->data[i] = NULL;
+				}
+			}
+        }
 
         if (decoded < 0)
             return -1;
@@ -71,14 +76,43 @@ int32_t AacDecoder_DecodeFlush(PAacDecoder config, uint8_t* outBuff0, uint8_t* o
     return ret;
 }
 
-int32_t AacDecoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize)
+int32_t AacDecoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize, uint32_t nbSamples)
 {
     if (!config || !config->context)
         return ERR_INVALID_HANDLE; 
  
     int ret = 0;
 
-    ret = decode_audio(config->context, config->packet, pCompressedAudio, cbInBufferSize, config->frame);    
+    config->packet->size = cbInBufferSize; //input buffer size
+    config->packet->data = pCompressedAudio; // the input buffer
+	config->packet->duration = nbSamples; //number of samples in the decoded frame
+
+    ret = decode_audio(config->context, config->packet, config->frame);
+	if (ret == 0) {
+        if (config->frame->nb_samples >= nbSamples) {
+            config->use_temp_buffer = 0;
+            for (int i = 0; i < AV_NUM_DATA_POINTERS && config->frame->data[i]; i++) {
+                config->data[i] = config->frame->data[i];
+            }
+        }
+        else {
+            //The frame is supposed to be longer, so pad the end with silence
+            int size = av_get_bytes_per_sample(config->swr_ctx->in_sample_fmt) * config->swr_ctx->in_ch_layout.nb_channels;
+            config->use_temp_buffer = 1;
+            for (int i = 0; i < AV_NUM_DATA_POINTERS && config->frame->data[i]; i++) {
+				size_t sampleBytes = size * nbSamples;
+				config->data[i] = malloc(sampleBytes);
+				if (!config->data[i]) {
+					ret = ERR_ALLOC_FAIL;
+                }
+                else {
+                    memset(config->data[i], 0, sampleBytes);
+                    memcpy(config->data[i], config->frame->data[i], config->frame->linesize[i]);
+                }
+            }
+        }
+        config->nb_samples = nbSamples;
+	}
     return ret;
 }
 
@@ -123,6 +157,9 @@ PVOID AacDecoder_Open(PAacDecoderOptions decoder_options)
     pdec->swr_ctx = NULL;
     pdec->packet = NULL;
     pdec->frame = NULL;
+	for (int i = 0; i < AV_NUM_DATA_POINTERS; i++) {
+		pdec->data[i] = NULL;
+	}
 
     codec = avcodec_find_decoder(AV_CODEC_ID_AAC);
 

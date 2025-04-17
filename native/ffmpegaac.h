@@ -37,6 +37,9 @@ typedef struct _AacDecoder {
     SwrContext* swr_ctx;
     AVPacket* packet;
     AVFrame* frame;
+    int64_t use_temp_buffer;
+    int nb_samples;
+    uint8_t* data[AV_NUM_DATA_POINTERS];
 }AacDecoder, * PAacDecoder;
 
 typedef struct _AacDecoderOptions {
@@ -167,10 +170,12 @@ EXPORT int32_t AacDecoder_Close(PAacDecoder config);
 * 
 * @param cbInBufferSize The size, in bytes, of the AAC audio frame.
 * 
+* @param nbSamples The number of samples in the decoded audio frame.
+* 
 * @return 0 is success, otherwise a negative error code.
 * 
 */
-EXPORT int32_t AacDecoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize);
+EXPORT int32_t AacDecoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize, uint32_t nbSamples);
 /**
 * Receive a decoded audio frame. Must call first with outBuff0 null and cbOutBuff 0
 to retrieve the size of the decoded frame. Call repeatedly, first with NULL/0 then

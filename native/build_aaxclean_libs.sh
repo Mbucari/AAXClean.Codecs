@@ -2,11 +2,7 @@
 
 OS=$(uname -s)
 ARCH=$(uname -m)
-if [ $ARCH = "x86_64" ]; then
-  ARCHITECTURE_NAME=x64
-elif [[ "$ARCH" =~ ^(arm64|aarch64)$ ]]; then
-  ARCHITECTURE_NAME=arm64
-else
+if [[ ! "$ARCH" =~ ^(x86_64|arm64|aarch64)$ ]]; then
   echo "Unknown architecture: $ARCH"
   exit 1
 fi
@@ -40,7 +36,7 @@ if [ $OS = Linux ]; then
   else
     sudo apt-get install gcc make perl pkg-config yasm autoconf libtool
   fi
-  LIB_EXTENSION=$ARCHITECTURE_NAME.so
+  LIB_EXTENSION=so
   NUM_CPUS=$(nproc)
 elif [ $OS = Darwin ]; then
   if ! command -v brew &> /dev/null; then
@@ -48,10 +44,23 @@ elif [ $OS = Darwin ]; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   fi
   #brew install gcc perl pkg-config yasm
-  LIB_EXTENSION=$ARCHITECTURE_NAME.dylib
+  LIB_EXTENSION=dylib
   NUM_CPUS=$(sysctl -n hw.physicalcpu)
+elif [[ $OS =~ MINGW64.* ]]; then
+  OS=Windows
+  #pacman -S gcc make perl pkg-config yasm autoconf libtool unzip
+  LIB_EXTENSION=dll
+  NUM_CPUS=$(nproc)
+  ARCH=x64
+elif [[ $OS =~ MINGW32.* ]]; then
+  OS=Windows
+  #pacman -S gcc make perl pkg-config yasm autoconf libtool unzip
+  LIB_EXTENSION=dll
+  NUM_CPUS=$(nproc)
+  ARCH=x86
 else
   echo "Unknown OS: '$OS'"
+  exit 1
 fi
 
 FDK_NAME=fdk-aac-master
@@ -60,8 +69,8 @@ FDK_INSTALL=$THIS_DIR/libfdk
 if [ ! -d "$FDK_MAIN" ]; then
   download_file $FDK_NAME.zip "https://github.com/mstorsjo/fdk-aac/archive/refs/heads/master.zip"
   echo "Extracting $FDK_NAME.zip"
-  unzip -o ./$FDK_NAME.zip &> /dev/null;
-  rm $FDK_NAME.zip &> /dev/null;
+  unzip -o ./$FDK_NAME.zip
+  rm $FDK_NAME.zip
 fi
 
 if ! [ -f "$FDK_INSTALL/lib/libfdk-aac.a" ]; then
@@ -74,25 +83,25 @@ if ! [ -f "$FDK_INSTALL/lib/libfdk-aac.a" ]; then
   cd $THIS_DIR
 fi
 
+
 FFMPEG_NAME=ffmpeg-$FFMPEG_VER
 FFMPEG_MAIN=$THIS_DIR/$FFMPEG_NAME
 if [ ! -d "$FFMPEG_MAIN" ]; then
   download_file $FFMPEG_NAME.tar.xz "https://ffmpeg.org/releases/$FFMPEG_NAME.tar.xz"
   echo "Extracting $FFMPEG_NAME.tar.xz"
-  tar -xf ./$FFMPEG_NAME.tar.xz &> /dev/null;
-  rm $FFMPEG_NAME.tar.xz &> /dev/null;
+  tar -xf ./$FFMPEG_NAME.tar.xz
+  rm $FFMPEG_NAME.tar.xz
 fi
 
 if ! [ -f "$FFMPEG_MAIN/libavcodec/libavcodec.a" ]; then
   echo "Building $FFMPEG_NAME"
   cd $FFMPEG_MAIN
   export PKG_CONFIG_PATH=$FDK_INSTALL/lib/pkgconfig
-  ./configure --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac 1> /dev/null;
-  make &> /dev/null;
+  ./configure --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac
+  make
   cd $THIS_DIR
 fi
 
-echo "Building ffmpegaac"
 FFMPEGAAC_MAIN=$THIS_DIR/ffmpegaac
 if [ ! -d "$FFMPEGAAC_MAIN" ]; then
   mkdir $FFMPEGAAC_MAIN
@@ -105,16 +114,19 @@ if [ ! -d "$FFMPEGAAC_MAIN" ]; then
 fi
 
 if ! [ -f "ffmpegaac.$LIB_EXTENSION" ]; then
+  echo "Building ffmpegaac"
   cd $FFMPEGAAC_MAIN
   if [ $OS = Darwin ]; then
     gcc -fPIC -v -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN -I./ 1> /dev/null;
-    gcc -dynamiclib -shared -fPIC -Wl,-v -o ffmpegaac.dylib AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$FDK_INSTALL/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices 1> /dev/null;
-    mv ffmpegaac.dylib $THIS_DIR/ffmpegaac.$LIB_EXTENSION
-  else
+    gcc -dynamiclib -shared -static -fPIC -Wl,-v -o ffmpegaac.dylib AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$FDK_INSTALL/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices 1> /dev/null;
+  elif [ $OS = Linux ]; then
     gcc -fPIC -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN -I./ 1> /dev/null;
-    gcc -pthread -shared -fPIC -Wl,-Bsymbolic -Wl,--no-undefined -Wl,-soname,ffmpegaac.so.2 -o ffmpegaac.so AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$FDK_INSTALL/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lm -lrt 1> /dev/null;
-    mv ffmpegaac.so $THIS_DIR/ffmpegaac.$LIB_EXTENSION
+    gcc -pthread -shared -static -fPIC -Wl,-Bsymbolic -Wl,--no-undefined -Wl,-soname,ffmpegaac.so.2 -o ffmpegaac.so AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$FDK_INSTALL/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lm -lrt 1> /dev/null;
+  else
+    gcc -static -fPIC -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN -I./ 1> /dev/null;
+    gcc -shared -static -fPIC -o ffmpegaac.dll AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$FDK_INSTALL/lib -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lbcrypt
   fi
+  mv ffmpegaac.$LIB_EXTENSION $THIS_DIR/ffmpegaac.$LIB_EXTENSION
   cd $THIS_DIR
 fi
 
@@ -131,10 +143,12 @@ fi
 if ! [ -f "$LAME_LIB_DIR/libmp3lame.a" ]; then
   if [ $ARCH = "arm64" ]; then
     LAME_ARCH=arm
+  elif [ $ARCH = "x64" ]; then  
+    LAME_ARCH="x86_64"
   else
     LAME_ARCH=$ARCH
   fi
-  echo "Building $LAME_NAME"
+  echo "Building $LAME_NAME-$LAME_ARCH"
   cd $LAME_MAIN
   ./configure --disable-decoder --disable-frontend --host="$LAME_ARCH"
   make CFLAGS='-fPIC -O3' CPPFLAGS="-DNDEBUG"
@@ -143,15 +157,15 @@ fi
 cd $LAME_LIB_DIR
 if [ $OS = Darwin ]; then
   gcc -dynamiclib -shared -fPIC -Wl,-v,-force_load libmp3lame.a -o libmp3lame.dylib &> /dev/null;
-  mv libmp3lame.dylib $THIS_DIR/libmp3lame.$LIB_EXTENSION
+elif [ $OS = Linux ]; then
+  gcc -shared -fPIC -Wl,-v -Wl,--whole-archive libmp3lame.a -o libmp3lame.$LIB_EXTENSION -Wl,--no-whole-archive -lm
 else
-  gcc -shared -fPIC -Wl,-v -Wl,--whole-archive libmp3lame.a -o libmp3lame.so -Wl,--no-whole-archive -lm &> /dev/null;
-  mv libmp3lame.so $THIS_DIR/libmp3lame.$LIB_EXTENSION
+  gcc -shared -fPIC -Wl,-v -Wl,--whole-archive libmp3lame.a -o libmp3lame.$LIB_EXTENSION -Wl,--no-whole-archive -lm
 fi
+mv libmp3lame.$LIB_EXTENSION $THIS_DIR/libmp3lame.$LIB_EXTENSION
 
 cd $THIS_DIR
-echo "OS=$OS"
 
-tar -cvzf aaxclean_native_libs_${OS}_$ARCHITECTURE_NAME.tar.gz libmp3lame.$LIB_EXTENSION ffmpegaac.$LIB_EXTENSION
+tar -cvzf aaxclean_native_libs_${OS}_$ARCH.tar.gz libmp3lame.$LIB_EXTENSION ffmpegaac.$LIB_EXTENSION
 
 echo "Done!"
