@@ -30,7 +30,7 @@ namespace NAudio.Lame.ID3
 			Description = ReadNullTerminatedString(file, textEncoding == 1);
 			Type = (byte)file.ReadByte();
 			Image = new byte[(int)(startPos + header.Size - file.Position)];
-			file.Read(Image);
+			file.ReadExactly(Image);
 		}
 
 		public override void Render(Stream file)

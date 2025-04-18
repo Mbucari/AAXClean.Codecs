@@ -5,19 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace AAXClean.Codecs
 {
 	public static class Mp4FileExtensions
 	{
-
-		public static void Load() { }
-
-		public static AacWaveStream GetWaveStream(this Mp4File mp4File, TimeSpan bufferTime)
-			=> new(new AacDecodeBuffer(mp4File, bufferTime));
-
 		public static Mp4Operation<List<SilenceEntry>> DetectSilenceAsync(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null)
 		{
 			if (mp4File is null) throw new ArgumentNullException(nameof(mp4File));
@@ -226,7 +219,7 @@ namespace AAXClean.Codecs
 			//USAC is much more efficient than LC, so allow double the bitrate when transcoding
 			var USAC_Scaler = mp4File.AudioObjectType == 42 ? 2 : 1;
 
-            NAudio.Lame.LameConfig lameConfig = new NAudio.Lame.LameConfig
+			NAudio.Lame.LameConfig lameConfig = new NAudio.Lame.LameConfig
 			{
 				ABRRateKbps = (int)Math.Round(mp4File.AverageBitrate / 1024d / mp4File.AudioChannels * USAC_Scaler),
 				Mode = NAudio.Lame.MPEGMode.Mono,

@@ -50,7 +50,7 @@ namespace NAudio.Lame.ID3
 		public static string ReadSizeString(Stream file, bool unicode, int bytes)
 		{
 			var buff= new byte[bytes];
-			file.Read(buff);
+			file.ReadExactly(buff);
 
 			return (unicode ? Encoding.Unicode : Encoding.ASCII).GetString(buff);
 		}
@@ -61,11 +61,11 @@ namespace NAudio.Lame.ID3
 			if (unicode)
 			{
 				var blob = new byte[2];
-				file.Read(blob);
+				file.ReadExactly(blob);
 				while (blob[0] != 0 || blob[1] != 0)
 				{
 					lst.AddRange(blob);
-					file.Read(blob);
+					file.ReadExactly(blob);
 				}
 				return Encoding.Unicode.GetString(lst.ToArray());
 			}

@@ -11,46 +11,52 @@ namespace AAXClean.Codecs
 		internal const string libname = FfmpegAacDecoder.libname;
 		public WaveFormat WaveFormat { get; }
 		private readonly NativeAacEncode aacEncoder;
-		private readonly Memory<byte> buffer;
 		private const int AAC_SAMPLES_PER_FRAME = 1024;
 		public byte[] GetAudioSpecificConfig() => aacEncoder.GetAudioSpecificConfig();
 
-        public FfmpegAacEncoder(WaveFormat inputWaveFormat, long? bitRate, double? quality)
+		public FfmpegAacEncoder(WaveFormat inputWaveFormat, long? bitRate, double? quality)
 		{
+			if (inputWaveFormat.Channels > 2)
+				throw new ArgumentException("AAC encoder only supports mono or stereo wave formats.", nameof(inputWaveFormat));
+			if (inputWaveFormat.Encoding != NAudio.Wave.WaveFormatEncoding.Pcm)
+				throw new ArgumentException("AAC encoder only supports PCM wave formats.", nameof(inputWaveFormat));
+
 			WaveFormat = inputWaveFormat;
-			buffer = new byte[AAC_SAMPLES_PER_FRAME * WaveFormat.BlockAlign];
 			aacEncoder = NativeAacEncode.Open(WaveFormat, bitRate ?? 0, quality ?? 0);
 		}
 
 		public IEnumerable<FrameEntry> EncodeWave(WaveEntry input)
 		{
-			if (input.SamplesInFrame > AAC_SAMPLES_PER_FRAME)
-				throw new Exception($"Maximum number of samples that can be sent to the encoder at one time is {AAC_SAMPLES_PER_FRAME}");
+			int startIndex = 0;
+			var frameSize = (int)input.SamplesInFrame;
 
-			int samplesNeeded
-				= WaveFormat.Encoding is NAudio.Wave.WaveFormatEncoding.Dts && WaveFormat.Channels == 2
-				? SendSamplesPlanarStereo(input.FrameData.Span, input.FrameData2.Span, (int)input.SamplesInFrame)
-				: SendSamples(input.FrameData.Span, (int)input.SamplesInFrame);
-
-            if (samplesNeeded > 0) yield break;
-
-			do
+			//It's possible that a frame may be larger than AAC_SAMPLES_PER_FRAME
+			//Send a maximum of AAC_SAMPLES_PER_FRAME at a time to the encoder.
+			while (frameSize > 0)
 			{
-				int encodedSize = GetAvailableFrameSize();
+				int toSend = Math.Min(frameSize, AAC_SAMPLES_PER_FRAME);
 
-				if (encodedSize < 0)
-					throw new Exception("Failed to retrieve encoded samples.");
-				else if (encodedSize == 0) yield break;
+				int samplesNeeded = SendSamples(input.FrameData.Slice(startIndex, toSend).Span, toSend);
+				startIndex += toSend;
+				frameSize -= toSend;
 
-				Memory<byte> encAud = GetEncodedFrame(encodedSize);
-				yield return new FrameEntry
+				if (samplesNeeded == 0)
 				{
-					Chunk = input.Chunk,
-					FrameIndex = input.FrameIndex,
-					SamplesInFrame = AAC_SAMPLES_PER_FRAME,
-					FrameData = encAud
-				};
-			} while (true);
+					int encodedSize;
+					while ((encodedSize = GetAvailableFrameSize()) > 0)
+					{
+						Memory<byte> encAud = GetEncodedFrame(encodedSize);
+						yield return new FrameEntry
+						{
+							Chunk = input.Chunk,
+							SamplesInFrame = AAC_SAMPLES_PER_FRAME,
+							FrameData = encAud
+						};
+					}
+					if (encodedSize < 0)
+						throw new Exception("Failed to retrieve encoded samples.");
+				}
+			}
 		}
 
 		public IEnumerable<FrameEntry> EncodeFlush()
@@ -80,10 +86,10 @@ namespace AAXClean.Codecs
 		private int SendSamples(Span<byte> frameData, int numSamples)
 		{
 			int ret;
-			fixed(byte* buffer1 = frameData)
-            {
-                ret = aacEncoder.EncodeFrame(buffer1, null, numSamples);
-            }
+			fixed (byte* buffer1 = frameData)
+			{
+				ret = aacEncoder.EncodeFrame(buffer1, null, numSamples);
+			}
 
 			if (ret < 0)
 				throw new Exception("Failed to encode samples.");
@@ -94,7 +100,7 @@ namespace AAXClean.Codecs
 		private int SendSamplesPlanarStereo(Span<byte> frameData1, Span<byte> frameData2, int numSamples)
 		{
 			int ret;
-			fixed(byte* buffer1 = frameData1)
+			fixed (byte* buffer1 = frameData1)
 			{
 				fixed (byte* buffer2 = frameData2)
 				{
@@ -149,7 +155,7 @@ namespace AAXClean.Codecs
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
 			private static extern int AacEncoder_GetExtraData(EncoderHandle self, byte* ascBuffer, int* pSize);
 
-            public static NativeAacEncode Open(WaveFormat waveFormat, long bitRate, double quality)
+			public static NativeAacEncode Open(WaveFormat waveFormat, long bitRate, double quality)
 			{
 				AacEncoderOptions options = new()
 				{
@@ -180,15 +186,15 @@ namespace AAXClean.Codecs
 
 			public byte[] GetAudioSpecificConfig()
 			{
-                var ascSize = AacEncoder_GetExtraData(Handle, null, null);
+				var ascSize = AacEncoder_GetExtraData(Handle, null, null);
 				var ascBuffer = new byte[ascSize];
-                fixed (byte* pAscBuffer = ascBuffer)
+				fixed (byte* pAscBuffer = ascBuffer)
 				{
-                    if (AacEncoder_GetExtraData(Handle, pAscBuffer, &ascSize) != 0)
+					if (AacEncoder_GetExtraData(Handle, pAscBuffer, &ascSize) != 0)
 						throw new Exception("Failed to retrieve Audio Specific Config.");
-                }
+				}
 				return ascBuffer;
-            }
+			}
 
 			private class EncoderHandle : SafeHandle
 			{

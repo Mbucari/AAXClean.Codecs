@@ -1,9 +1,6 @@
-﻿using NAudio.Lame;
+﻿namespace AAXClean.Codecs;
 
-namespace AAXClean.Codecs
+public class NewAacSplitCallback : NewSplitCallback
 {
-	public class NewAacSplitCallback : NewSplitCallback
-	{
-		public AacEncodingOptions EncodingOptions { get; internal set; }
-	}
+	public AacEncodingOptions EncodingOptions { get; internal set; }
 }

@@ -43,7 +43,7 @@ elif [ $OS = Darwin ]; then
     echo "Installing homebrew"
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   fi
-  #brew install gcc perl pkg-config yasm
+  #xcode-select --install && brew install gcc perl pkg-config yasm
   LIB_EXTENSION=dylib
   NUM_CPUS=$(sysctl -n hw.physicalcpu)
 elif [[ $OS =~ MINGW64.* ]]; then
@@ -121,7 +121,7 @@ if ! [ -f "ffmpegaac.$LIB_EXTENSION" ]; then
     gcc -dynamiclib -shared -static -fPIC -Wl,-v -o ffmpegaac.dylib AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$FDK_INSTALL/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices 1> /dev/null;
   elif [ $OS = Linux ]; then
     gcc -fPIC -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN -I./ 1> /dev/null;
-    gcc -pthread -shared -static -fPIC -Wl,-Bsymbolic -Wl,--no-undefined -Wl,-soname,ffmpegaac.so.2 -o ffmpegaac.so AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$FDK_INSTALL/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lm -lrt 1> /dev/null;
+    gcc -pthread -shared -fPIC -Wl,-Bsymbolic -Wl,--no-undefined -Wl,-soname,ffmpegaac.so.2 -o ffmpegaac.so AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$FDK_INSTALL/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lm -lrt 1> /dev/null;
   else
     gcc -static -fPIC -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN -I./ 1> /dev/null;
     gcc -shared -static -fPIC -o ffmpegaac.dll AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$FDK_INSTALL/lib -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lbcrypt
@@ -157,8 +157,6 @@ fi
 cd $LAME_LIB_DIR
 if [ $OS = Darwin ]; then
   gcc -dynamiclib -shared -fPIC -Wl,-v,-force_load libmp3lame.a -o libmp3lame.dylib &> /dev/null;
-elif [ $OS = Linux ]; then
-  gcc -shared -fPIC -Wl,-v -Wl,--whole-archive libmp3lame.a -o libmp3lame.$LIB_EXTENSION -Wl,--no-whole-archive -lm
 else
   gcc -shared -fPIC -Wl,-v -Wl,--whole-archive libmp3lame.a -o libmp3lame.$LIB_EXTENSION -Wl,--no-whole-archive -lm
 fi

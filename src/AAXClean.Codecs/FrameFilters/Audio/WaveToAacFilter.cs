@@ -16,17 +16,17 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		private int FramesInCurrentChunk = 0;
 		public bool Closed { get; private set; }
 
-        internal WaveToAacFilter(Stream mp4Output, Mp4File mp4File, ChapterQueue chapterQueue, WaveFormat waveFormat, long? bitrate, double? quality)
+		internal WaveToAacFilter(Stream mp4Output, Mp4File mp4File, ChapterQueue chapterQueue, WaveFormat waveFormat, long? bitrate, double? quality)
 		{
 			ChapterQueue = chapterQueue;
-            aacEncoder = new FfmpegAacEncoder(waveFormat, bitrate, quality);
+			aacEncoder = new FfmpegAacEncoder(waveFormat, bitrate, quality);
 			var asc = aacEncoder.GetAudioSpecificConfig();
-            Mp4aWriter = new Mp4aWriter(mp4Output, mp4File.Ftyp, mp4File.Moov, asc);
+			Mp4aWriter = new Mp4aWriter(mp4Output, mp4File.Ftyp, mp4File.Moov, asc);
 		}
 
 		protected override Task PerformFilteringAsync(WaveEntry input)
-        {
-            foreach (var encodedAac in aacEncoder.EncodeWave(input))
+		{
+			foreach (var encodedAac in aacEncoder.EncodeWave(input))
 			{
 				bool newChunk = FramesInCurrentChunk++ == 0;
 
@@ -36,8 +36,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 					Mp4aWriter.WriteChapter(chapterEntry);
 					newChunk = true;
 				}
-
-				Mp4aWriter.AddFrame(encodedAac.FrameData.Span, newChunk);
+				Mp4aWriter.AddFrame(encodedAac.FrameData.Span, newChunk, encodedAac.SamplesInFrame);
 				FramesInCurrentChunk %= FRAMES_PER_CHUNK;
 			}
 
@@ -45,10 +44,10 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		}
 
 		protected override Task FlushAsync()
-        {
-            foreach (var flushedFrame in aacEncoder.EncodeFlush())
+		{
+			foreach (var flushedFrame in aacEncoder.EncodeFlush())
 			{
-				Mp4aWriter.AddFrame(flushedFrame.FrameData.Span, newChunk: false);
+				Mp4aWriter.AddFrame(flushedFrame.FrameData.Span, newChunk: false, flushedFrame.SamplesInFrame);
 			}
 
 			//Write any remaining chapters

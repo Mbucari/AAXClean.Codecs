@@ -1,5 +1,6 @@
 ﻿using AAXClean.Codecs.FrameFilters.Audio;
 using AAXClean.FrameFilters;
+using Mpeg4Lib.Descriptors;
 using System;
 using System.Runtime.InteropServices;
 
@@ -11,14 +12,12 @@ namespace AAXClean.Codecs
 		public WaveFormat WaveFormat { get; }
 
 		private readonly NativeAacDecode aacDecoder;
-		private readonly int inputSampleRate;
-		private readonly int inputChannels;
-		private static readonly int[] asc_samplerates = { 96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350 };
+		private readonly IASC Asc;
 
 		public FfmpegAacDecoder(byte[] asc, WaveFormatEncoding waveFormatEncoding)
 			: this(asc)
 		{
-			WaveFormat = new WaveFormat((SampleRate)inputSampleRate, waveFormatEncoding, inputChannels == 2);
+			WaveFormat = new WaveFormat((SampleRate)Asc.SamplingFrequency, waveFormatEncoding, Asc.ChannelConfiguration == 2);
 			aacDecoder = NativeAacDecode.Open(asc, WaveFormat);
 		}
 
@@ -31,13 +30,12 @@ namespace AAXClean.Codecs
 
 		private FfmpegAacDecoder(byte[] asc)
 		{
-			inputSampleRate = asc_samplerates[(asc[0] & 7) << 1 | asc[1] >> 7];
-			inputChannels = (asc[1] >> 3) & 7;
+			Asc = AudioSpecificConfig.Parse(asc);
 		}
 
 		public WaveEntry DecodeWave(FrameEntry input)
 		{
-			SendSamples(input.FrameData, (int)input.SamplesInFrame);
+			SendSamples(input.FrameData, input.SamplesInFrame);
 
 			int requiredSamples = GetMaxAvaliableDecodeSize();
 
@@ -56,7 +54,6 @@ namespace AAXClean.Codecs
 					SamplesInFrame = (uint)receivedSamples,
 					FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign / 2),
 					FrameData2 = decoded.Slice(requiredSamples * WaveFormat.BlockAlign / 2, receivedSamples * WaveFormat.BlockAlign / 2),
-					FrameIndex = input.FrameIndex
 				};
 			}
 			else
@@ -71,8 +68,7 @@ namespace AAXClean.Codecs
 				{
 					Chunk = input.Chunk,
 					SamplesInFrame = (uint)receivedSamples,
-					FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign),
-					FrameIndex = input.FrameIndex
+					FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign)
 				};
 			}
 		}
@@ -113,13 +109,13 @@ namespace AAXClean.Codecs
 			}
 		}
 
-		private void SendSamples(Memory<byte> frameData, int numSamples)
+		private void SendSamples(ReadOnlyMemory<byte> frameData, uint numSamples)
 		{
 			int ret;
 
 			fixed (byte* inBuff = frameData.Span)
 			{
-				ret = aacDecoder.DecodeFrame(inBuff, frameData.Length);
+				ret = aacDecoder.DecodeFrame(inBuff, frameData.Length, numSamples);
 			}
 
 			if (ret < 0)
@@ -143,7 +139,7 @@ namespace AAXClean.Codecs
 			private static extern DecoderHandle AacDecoder_Open(AacDecoderOptions* decoder_options);
 
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int AacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize);
+			private static extern int AacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, uint nbSamples);
 
 			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
 			private static extern int AacDecoder_ReceiveDecodedFrame(DecoderHandle self, byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInBufferSize);
@@ -178,8 +174,8 @@ namespace AAXClean.Codecs
 			}
 
 			public void Close() => Handle.Close();
-			public int DecodeFrame(byte* pCompressedAudio, int cbInputSize)
-				=> AacDecoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize);
+			public int DecodeFrame(byte* pCompressedAudio, int cbInputSize, uint nbSamples)
+				=> AacDecoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize, nbSamples);
 			public int ReceiveDecodedFrame(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
 				=> AacDecoder_ReceiveDecodedFrame(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
 			public int DecodeFlush(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)

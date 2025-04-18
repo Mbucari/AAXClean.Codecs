@@ -21,7 +21,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		private const int FRAMES_PER_CHUNK = 20;
 
 		public WaveToAacMultipartFilter(ChapterInfo splitChapters, FtypBox ftyp, MoovBox moov, WaveFormat waveFormat, AacEncodingOptions encoderOptions, Action<NewAacSplitCallback> newFileCallback)
-			:base(splitChapters, waveFormat.SampleRateEnum, waveFormat.Channels == 2)
+			: base(splitChapters, waveFormat.SampleRateEnum, waveFormat.Channels == 2)
 		{
 			this.ftyp = ftyp;
 			this.moov = moov;
@@ -36,7 +36,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 			foreach (var flushedFrame in aacEncoder.EncodeFlush())
 			{
-				mp4writer.AddFrame(flushedFrame.FrameData.Span, newChunk: false);
+				mp4writer.AddFrame(flushedFrame.FrameData.Span, newChunk: false, flushedFrame.SamplesInFrame);
 			}
 			mp4writer?.Close();
 			mp4writer?.OutputFile.Close();
@@ -48,7 +48,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		{
 			foreach (var encodedAac in aacEncoder.EncodeWave(audioFrame))
 			{
-				mp4writer.AddFrame(encodedAac.FrameData.Span, framesInCurrentChunk++ == 0);
+				mp4writer.AddFrame(encodedAac.FrameData.Span, framesInCurrentChunk++ == 0, encodedAac.SamplesInFrame);
 				framesInCurrentChunk %= FRAMES_PER_CHUNK;
 			}
 		}
@@ -58,13 +58,13 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 			callback.EncodingOptions = encodingOptions;
 			NewFileCallback(callback);
 			encodingOptions = callback.EncodingOptions;
-            aacEncoder = new FfmpegAacEncoder(waveFormat, encodingOptions?.BitRate, encodingOptions?.EncoderQuality);
+			aacEncoder = new FfmpegAacEncoder(waveFormat, encodingOptions?.BitRate, encodingOptions?.EncoderQuality);
 			var ascBytes = aacEncoder.GetAudioSpecificConfig();
-            mp4writer = new Mp4aWriter(callback.OutputFile, ftyp, moov, ascBytes);
+			mp4writer = new Mp4aWriter(callback.OutputFile, ftyp, moov, ascBytes);
 			currentWriterOpen = true;
 			framesInCurrentChunk = 0;
 			mp4writer.RemoveTextTrack();
-			
+
 			if (mp4writer.Moov.ILst is not null)
 			{
 				var tags = new AppleTags(mp4writer.Moov.ILst);
