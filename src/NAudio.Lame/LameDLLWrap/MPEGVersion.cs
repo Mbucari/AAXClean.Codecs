@@ -33,7 +33,6 @@
 //
 #endregion
 
-
 namespace LameDLLWrap
 {
 	/// <summary>MPEG wrapper version</summary>

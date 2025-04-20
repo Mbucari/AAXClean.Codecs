@@ -33,7 +33,6 @@
 //
 #endregion
 
-
 namespace LameDLLWrap
 {
 	/// <summary>Variable BitRate Mode</summary>

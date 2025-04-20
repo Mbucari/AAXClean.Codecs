@@ -129,7 +129,6 @@ namespace AAXClean.Codecs
 			aacDecoder?.Close();
 		}
 
-
 		private class NativeAacDecode
 		{
 			private readonly DecoderHandle Handle;

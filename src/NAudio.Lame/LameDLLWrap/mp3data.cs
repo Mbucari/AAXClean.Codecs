@@ -34,7 +34,6 @@
 #endregion
 using System.Runtime.InteropServices;
 
-
 namespace LameDLLWrap
 {
 	[StructLayout(LayoutKind.Sequential)]

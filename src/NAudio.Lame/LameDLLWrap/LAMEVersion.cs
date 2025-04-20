@@ -35,7 +35,6 @@
 using System;
 using System.Runtime.InteropServices;
 
-
 namespace LameDLLWrap
 {
 	/// <summary>LAME DLL version information</summary>

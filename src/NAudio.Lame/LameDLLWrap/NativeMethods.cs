@@ -78,7 +78,6 @@ namespace LameDLLWrap
 		[DllImport(libname, CallingConvention = CallingConvention.Cdecl)]
 		internal static extern int lame_close(IntPtr context);
 
-
 		/*
 		 * OPTIONAL:
 		 * lame_get_lametag_frame copies the final LAME-tag into 'buffer'.
@@ -1083,7 +1082,6 @@ namespace LameDLLWrap
 				int mp3buf_size
 			);
 
-
 		/*
 		 * OPTIONAL:
 		 * Normally, this is called by lame_init_params().  It writes id3v2 and
@@ -1111,7 +1109,6 @@ namespace LameDLLWrap
 		[DllImport(libname, CallingConvention = CallingConvention.Cdecl)]
 		internal static extern void lame_print_internals(IntPtr context);
 
-
 		#endregion
 
 		#region 'printf' support for reporting functions
@@ -1132,7 +1129,6 @@ namespace LameDLLWrap
 			return sb.ToString().Replace("\xFF", "\t");
 		}
 		#endregion
-
 
 		#region Decoding
 		/// <summary>required call to initialize decoder</summary>
