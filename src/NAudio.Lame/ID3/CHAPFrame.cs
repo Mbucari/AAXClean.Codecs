@@ -21,7 +21,7 @@ namespace NAudio.Lame.ID3
 		public uint ByteStart { get; set; }
 		public uint ByteEnd { get; set; }
 
-		public CHAPFrame(TimeSpan startTime, TimeSpan endTime, int chNum, string title = null, string subtitle = null, string chapterIdPrefix = "CH")
+		public CHAPFrame(TimeSpan startTime, TimeSpan endTime, int chNum, string? title = null, string? subtitle = null, string chapterIdPrefix = "CH")
 			: base(new FrameHeader("CHAP", 0), null)
 		{
 			ChapterID = $"{chapterIdPrefix}{chNum:D3}";
@@ -37,7 +37,7 @@ namespace NAudio.Lame.ID3
 				TEXTFrame.Create(this, "TIT3", subtitle);
 		}
 
-		public CHAPFrame(Stream file, Header header, Frame parent) : base(header, parent)
+		public CHAPFrame(Stream file, Header header, Frame? parent) : base(header, parent)
 		{
 			ChapterID = ReadNullTerminatedString(file, false);
 			StartTime = TimeSpan.FromMilliseconds(Header.ReadUInt32BE(file));

@@ -20,7 +20,7 @@ namespace NAudio.Lame.ID3
 			ElementID = elementId;
 		}
 
-		public CTOCFrame(Stream file, Header header, Frame parent) : base(header, parent)
+		public CTOCFrame(Stream file, Header header, Frame? parent) : base(header, parent)
 		{
 			ElementID = ReadNullTerminatedString(file, false);
 			ChapterFlags = (ChapterFlags)file.ReadByte();

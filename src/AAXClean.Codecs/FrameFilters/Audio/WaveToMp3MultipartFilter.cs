@@ -12,9 +12,9 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		private readonly Action<NewMP3SplitCallback> newFileCallback;
 		private bool CurrentWriterOpen;
 		private readonly WaveFormat WaveFormat;
-		private LameMP3FileWriter Writer;
+		private LameMP3FileWriter? Writer;
 		private LameConfig LameConfig;
-		private Stream OutputStream;
+		private Stream? OutputStream;
 
 		public WaveToMp3MultipartFilter(ChapterInfo splitChapters, WaveFormat waveFormat, LameConfig lameConfig, Action<NewMP3SplitCallback> newFileCallback)
 			: base(splitChapters, waveFormat.SampleRateEnum, waveFormat.Channels == 2)
@@ -37,19 +37,23 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		}
 
 		protected override void WriteFrameToFile(WaveEntry audioFrame, bool newChunk)
-			=> Writer.Write(audioFrame.FrameData.Span);
+			=> Writer?.Write(audioFrame.FrameData.Span);
 
 		protected override void CreateNewWriter(NewMP3SplitCallback callback)
 		{
 			callback.LameConfig = LameConfig;
 			newFileCallback(callback);
+			
+			if (callback.OutputFile is not Stream outFile)
+				throw new InvalidOperationException("Output file stream null");
+
 			LameConfig = callback.LameConfig;
 			CurrentWriterOpen = true;
 
 			LameConfig.ID3.Track = $"{callback.TrackNumber}/{callback.TrackCount}";
 			LameConfig.ID3.Title = callback.TrackTitle ?? LameConfig.ID3.Title;
-			OutputStream = callback.OutputFile;
-			Writer = new LameMP3FileWriter(OutputStream, WaveFormat, LameConfig);
+			OutputStream = outFile;
+			Writer = new LameMP3FileWriter(outFile, WaveFormat, LameConfig);
 		}
 
 		protected override void Dispose(bool disposing)

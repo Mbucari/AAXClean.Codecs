@@ -13,7 +13,7 @@ namespace NAudio.Lame.ID3
 			LoadChildren(file);
 		}
 
-		public static Id3Tag Create(Stream stream) => TagFactory.CreateTag(stream, null) is Id3Tag id3 ? id3 : null;
+		public static Id3Tag? Create(Stream stream) => TagFactory.CreateTag(stream, null) is Id3Tag id3 ? id3 : null;
 
 		public void Add(Frame frame) => Children.Add(frame);
 

@@ -8,42 +8,27 @@ namespace NAudio.Lame
 	{
 		// Standard values:
 		/// <summary>Track title (TIT2)</summary>
-		public string Title;
+		public string? Title;
 		/// <summary>Artist (TPE1)</summary>
-		public string Artist;
+		public string? Artist;
 		/// <summary>Composer (TCOM)</summary>
-		public string Composer;
+		public string? Composer;
 		/// <summary>Album (TALB)</summary>
-		public string Album;
+		public string? Album;
 		/// <summary>Year (TYER)</summary>
-		public string Year;
+		public string? Year;
 		/// <summary>Comment (COMM)</summary>
-		public string Comment;
+		public string? Comment;
 		/// <summary>Genre (TCON)</summary>
-		public string Genre;
+		public string? Genre;
 		/// <summary>Track number (TRCK)</summary>
-		public string Track;
+		public string? Track;
 
 		// Experimental:
 		/// <summary>Subtitle (TIT3)</summary>
-		public string Subtitle;
+		public string? Subtitle;
 		/// <summary>AlbumArtist (TPE2)</summary>
-		public string AlbumArtist;
-
-		/// <summary>User defined text frames (TXXX) - Multiples are allowed as long as their description is unique (Format : "description=text")</summary>
-		/// <remarks>
-		/// Obsolete.  Please use <see cref="UserDefinedText"/> property instead.
-		/// 
-		/// Implemented as accessor to <see cref="UserDefinedText"/> Dictionary.
-		/// 
-		/// If multiple tags with the same description are supplied only the last one is used.
-		/// </remarks>
-		[Obsolete("Use the UserDefinedText property instead.", false)]
-		public string[] UserDefinedTags
-		{
-			get => UserDefinedText.Select(kv => $"{kv.Key}={kv.Value}").ToArray();
-			set => SetUDT(value);
-		}
+		public string? AlbumArtist;		
 
 		/// <summary>User defined text frames (TXXX)</summary>
 		/// <remarks>Stored in ID3v2 tag as one TXXX frame per item.</remarks>
@@ -52,10 +37,10 @@ namespace NAudio.Lame
 		public List<(TimeSpan start, TimeSpan end, string title)> Chapters { get; } = new();
 
 		/// <summary>Album art - PNG, JPG or GIF file content</summary>
-		public byte[] AlbumArt;
+		public byte[]? AlbumArt;
 
 		/// <summary>
-		/// Clear <see cref="UserDefinedText"/> and insret values from collection of "description=text" strings.
+		/// Clear <see cref="UserDefinedText"/> and insert values from collection of "description=text" strings.
 		/// </summary>
 		/// <param name="data">Collection to load.</param>
 		public void SetUDT(IEnumerable<string> data)

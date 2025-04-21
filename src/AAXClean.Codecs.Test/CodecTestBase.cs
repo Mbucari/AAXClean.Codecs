@@ -141,7 +141,7 @@ namespace AAXClean.Codecs.Test
 			try
 			{
 				List<string> tempFiles = new();
-				void NewSplit(NewSplitCallback callback)
+				void NewSplit(INewSplitCallback callback)
 				{
 					callback.OutputFile = TestFiles.NewTempFile();
 					tempFiles.Add(((FileStream)callback.OutputFile).Name);
@@ -222,7 +222,7 @@ namespace AAXClean.Codecs.Test
 			try
 			{
 				List<string> tempFiles = new();
-				void NewSplit(NewSplitCallback callback)
+				void NewSplit(INewSplitCallback callback)
 				{
 					callback.OutputFile = TestFiles.NewTempFile();
 					tempFiles.Add(((FileStream)callback.OutputFile).Name);
@@ -294,7 +294,7 @@ namespace AAXClean.Codecs.Test
 			{
 				FileStream tempfile = TestFiles.NewTempFile();
 
-				void NewSplit(NewSplitCallback callback)
+				void NewSplit(INewSplitCallback callback)
 				{
 					callback.OutputFile = TestFiles.NewTempFile();
 				}

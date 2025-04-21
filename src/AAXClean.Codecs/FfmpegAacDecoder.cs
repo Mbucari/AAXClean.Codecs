@@ -2,6 +2,7 @@
 using AAXClean.FrameFilters;
 using Mpeg4Lib.Descriptors;
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace AAXClean.Codecs
@@ -15,29 +16,24 @@ namespace AAXClean.Codecs
 		private readonly IASC Asc;
 
 		public FfmpegAacDecoder(byte[] asc, WaveFormatEncoding waveFormatEncoding)
-			: this(asc)
 		{
+			Asc = AudioSpecificConfig.Parse(asc);
 			WaveFormat = new WaveFormat((SampleRate)Asc.SamplingFrequency, waveFormatEncoding, Asc.ChannelConfiguration == 2);
 			aacDecoder = NativeAacDecode.Open(asc, WaveFormat);
 		}
 
 		public FfmpegAacDecoder(byte[] asc, WaveFormatEncoding waveFormatEncoding, SampleRate sampleRate, bool stereo)
-			: this(asc)
-		{
-			WaveFormat = new WaveFormat(sampleRate, waveFormatEncoding, stereo);
-			aacDecoder = NativeAacDecode.Open(asc, WaveFormat);
-		}
-
-		private FfmpegAacDecoder(byte[] asc)
 		{
 			Asc = AudioSpecificConfig.Parse(asc);
+			WaveFormat = new WaveFormat(sampleRate, waveFormatEncoding, stereo);
+			aacDecoder = NativeAacDecode.Open(asc, WaveFormat);
 		}
 
 		public WaveEntry DecodeWave(FrameEntry input)
 		{
 			SendSamples(input.FrameData, input.SamplesInFrame);
 
-			int requiredSamples = GetMaxAvaliableDecodeSize();
+			int requiredSamples = GetMaxAvailableDecodeSize();
 
 			Memory<byte> decoded = new byte[requiredSamples * WaveFormat.BlockAlign];
 
@@ -64,6 +60,8 @@ namespace AAXClean.Codecs
 					receivedSamples = aacDecoder.ReceiveDecodedFrame(decodeBuff, null, requiredSamples);
 				}
 
+				Debug.Assert(receivedSamples <= requiredSamples);
+
 				return new WaveEntry
 				{
 					Chunk = input.Chunk,
@@ -75,7 +73,7 @@ namespace AAXClean.Codecs
 
 		public WaveEntry DecodeFlush()
 		{
-			int requiredSamples = GetMaxAvaliableDecodeSize();
+			int requiredSamples = GetMaxAvailableDecodeSize();
 
 			Memory<byte> decoded = new byte[requiredSamples * WaveFormat.BlockAlign];
 
@@ -86,6 +84,7 @@ namespace AAXClean.Codecs
 				{
 					receivedSamples = aacDecoder.DecodeFlush(decodeBuff, decodeBuff + decoded.Length / 2, requiredSamples);
 				}
+
 				return new WaveEntry
 				{
 					SamplesInFrame = (uint)receivedSamples,
@@ -100,6 +99,8 @@ namespace AAXClean.Codecs
 				{
 					receivedSamples = aacDecoder.DecodeFlush(decodeBuff, null, requiredSamples);
 				}
+
+				Debug.Assert(receivedSamples <= requiredSamples);
 
 				return new WaveEntry
 				{
@@ -122,7 +123,7 @@ namespace AAXClean.Codecs
 				throw new Exception($"Error decoding AAC frame. Code {ret:X}");
 		}
 
-		private int GetMaxAvaliableDecodeSize() => aacDecoder.ReceiveDecodedFrame(null, null, 0);
+		private int GetMaxAvailableDecodeSize() => aacDecoder.ReceiveDecodedFrame(null, null, 0);
 
 		public void Dispose()
 		{

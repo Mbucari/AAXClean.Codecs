@@ -88,7 +88,7 @@ namespace LameDLLWrap
 
 		#region DLL version data
 		/// <summary>Lame Version</summary>
-		public static string LameVersion => Marshal.PtrToStringAnsi(NativeMethods.get_lame_version());
+		public static string? LameVersion => Marshal.PtrToStringAnsi(NativeMethods.get_lame_version());
 
 		/// <summary>Lame Short Version</summary>
 		public static string LameShortVersion { get { return NativeMethods.get_lame_short_version(); } }
@@ -115,7 +115,7 @@ namespace LameDLLWrap
 		delegate int setFunc<T>(IntPtr p, T val);
 
 		// wrapper function to simplify calling lame_set_* entry points
-		void Setter<T>(setFunc<T> f, T value, string name = null)
+		void Setter<T>(setFunc<T> f, T value, string? name = null)
 		{
 			int res = f(context, value);
 			if (res != 0)
@@ -423,7 +423,7 @@ namespace LameDLLWrap
 
 		/// <summary>Get the LAME VBR frame content</summary>
 		/// <returns>Byte array with VBR frame contents or null on error.</returns>
-		public byte[] GetLAMETagFrame()
+		public byte[]? GetLAMETagFrame()
 		{
 			byte[] buffer = new byte[1];
 			size_t frameSize = NativeMethods.lame_get_lametag_frame(context, buffer, size_t.Zero);
@@ -445,9 +445,9 @@ namespace LameDLLWrap
 
 		#region Reporting function support
 
-		private ReportFunction rptError = null;
-		private ReportFunction rptDebug = null;
-		private ReportFunction rptMsg = null;
+		private ReportFunction? rptError = null;
+		private ReportFunction? rptDebug = null;
+		private ReportFunction? rptMsg = null;
 
 		private void ErrorProxy(string format, IntPtr va_args)
 		{
@@ -497,7 +497,7 @@ namespace LameDLLWrap
 		#endregion
 
 		#region ID3 tag support
-		private static GenreCallback id3GenreCallback = null;
+		private static GenreCallback? id3GenreCallback = null;
 
 		private static void ID3Genre_proxy(int index, string genre, IntPtr cookie)
 		{
@@ -516,7 +516,7 @@ namespace LameDLLWrap
 		public static  Dictionary<int, string> ID3GenreList()
 		{
 			Dictionary<int, string> res = new Dictionary<int, string>();
-			GenreCallback cbsave = id3GenreCallback;
+			GenreCallback? cbsave = id3GenreCallback;
 			id3GenreCallback = (idx, gen) => res[idx] = gen;
 
 			NativeMethods.id3tag_genre_list(ID3Genre_proxy, IntPtr.Zero);
@@ -642,7 +642,7 @@ namespace LameDLLWrap
 			return CheckResult(NativeMethods.id3tag_set_albumart(context, image, image.Length));
 		}
 
-		public byte[] ID3GetID3v1Tag()
+		public byte[]? ID3GetID3v1Tag()
 		{
 			int len = NativeMethods.lame_get_id3v1_tag(context, new byte[] { }, 0);
 			if (len < 1)
@@ -654,7 +654,7 @@ namespace LameDLLWrap
 			return res;
 		}
 
-		public byte[] ID3GetID3v2Tag()
+		public byte[]? ID3GetID3v2Tag()
 		{
 			int len = NativeMethods.lame_get_id3v2_tag(context, new byte[] { }, 0);
 			if (len < 1)

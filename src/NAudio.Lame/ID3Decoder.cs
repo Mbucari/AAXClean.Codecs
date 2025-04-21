@@ -118,7 +118,8 @@ namespace NAudio.Lame
 					case "TXXX":
 					{
 						var udt = frame.ParseUserDefinedText();
-						res.UserDefinedText[udt.Key] = udt.Value;
+							if (udt.HasValue)
+								res.UserDefinedText[udt.Value.Key] = udt.Value.Value;
 						break;
 					}
 					case "APIC":
@@ -238,7 +239,7 @@ namespace NAudio.Lame
 			/// <param name="offset">Offset of start of content frame data.</param>
 			/// <param name="size">Output: total bytes consumed by frame, including header, or -1 if no frame available.</param>
 			/// <returns><see cref="ID3FrameData"/> with frame, or null if no frame available.</returns>
-			public static ID3FrameData ReadFrame(byte[] buffer, int offset, out int size)
+			public static ID3FrameData? ReadFrame(byte[] buffer, int offset, out int size)
 			{
 				size = -1;
 				if ((buffer.Length - offset) <= 10)
@@ -276,7 +277,7 @@ namespace NAudio.Lame
 			/// <param name="offset">Start of string in array.</param>
 			/// <param name="requireTerminator">If true then fail if no terminator found.</param>
 			/// <returns>String from buffer, string.Empty if 0-length, null on failure.</returns>
-			private static string GetASCIIString(byte[] buffer, ref int offset, bool requireTerminator)
+			private static string? GetASCIIString(byte[] buffer, ref int offset, bool requireTerminator)
 			{
 				int start = offset;
 				int position = offset;
@@ -296,7 +297,7 @@ namespace NAudio.Lame
 			/// <param name="offset">Start of string in array.</param>
 			/// <param name="requireTerminator">If true then fail if no terminator found.</param>
 			/// <returns>String from buffer, string.Empty if 0-length, null on failure.</returns>
-			private static string GetUnicodeString(byte[] buffer, ref int offset, bool requireTerminator = true)
+			private static string? GetUnicodeString(byte[] buffer, ref int offset, bool requireTerminator = true)
 			{
 				int start = offset;
 				int position = offset;
@@ -311,7 +312,7 @@ namespace NAudio.Lame
 				return res;
 			}
 
-			delegate string delGetString(byte[] buffer, ref int offset, bool requireTeminator);
+			delegate string? delGetString(byte[] buffer, ref int offset, bool requireTeminator);
 
 			private delGetString GetGetString()
 			{
@@ -328,7 +329,7 @@ namespace NAudio.Lame
 			/// </summary>
 			/// <returns>String content, string.Empty if 0-length.</returns>
 			/// <exception cref="InvalidDataException">Invalid string encoding.</exception>
-			public string ParseString()
+			public string? ParseString()
 			{
 				int position = 1;
 				return GetGetString()(Data, ref position, false);
@@ -338,15 +339,15 @@ namespace NAudio.Lame
 			/// Parse the frame content as a Comment (COMM) frame, return comment text only.
 			/// </summary>
 			/// <returns>Comment text only.  Language and short description omitted.</returns>
-			public string ParseCommentText()
+			public string? ParseCommentText()
 			{
 				var getstr = GetGetString();
 				int position = 1;
 
 				string language = Encoding.ASCII.GetString(Data, position, 3);
 				position += 3;
-				string shortdesc = getstr(Data, ref position, true);
-				string comment = getstr(Data, ref position, false);
+				string? shortdesc = getstr(Data, ref position, true);
+				string? comment = getstr(Data, ref position, false);
 
 				return comment;
 			}
@@ -355,7 +356,7 @@ namespace NAudio.Lame
 			/// Parse the frame content as a User-Defined Text Information (TXXX) frame.
 			/// </summary>
 			/// <returns><see cref="KeyValuePair{TKey, TValue}"/> with content, or exception on error.</returns>
-			public KeyValuePair<string, string> ParseUserDefinedText()
+			public KeyValuePair<string, string>? ParseUserDefinedText()
 			{
 				byte encoding = Data[0];
 				delGetString getstring;
@@ -367,16 +368,17 @@ namespace NAudio.Lame
 					throw new InvalidDataException($"Unknown string encoding: {encoding}");
 
 				int position = 1;
-				string description = getstring(Data, ref position, true);
-				string value = getstring(Data, ref position, false);
-				return new KeyValuePair<string, string>(description, value);
+				string? description = getstring(Data, ref position, true);
+				string? value = getstring(Data, ref position, false);
+				return description is null || value is null ? null :
+				 new KeyValuePair<string, string>(description, value);
 			}
 
 			/// <summary>
 			/// Parse the frame content as an attached picture (APIC) frame.
 			/// </summary>
 			/// <returns><see cref="APICData"/> object </returns>
-			public APICData ParseAPIC()
+			public APICData? ParseAPIC()
 			{
 				if (FrameID != "APIC")
 					return null;
@@ -384,9 +386,9 @@ namespace NAudio.Lame
 
 				// get attributes
 				int position = 1;
-				string mime = getstr(Data, ref position, true);
+				string? mime = getstr(Data, ref position, true);
 				byte type = Data[position++];
-				string description = getstr(Data, ref position, true);
+				string? description = getstr(Data, ref position, true);
 
 				// get image content
 				int datalength = Data.Length - position;
@@ -410,7 +412,7 @@ namespace NAudio.Lame
 				/// <summary>
 				/// MIME type of contained image 
 				/// </summary>
-				public string MIMEType;
+				public string? MIMEType;
 
 				/// <summary>
 				/// Type of image.  Refer to http://id3.org/id3v2.3.0#Attached_picture for list of values.
@@ -420,12 +422,12 @@ namespace NAudio.Lame
 				/// <summary>
 				/// Picture description.
 				/// </summary>
-				public string Description;
+				public string? Description;
 
 				/// <summary>
 				/// Picture file content.
 				/// </summary>
-				public byte[] ImageBytes;
+				public byte[]? ImageBytes;
 			}
 		}
 	}

@@ -16,6 +16,7 @@
 		<RepositoryType>Git</RepositoryType>
 		<PackageTags>Audible AAC AAXC m4b mp3 audiobook</PackageTags>
 		<NeutralLanguage>en</NeutralLanguage>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 	
 	<PropertyGroup>

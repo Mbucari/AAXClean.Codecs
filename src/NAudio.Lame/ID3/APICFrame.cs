@@ -22,7 +22,7 @@ namespace NAudio.Lame.ID3
 		public byte Type { get; set; }
 		public byte[] Image { get; set; }
 
-		public APICFrame(Stream file, Header header, Frame parent) : base(header, parent)
+		public APICFrame(Stream file, Header header, Frame? parent) : base(header, parent)
 		{
 			var startPos = file.Position;
 			var textEncoding = file.ReadByte();

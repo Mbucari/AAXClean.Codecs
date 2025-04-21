@@ -18,7 +18,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		private readonly double SilenceThreshold;
 		private readonly TimeSpan MinimumDuration;
 		private readonly WaveFormat WaveFormat;
-		private readonly Action<SilenceDetectCallback> DetectionCallback;
+		private readonly Action<SilenceDetectCallback>? DetectionCallback;
 		private readonly long MinConsecutiveSamples;
 
 		private readonly Vector256<short> MaxAmplitudes;
@@ -31,7 +31,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		private readonly Memory<short> buff256;
 		private readonly MemoryHandle hbuff256;
 		private readonly short* pbuff256;
-		public unsafe SilenceDetectFilter(double db, TimeSpan minDuration, WaveFormat waveFormat, Action<SilenceDetectCallback> detectionCallback)
+		public unsafe SilenceDetectFilter(double db, TimeSpan minDuration, WaveFormat waveFormat, Action<SilenceDetectCallback>? detectionCallback)
 		{
 			SilenceThreshold = db;
 			MinimumDuration = minDuration;
@@ -63,7 +63,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 				SilenceEntry silence = new(start, end);
 				Silences.Add(silence);
-				DetectionCallback?.Invoke(new SilenceDetectCallback { SilenceThreshold = SilenceThreshold, MinimumDuration = MinimumDuration, Silence = silence });
+				DetectionCallback?.Invoke(new SilenceDetectCallback(SilenceThreshold, MinimumDuration, silence));
 			}
 		}
 

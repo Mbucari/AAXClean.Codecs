@@ -8,7 +8,7 @@ namespace LameDLLWrap
 	/// </summary>
 	public static class UCS2
 	{
-		static readonly byte[] _terminator = new byte[] { 0, 0 };
+		static readonly byte[] _terminator = [0, 0];
 
 		/// <summary>
 		/// Get UCS-2 byte sequence for the supplied string.
@@ -34,7 +34,7 @@ namespace LameDLLWrap
 			}
 		}
 
-		private static Encoding UCS = null;
+		private static Encoding? UCS = null;
 
 		/// <summary>
 		/// Get String from supplied UCS-2 byte sequence with optional BOM and nul terminator bytes.

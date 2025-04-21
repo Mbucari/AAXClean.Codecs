@@ -9,11 +9,11 @@ namespace NAudio.Lame.ID3
 	public abstract class Frame
 	{
 		public Header Header { get; }
-		public Frame Parent { get; }
+		public Frame? Parent { get; }
 		public virtual int Size => Children.Sum(b => b.Size);
 		public List<Frame> Children { get; } = new();
 
-		public Frame(Header header, Frame parent)
+		public Frame(Header header, Frame? parent)
 		{
 			Header = header;
 			Parent = parent;
@@ -35,10 +35,8 @@ namespace NAudio.Lame.ID3
 		{
 			long endPos = Header.OriginalPosition + Header.Size + Header.HeaderSize;
 
-			while (file.Position < endPos)
+			while (file.Position < endPos && TagFactory.CreateTag(file, this) is Frame child)
 			{
-				var child = TagFactory.CreateTag(file, this);
-
 				if (child.Header.Identifier == "\0\0\0\0")
 					break;
 				Children.Add(child);

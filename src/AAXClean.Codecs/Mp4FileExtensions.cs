@@ -11,9 +11,9 @@ namespace AAXClean.Codecs
 {
 	public static class Mp4FileExtensions
 	{
-		public static Mp4Operation<List<SilenceEntry>> DetectSilenceAsync(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback> detectionCallback = null)
+		public static Mp4Operation<List<SilenceEntry>?> DetectSilenceAsync(this Mp4File mp4File, double decibels, TimeSpan minDuration, Action<SilenceDetectCallback>? detectionCallback = null)
 		{
-			if (mp4File is null) throw new ArgumentNullException(nameof(mp4File));
+			ArgumentNullException.ThrowIfNull(mp4File, nameof(mp4File));
 			if (decibels >= 0 || decibels < -90) throw new ArgumentOutOfRangeException(nameof(decibels), "must fall in [-90,0)");
 			if (minDuration.TotalSeconds * (int)mp4File.SampleRate < 2) throw new ArgumentOutOfRangeException(nameof(minDuration), "must be no shorter than 2 audio samples.");
 
@@ -28,7 +28,7 @@ namespace AAXClean.Codecs
 			filter1.LinkTo(filter2);
 			filter2.LinkTo(f3);
 
-			List<SilenceEntry> completion(Task t)
+			List<SilenceEntry>? completion(Task t)
 			{
 				filter1.Dispose();
 				return t.IsFaulted ? null : f3.Silences;
@@ -37,16 +37,16 @@ namespace AAXClean.Codecs
 			return mp4File.ProcessAudio(TimeSpan.Zero, TimeSpan.MaxValue, completion, (mp4File.Moov.AudioTrack, filter1));
 		}
 
-		public static Mp4Operation ConvertToMp3Async(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig lameConfig = null, ChapterInfo userChapters = null)
+		public static Mp4Operation ConvertToMp3Async(this Mp4File mp4File, Stream outputStream, NAudio.Lame.LameConfig? lameConfig = null, ChapterInfo? userChapters = null)
 		{
-			if (mp4File is null) throw new ArgumentNullException(nameof(mp4File));
-			if (outputStream is null) throw new ArgumentNullException(nameof(outputStream));
+			ArgumentNullException.ThrowIfNull(mp4File, nameof(mp4File));
+			ArgumentNullException.ThrowIfNull(outputStream, nameof(outputStream));
 			if (outputStream.CanWrite is false) throw new ArgumentException("output stream is not writable", nameof(outputStream));
 
 			lameConfig ??= mp4File.GetDefaultLameConfig();
 			lameConfig.ID3 ??= mp4File.AppleTags?.ToIDTags() ?? new();
 
-			if (!lameConfig.ID3.Chapters.Any() && userChapters is not null)
+			if (lameConfig.ID3.Chapters.Count == 0 && userChapters is not null)
 			{
 				foreach (var ch in userChapters)
 					lameConfig.ID3.Chapters.Add((ch.StartOffset - userChapters.StartOffset, ch.EndOffset - userChapters.StartOffset, ch.Title));
@@ -83,18 +83,18 @@ namespace AAXClean.Codecs
 			return mp4File.ProcessAudio(start, end, completion, (mp4File.Moov.AudioTrack, filter1));
 		}
 
-		public static Mp4Operation ConvertToMp4aAsync(this Mp4File mp4File, Stream outputStream, AacEncodingOptions options, ChapterInfo userChapters = null)
+		public static Mp4Operation ConvertToMp4aAsync(this Mp4File mp4File, Stream outputStream, AacEncodingOptions options, ChapterInfo? userChapters = null)
 		{
-			if (mp4File is null) throw new ArgumentNullException(nameof(mp4File));
-			if (outputStream is null) throw new ArgumentNullException(nameof(outputStream));
+			ArgumentNullException.ThrowIfNull(mp4File, nameof(mp4File));
+			ArgumentNullException.ThrowIfNull(outputStream, nameof(outputStream));
+			ArgumentNullException.ThrowIfNull(options, nameof(options));
 			if (outputStream.CanWrite is false) throw new ArgumentException("output stream is not writable", nameof(outputStream));
-			if (options is null) throw new ArgumentNullException(nameof(options));
 
 			var start = userChapters?.StartOffset ?? TimeSpan.Zero;
 			var end = userChapters?.EndOffset ?? TimeSpan.MaxValue;
 
 			var stereo = mp4File.AudioChannels > 1 && options.Stereo is true;
-			var sampleRate = mp4File.GetMaxSampleRate(options?.SampleRate);
+			var sampleRate = mp4File.GetMaxSampleRate(options.SampleRate);
 
 			ChapterQueue chapterQueue = new(mp4File.SampleRate, sampleRate);
 
@@ -147,14 +147,14 @@ namespace AAXClean.Codecs
 			}
 		}
 
-		public static Mp4Operation ConvertToMultiMp4aAsync(this Mp4File mp4File, ChapterInfo userChapters, Action<NewAacSplitCallback> newFileCallback, AacEncodingOptions options = null)
+		public static Mp4Operation ConvertToMultiMp4aAsync(this Mp4File mp4File, ChapterInfo userChapters, Action<NewAacSplitCallback> newFileCallback, AacEncodingOptions options)
 		{
-			if (mp4File is null) throw new ArgumentNullException(nameof(mp4File));
-			if (userChapters is null) throw new ArgumentNullException(nameof(mp4File));
-			if (newFileCallback is null) throw new ArgumentNullException(nameof(newFileCallback));
+			ArgumentNullException.ThrowIfNull(mp4File, nameof(mp4File));
+			ArgumentNullException.ThrowIfNull(userChapters, nameof(userChapters));
+			ArgumentNullException.ThrowIfNull(newFileCallback, nameof(newFileCallback));
 
-			var stereo = mp4File.AudioChannels > 1 && options?.Stereo is true;
-			var sampleRate = mp4File.GetMaxSampleRate(options?.SampleRate);
+			var stereo = mp4File.AudioChannels > 1 && options.Stereo is true;
+			var sampleRate = mp4File.GetMaxSampleRate(options.SampleRate);
 
 			FrameTransformBase<FrameEntry, FrameEntry> filter1 = mp4File.GetAudioFrameFilter();
 
@@ -178,11 +178,11 @@ namespace AAXClean.Codecs
 			return mp4File.ProcessAudio(userChapters.StartOffset, userChapters.EndOffset, completion, (mp4File.Moov.AudioTrack, filter1));
 		}
 
-		public static Mp4Operation ConvertToMultiMp3Async(this Mp4File mp4File, ChapterInfo userChapters, Action<NewMP3SplitCallback> newFileCallback, NAudio.Lame.LameConfig lameConfig = null)
+		public static Mp4Operation ConvertToMultiMp3Async(this Mp4File mp4File, ChapterInfo userChapters, Action<NewMP3SplitCallback> newFileCallback, NAudio.Lame.LameConfig? lameConfig = null)
 		{
-			if (mp4File is null) throw new ArgumentNullException(nameof(mp4File));
-			if (userChapters is null) throw new ArgumentNullException(nameof(mp4File));
-			if (newFileCallback is null) throw new ArgumentNullException(nameof(newFileCallback));
+			ArgumentNullException.ThrowIfNull(mp4File, nameof(mp4File));
+			ArgumentNullException.ThrowIfNull(userChapters, nameof(userChapters));
+			ArgumentNullException.ThrowIfNull(newFileCallback, nameof(newFileCallback));
 
 			lameConfig ??= mp4File.GetDefaultLameConfig();
 			lameConfig.ID3 ??= mp4File.AppleTags?.ToIDTags() ?? new();
@@ -214,7 +214,7 @@ namespace AAXClean.Codecs
 
 		public static NAudio.Lame.LameConfig GetDefaultLameConfig(this Mp4File mp4File)
 		{
-			if (mp4File is null) throw new ArgumentNullException(nameof(mp4File));
+			ArgumentNullException.ThrowIfNull(mp4File, nameof(mp4File));
 
 			//USAC is much more efficient than LC, so allow double the bitrate when transcoding
 			var USAC_Scaler = mp4File.AudioObjectType == 42 ? 2 : 1;
@@ -231,14 +231,14 @@ namespace AAXClean.Codecs
 
 		public static SampleRate GetMaxSampleRate(this Mp4File mp4File, SampleRate? sampleRate = null)
 		{
-			if (mp4File is null) throw new ArgumentNullException(nameof(mp4File));
+			ArgumentNullException.ThrowIfNull(mp4File, nameof(mp4File));
 
 			return (SampleRate)Math.Min((int)mp4File.SampleRate, (int)(sampleRate ?? SampleRate.Hz_96000));
 		}
 
 		public static NAudio.Lame.ID3TagData ToIDTags(this AppleTags appleTags)
 		{
-			if (appleTags is null) throw new ArgumentNullException(nameof(appleTags));
+			ArgumentNullException.ThrowIfNull(appleTags, nameof(appleTags));
 
 			NAudio.Lame.ID3TagData tags = new()
 			{

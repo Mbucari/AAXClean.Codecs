@@ -40,10 +40,7 @@
 			PsychoAcoustic_Alpha = source.psy_alpha;
 			PsychoAcoustic_Beta = source.psy_beta;
 
-			Features = source.features;
+			Features = source.features ?? string.Empty;
 		}
-
-		// Prevent default construction
-		private LAMEVersion() { }
 	}
 }

@@ -72,7 +72,7 @@ namespace LameDLLWrap
 		private IntPtr features_ptr = IntPtr.Zero;
 
 		/// <summary>Compile-time features string</summary>
-		public string features
+		public string? features
 		{
 			get
 			{

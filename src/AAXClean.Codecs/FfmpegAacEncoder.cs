@@ -64,7 +64,7 @@ namespace AAXClean.Codecs
 			int ret = aacEncoder.EncodeFlush();
 
 			if (ret < 0)
-				throw new Exception($"Error flusing AAC encoder.");
+				throw new Exception($"Error flushing AAC encoder.");
 
 			do
 			{

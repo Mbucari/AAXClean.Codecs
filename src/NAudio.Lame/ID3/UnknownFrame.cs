@@ -7,7 +7,7 @@ namespace NAudio.Lame.ID3
 	{
 		public override int Size => Blob.Length;
 		public byte[] Blob { get; }
-		public UnknownFrame(Stream file, Header header, Frame parent) : base(header, parent)
+		public UnknownFrame(Stream file, Header header, Frame? parent) : base(header, parent)
 		{
 			Blob = new byte[header.Size];
 			file.ReadExactly(Blob);

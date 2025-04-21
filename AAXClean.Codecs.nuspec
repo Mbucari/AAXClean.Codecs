@@ -26,10 +26,10 @@
 	</metadata>
 	<dependencies>
 		<group targetFramework="net9.0">
-			<dependency id="NAudio.Lame" version="1.0.19" />
+			<dependency id="NAudio.Lame" version="1.0.20" />
 		</group>
 		<group targetFramework="net8.0">
-			<dependency id="NAudio.Lame" version="1.0.19" />
+			<dependency id="NAudio.Lame" version="1.0.20" />
 		</group>
 	</dependencies>
 	<files>

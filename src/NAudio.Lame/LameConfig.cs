@@ -131,7 +131,7 @@ namespace NAudio.Lame
 
 		#region ID3
 		/// <summary>ID3 tag data, to be added after configuration.</summary>
-		public ID3TagData ID3 { get; set; }
+		public ID3TagData? ID3 { get; set; }
 		#endregion
 
 		#region DLL initialisation

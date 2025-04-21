@@ -41,7 +41,7 @@ namespace NAudio.Lame
 		// Flag to control whether we should dispose of output stream 
 		private readonly bool _disposeOutput = false;
 
-		private readonly ArrayUnion _inBuffer = null;
+		private readonly ArrayUnion _inBuffer;
 
 		private int inPosition;
 
@@ -51,7 +51,7 @@ namespace NAudio.Lame
 		long _outputByteCount = 0;
 
 		delegate int delEncode();
-		private readonly delEncode _encode = null;
+		private readonly delEncode _encode;
 
 		// Progress
 
@@ -69,7 +69,7 @@ namespace NAudio.Lame
 		}
 
 		/// <summary>Called when data is written to the output file from Encode or Flush</summary>
-		public event ProgressHandler OnProgress;
+		public event ProgressHandler? OnProgress;
 
 		private DateTime _lastProgress = DateTime.Now;
 
@@ -82,7 +82,7 @@ namespace NAudio.Lame
 		/// <param name="format">Input WaveFormat</param>
 		/// <param name="quality">LAME quality preset</param>
 		/// <param name="id3">Optional ID3 data block</param>
-		public LameMP3FileWriter(string outFileName, WaveFormat format, LAMEPreset quality, ID3TagData id3 = null)
+		public LameMP3FileWriter(string outFileName, WaveFormat format, LAMEPreset quality, ID3TagData? id3 = null)
 			: this(File.Create(outFileName), format, quality, id3)
 		{
 			_disposeOutput = true;
@@ -93,7 +93,7 @@ namespace NAudio.Lame
 		/// <param name="format">Input WaveFormat</param>
 		/// <param name="quality">LAME quality preset</param>
 		/// <param name="id3">Optional ID3 data block</param>
-		public LameMP3FileWriter(Stream outStream, WaveFormat format, LAMEPreset quality, ID3TagData id3 = null)
+		public LameMP3FileWriter(Stream outStream, WaveFormat format, LAMEPreset quality, ID3TagData? id3 = null)
 			: this(outStream, format, new LameConfig { Preset = quality, ID3 = id3 })
 		{ }
 
@@ -102,7 +102,7 @@ namespace NAudio.Lame
 		/// <param name="format">Input WaveFormat</param>
 		/// <param name="bitRate">Output bit rate in kbps</param>
 		/// <param name="id3">Optional ID3 data block</param>
-		public LameMP3FileWriter(string outFileName, WaveFormat format, int bitRate, ID3TagData id3 = null)
+		public LameMP3FileWriter(string outFileName, WaveFormat format, int bitRate, ID3TagData? id3 = null)
 			: this(File.Create(outFileName), format, bitRate, id3)
 		{
 			_disposeOutput = true;
@@ -113,7 +113,7 @@ namespace NAudio.Lame
 		/// <param name="format">Input WaveFormat</param>
 		/// <param name="bitRate">Output bit rate in kbps</param>
 		/// <param name="id3">Optional ID3 data block</param>
-		public LameMP3FileWriter(Stream outStream, WaveFormat format, int bitRate, ID3TagData id3 = null)
+		public LameMP3FileWriter(Stream outStream, WaveFormat format, int bitRate, ID3TagData? id3 = null)
 			: this(outStream, format, new LameConfig { BitRate = bitRate, ID3 = id3 })
 		{ }
 
@@ -194,12 +194,10 @@ namespace NAudio.Lame
 				Flush();
 
 			_lame?.Dispose();
-			_lame = null;
 			
 			if (_disposeOutput)
 			{
 				_outStream?.Dispose();
-				_outStream = null;
 			}
 
 			base.Dispose(disposing);
@@ -313,7 +311,6 @@ namespace NAudio.Lame
 				// Cannot continue after flush, so clear output stream
 				if (_disposeOutput)
 					_outStream.Dispose();
-				_outStream = null;
 			}
 
 			// report progress
@@ -325,17 +322,19 @@ namespace NAudio.Lame
 		/// <remarks>Based on the LAME source: https://sourceforge.net/p/lame/svn/HEAD/tree/trunk/lame/Dll/BladeMP3EncDLL.c#l816 </remarks>
 		private bool UpdateLameTagFrame()
 		{
-			if (_outStream == null || !_outStream.CanSeek || !_outStream.CanRead || !_outStream.CanWrite)
+			if (_outStream == null || !_outStream.CanSeek || !_outStream.CanWrite)
 				return false;
 
 			long strmPos = _outStream.Position;
 			try
 			{
-				byte[] frame = _lame.GetLAMETagFrame();
+				byte[]? frame = _lame.GetLAMETagFrame();
 				if (frame == null || frame.Length < 4)
 					return false;
 
-				if (SkipId3v2(frame.Length) != 0)
+				if (EndOfID3Tag >= 0)
+					_outStream.Position = EndOfID3Tag;
+				else if (!_outStream.CanRead || SkipId3v2(frame.Length) != 0)
 					return false;
 
 				_outStream.Write(frame, 0, frame.Length);
@@ -461,14 +460,19 @@ namespace NAudio.Lame
 			if (tag.AlbumArt?.Length > 0)
 				_lame.ID3SetAlbumArt(tag.AlbumArt);
 
-			byte[] data = _lame.ID3GetID3v2Tag();
+			byte[]? data = _lame.ID3GetID3v2Tag();
 			if (data is null)
 				_lame.ID3WriteTagAutomatic = true;
 			else
             {
-                _lame.ID3WriteTagAutomatic = false;
                 using MemoryStream id3Stream = new(data);
-				var tag1 = ID3.Id3Tag.Create(id3Stream);
+				if ( ID3.Id3Tag.Create(id3Stream) is not ID3.Id3Tag tag1)
+				{
+					_lame.ID3WriteTagAutomatic = true;
+					return;
+				}
+
+				_lame.ID3WriteTagAutomatic = false;
 
 				//Write chapters if any
 				if (tag.Chapters.Count > 0)
@@ -488,24 +492,26 @@ namespace NAudio.Lame
 				}
 
 				tag1.Save(_outStream);
+				EndOfID3Tag = _outStream.Position;
 			}
 		}
+		private long EndOfID3Tag = -1;
 
 		/// <summary>
 		/// Get the bytes of the ID3v1 tag written to the file
 		/// </summary>
 		/// <returns>Byte array with ID3v1 tag data if available, else null</returns>
-		public byte[] GetID3v1TagBytes()
+		public byte[]? GetID3v1TagBytes()
 			=> _lame.ID3GetID3v1Tag();
 
 		/// <summary>
 		/// Get the bytes of the ID3v2 tag written to the file
 		/// </summary>
 		/// <returns>Byte array with ID3v2 tag data if supplied, else null</returns>
-		public byte[] GetID3v2TagBytes()
+		public byte[]? GetID3v2TagBytes()
 			=> _lame.ID3GetID3v2Tag();
 
-		private static Dictionary<int, string> _genres;
+		private static Dictionary<int, string>? _genres;
 		/// <summary>Dictionary of Genres supported by LAME's ID3 tag support</summary>
 		public Dictionary<int, string> Genres
 		{
@@ -574,6 +580,7 @@ namespace NAudio.Lame
 		[StructLayout(LayoutKind.Explicit)]
 		private class ArrayUnion
 		{
+#nullable disable
 			/// <summary>Length of the byte array</summary>
 			[FieldOffset(0)]
 			public readonly int nBytes;
@@ -602,6 +609,7 @@ namespace NAudio.Lame
 			/// <remarks>This is the actual array allocated by the constructor</remarks>
 			[FieldOffset(16)]
 			public readonly double[] doubles;
+#nullable restore
 
 			// True sizes of the various array types, calculated from number of bytes
 
