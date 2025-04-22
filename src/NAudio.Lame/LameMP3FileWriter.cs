@@ -449,12 +449,14 @@ namespace NAudio.Lame
 			// Add user-defined tags if present
 			foreach (var kv in tag.UserDefinedText)
 			{
-				_lame.ID3SetFieldValue($"TXXX={kv.Key}={kv.Value}");
+				if (kv.Value is string value)
+					_lame.ID3SetFieldValue($"TXXX={kv.Key}={value}");
 			}
 
 			foreach (var kv in tag.AdditionalTags)
 			{
-				_lame.ID3SetFieldValue($"{kv.Key}={kv.Value}");
+				if (kv.Value is string value)
+					_lame.ID3SetFieldValue($"{kv.Key}={value}");
 			}
 			// Set the album art if supplied
 			if (tag.AlbumArt?.Length > 0)

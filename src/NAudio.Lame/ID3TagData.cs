@@ -32,8 +32,8 @@ namespace NAudio.Lame
 
 		/// <summary>User defined text frames (TXXX)</summary>
 		/// <remarks>Stored in ID3v2 tag as one TXXX frame per item.</remarks>
-		public Dictionary<string, string> UserDefinedText { get; set; } = new Dictionary<string, string>();
-		public Dictionary<string, string> AdditionalTags { get; set; } = new Dictionary<string, string>();
+		public Dictionary<string, string?> UserDefinedText { get; set; } = new();
+		public Dictionary<string, string?> AdditionalTags { get; set; } = new();
 		public List<(TimeSpan start, TimeSpan end, string title)> Chapters { get; } = new();
 
 		/// <summary>Album art - PNG, JPG or GIF file content</summary>
