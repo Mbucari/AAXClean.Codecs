@@ -28,7 +28,7 @@ namespace NAudio.Lame
 		/// <summary>Subtitle (TIT3)</summary>
 		public string? Subtitle;
 		/// <summary>AlbumArtist (TPE2)</summary>
-		public string? AlbumArtist;		
+		public string? AlbumArtist;
 
 		/// <summary>User defined text frames (TXXX)</summary>
 		/// <remarks>Stored in ID3v2 tag as one TXXX frame per item.</remarks>
@@ -38,6 +38,12 @@ namespace NAudio.Lame
 
 		/// <summary>Album art - PNG, JPG or GIF file content</summary>
 		public byte[]? AlbumArt;
+
+		public ID3TagData() { }
+		public ID3TagData(string tool)
+		{
+			UserDefinedText["TOOL"] = tool;
+		}
 
 		/// <summary>
 		/// Clear <see cref="UserDefinedText"/> and insert values from collection of "description=text" strings.
