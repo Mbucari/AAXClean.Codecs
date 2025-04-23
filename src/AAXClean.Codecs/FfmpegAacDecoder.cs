@@ -1,208 +1,145 @@
 ﻿using AAXClean.Codecs.FrameFilters.Audio;
+using AAXClean.Codecs.Interop;
 using AAXClean.FrameFilters;
-using Mpeg4Lib.Descriptors;
+using Mpeg4Lib.Boxes;
 using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
-namespace AAXClean.Codecs
+namespace AAXClean.Codecs;
+
+internal unsafe sealed class FfmpegAacDecoder : IDisposable
 {
-	internal unsafe sealed class FfmpegAacDecoder : IDisposable
+	internal const string libname = "ffmpegaac";
+	public WaveFormat WaveFormat { get; }
+
+	private readonly NativeDecode AudioDecoder;
+
+	public FfmpegAacDecoder(AudioSampleEntry audioSampleEntry, WaveFormatEncoding waveFormatEncoding)
 	{
-		internal const string libname = "ffmpegaac";
-		public WaveFormat WaveFormat { get; }
-
-		private readonly NativeAacDecode aacDecoder;
-		private readonly IASC Asc;
-
-		public FfmpegAacDecoder(byte[] asc, WaveFormatEncoding waveFormatEncoding)
+		if (audioSampleEntry.Esds is EsdsBox esds)
 		{
-			Asc = AudioSpecificConfig.Parse(asc);
-			WaveFormat = new WaveFormat((SampleRate)Asc.SamplingFrequency, waveFormatEncoding, Asc.ChannelConfiguration == 2);
-			aacDecoder = NativeAacDecode.Open(asc, WaveFormat);
+			var asc = esds.ES_Descriptor.DecoderConfig.AudioSpecificConfig;
+			WaveFormat = new WaveFormat((SampleRate)asc.SamplingFrequency, waveFormatEncoding, asc.ChannelConfiguration == 2);
+			AudioDecoder = new NativeAacDecode(esds, WaveFormat);
+		}
+		else if (audioSampleEntry.Dec3 is Dec3Box dec3)
+		{
+			WaveFormat = new WaveFormat((SampleRate)dec3.SampleRate, waveFormatEncoding, stereo: true);
+			AudioDecoder = new NativeEc3Decode(dec3, WaveFormat);
+		}
+		else
+			throw new Exception($"AudioSampleEntry does not contain {nameof(EsdsBox)} or {nameof(Dec3Box)}");
+	}
+
+	public FfmpegAacDecoder(AudioSampleEntry audioSampleEntry, WaveFormatEncoding waveFormatEncoding, SampleRate sampleRate, bool stereo)
+	{
+		WaveFormat = new WaveFormat(sampleRate, waveFormatEncoding, stereo);
+		if (audioSampleEntry.Esds is EsdsBox esds)
+			AudioDecoder = new NativeAacDecode(esds, WaveFormat);
+		else if (audioSampleEntry.Dec3 is Dec3Box dec3)
+			AudioDecoder = new NativeEc3Decode(dec3, WaveFormat);
+		else
+			throw new Exception($"AudioSampleEntry does not contain {nameof(EsdsBox)} or {nameof(Dec3Box)}");
+	}
+
+	public WaveEntry DecodeWave(FrameEntry input)
+	{
+		SendSamples(input.FrameData, input.SamplesInFrame);
+
+		int requiredSamples = GetMaxAvailableDecodeSize();
+
+		Memory<byte> decoded = new byte[requiredSamples * WaveFormat.BlockAlign];
+
+		if (WaveFormat.Encoding is NAudio.Wave.WaveFormatEncoding.Dts && WaveFormat.Channels == 2)
+		{
+			int receivedSamples;
+			fixed (byte* decodeBuff = decoded.Span)
+			{
+				receivedSamples = AudioDecoder.ReceiveDecodedFrame(decodeBuff, decodeBuff + decoded.Length / 2, requiredSamples);
+			}
+			return new WaveEntry
+			{
+				Chunk = input.Chunk,
+				SamplesInFrame = (uint)receivedSamples,
+				FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign / 2),
+				FrameData2 = decoded.Slice(requiredSamples * WaveFormat.BlockAlign / 2, receivedSamples * WaveFormat.BlockAlign / 2),
+			};
+		}
+		else
+		{
+			int receivedSamples;
+			fixed (byte* decodeBuff = decoded.Span)
+			{
+				receivedSamples = AudioDecoder.ReceiveDecodedFrame(decodeBuff, null, requiredSamples);
+			}
+
+			Debug.Assert(receivedSamples <= requiredSamples);
+
+			return new WaveEntry
+			{
+				Chunk = input.Chunk,
+				SamplesInFrame = (uint)receivedSamples,
+				FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign)
+			};
+		}
+	}
+
+	public WaveEntry DecodeFlush()
+	{
+		int requiredSamples = GetMaxAvailableDecodeSize();
+
+		Memory<byte> decoded = new byte[requiredSamples * WaveFormat.BlockAlign];
+
+		if (WaveFormat.Encoding is NAudio.Wave.WaveFormatEncoding.Dts && WaveFormat.Channels == 2)
+		{
+			int receivedSamples;
+			fixed (byte* decodeBuff = decoded.Span)
+			{
+				receivedSamples = AudioDecoder.DecodeFlush(decodeBuff, decodeBuff + decoded.Length / 2, requiredSamples);
+			}
+
+			return new WaveEntry
+			{
+				SamplesInFrame = (uint)receivedSamples,
+				FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign / 2),
+				FrameData2 = decoded.Slice(requiredSamples * WaveFormat.BlockAlign / 2, receivedSamples * WaveFormat.BlockAlign / 2),
+			};
+		}
+		else
+		{
+			int receivedSamples;
+			fixed (byte* decodeBuff = decoded.Span)
+			{
+				receivedSamples = AudioDecoder.DecodeFlush(decodeBuff, null, requiredSamples);
+			}
+
+			Debug.Assert(receivedSamples <= requiredSamples);
+
+			return new WaveEntry
+			{
+				SamplesInFrame = (uint)receivedSamples,
+				FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign),
+			};
+		}
+	}
+
+	private void SendSamples(ReadOnlyMemory<byte> frameData, uint numSamples)
+	{
+		int ret;
+
+		fixed (byte* inBuff = frameData.Span)
+		{
+			ret = AudioDecoder.DecodeFrame(inBuff, frameData.Length, numSamples);
 		}
 
-		public FfmpegAacDecoder(byte[] asc, WaveFormatEncoding waveFormatEncoding, SampleRate sampleRate, bool stereo)
-		{
-			Asc = AudioSpecificConfig.Parse(asc);
-			WaveFormat = new WaveFormat(sampleRate, waveFormatEncoding, stereo);
-			aacDecoder = NativeAacDecode.Open(asc, WaveFormat);
-		}
+		if (ret < 0)
+			throw new Exception($"Error decoding AAC frame. Code {ret:X}");
+	}
 
-		public WaveEntry DecodeWave(FrameEntry input)
-		{
-			SendSamples(input.FrameData, input.SamplesInFrame);
+	private int GetMaxAvailableDecodeSize() => AudioDecoder.ReceiveDecodedFrame(null, null, 0);
 
-			int requiredSamples = GetMaxAvailableDecodeSize();
-
-			Memory<byte> decoded = new byte[requiredSamples * WaveFormat.BlockAlign];
-
-			if (WaveFormat.Encoding is NAudio.Wave.WaveFormatEncoding.Dts && WaveFormat.Channels == 2)
-			{
-				int receivedSamples;
-				fixed (byte* decodeBuff = decoded.Span)
-				{
-					receivedSamples = aacDecoder.ReceiveDecodedFrame(decodeBuff, decodeBuff + decoded.Length / 2, requiredSamples);
-				}
-				return new WaveEntry
-				{
-					Chunk = input.Chunk,
-					SamplesInFrame = (uint)receivedSamples,
-					FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign / 2),
-					FrameData2 = decoded.Slice(requiredSamples * WaveFormat.BlockAlign / 2, receivedSamples * WaveFormat.BlockAlign / 2),
-				};
-			}
-			else
-			{
-				int receivedSamples;
-				fixed (byte* decodeBuff = decoded.Span)
-				{
-					receivedSamples = aacDecoder.ReceiveDecodedFrame(decodeBuff, null, requiredSamples);
-				}
-
-				Debug.Assert(receivedSamples <= requiredSamples);
-
-				return new WaveEntry
-				{
-					Chunk = input.Chunk,
-					SamplesInFrame = (uint)receivedSamples,
-					FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign)
-				};
-			}
-		}
-
-		public WaveEntry DecodeFlush()
-		{
-			int requiredSamples = GetMaxAvailableDecodeSize();
-
-			Memory<byte> decoded = new byte[requiredSamples * WaveFormat.BlockAlign];
-
-			if (WaveFormat.Encoding is NAudio.Wave.WaveFormatEncoding.Dts && WaveFormat.Channels == 2)
-			{
-				int receivedSamples;
-				fixed (byte* decodeBuff = decoded.Span)
-				{
-					receivedSamples = aacDecoder.DecodeFlush(decodeBuff, decodeBuff + decoded.Length / 2, requiredSamples);
-				}
-
-				return new WaveEntry
-				{
-					SamplesInFrame = (uint)receivedSamples,
-					FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign / 2),
-					FrameData2 = decoded.Slice(requiredSamples * WaveFormat.BlockAlign / 2, receivedSamples * WaveFormat.BlockAlign / 2),
-				};
-			}
-			else
-			{
-				int receivedSamples;
-				fixed (byte* decodeBuff = decoded.Span)
-				{
-					receivedSamples = aacDecoder.DecodeFlush(decodeBuff, null, requiredSamples);
-				}
-
-				Debug.Assert(receivedSamples <= requiredSamples);
-
-				return new WaveEntry
-				{
-					SamplesInFrame = (uint)receivedSamples,
-					FrameData = decoded.Slice(0, receivedSamples * WaveFormat.BlockAlign),
-				};
-			}
-		}
-
-		private void SendSamples(ReadOnlyMemory<byte> frameData, uint numSamples)
-		{
-			int ret;
-
-			fixed (byte* inBuff = frameData.Span)
-			{
-				ret = aacDecoder.DecodeFrame(inBuff, frameData.Length, numSamples);
-			}
-
-			if (ret < 0)
-				throw new Exception($"Error decoding AAC frame. Code {ret:X}");
-		}
-
-		private int GetMaxAvailableDecodeSize() => aacDecoder.ReceiveDecodedFrame(null, null, 0);
-
-		public void Dispose()
-		{
-			aacDecoder?.Close();
-		}
-
-		private class NativeAacDecode
-		{
-			private readonly DecoderHandle Handle;
-			private NativeAacDecode(DecoderHandle handle) => Handle = handle;
-
-			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern DecoderHandle AacDecoder_Open(AacDecoderOptions* decoder_options);
-
-			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int AacDecoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, uint nbSamples);
-
-			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int AacDecoder_ReceiveDecodedFrame(DecoderHandle self, byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInBufferSize);
-
-			[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-			private static extern int AacDecoder_DecodeFlush(DecoderHandle self, byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInBufferSize);
-
-			public static NativeAacDecode Open(byte[] ASC, WaveFormat waveFormat)
-			{
-				DecoderHandle handle;
-				fixed (byte* asc = ASC)
-				{
-					AacDecoderOptions options = new()
-					{
-						asc_size = ASC.Length,
-						sample_rate = waveFormat.SampleRate,
-						channels = waveFormat.Channels,
-						sample_fmt = (int)waveFormat.Encoding,
-						ASC = asc
-					};
-					handle = AacDecoder_Open(&options);
-				}
-
-				long err = handle.DangerousGetHandle();
-
-				if (err < 0)
-				{
-					throw new Exception($"Error opening AAC Decoder. Code {err}");
-				}
-
-				return new NativeAacDecode(handle);
-			}
-
-			public void Close() => Handle.Close();
-			public int DecodeFrame(byte* pCompressedAudio, int cbInputSize, uint nbSamples)
-				=> AacDecoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize, nbSamples);
-			public int ReceiveDecodedFrame(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
-				=> AacDecoder_ReceiveDecodedFrame(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
-			public int DecodeFlush(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
-				=> AacDecoder_DecodeFlush(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
-
-			private class DecoderHandle : SafeHandle
-			{
-				[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-				private static extern int AacDecoder_Close(IntPtr self);
-				private DecoderHandle() : base(IntPtr.Zero, true) { }
-				public override bool IsInvalid => IsClosed || handle == IntPtr.Zero;
-				protected override bool ReleaseHandle()
-				{
-					AacDecoder_Close(handle);
-					return true;
-				}
-			}
-
-			[StructLayout(LayoutKind.Sequential)]
-			private struct AacDecoderOptions
-			{
-				public int asc_size;
-				public int sample_rate;
-				public int channels;
-				public int sample_fmt;
-				public byte* ASC;
-			}
-		}
+	public void Dispose()
+	{
+		AudioDecoder.Dispose();
 	}
 }

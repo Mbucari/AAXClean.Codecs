@@ -43,15 +43,17 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		{
 			callback.LameConfig = LameConfig;
 			newFileCallback(callback);
-			
+
 			if (callback.OutputFile is not Stream outFile)
 				throw new InvalidOperationException("Output file stream null");
 
 			LameConfig = callback.LameConfig;
 			CurrentWriterOpen = true;
-
-			LameConfig.ID3.Track = $"{callback.TrackNumber}/{callback.TrackCount}";
-			LameConfig.ID3.Title = callback.TrackTitle ?? LameConfig.ID3.Title;
+			if (LameConfig.ID3 is ID3TagData tagData)
+			{
+				tagData.Track = $"{callback.TrackNumber}/{callback.TrackCount}";
+				tagData.Title = callback.TrackTitle ?? tagData.Title;
+			}
 			OutputStream = outFile;
 			Writer = new LameMP3FileWriter(outFile, WaveFormat, LameConfig);
 		}

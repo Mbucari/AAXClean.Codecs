@@ -115,7 +115,7 @@ int32_t AacEncoder_Close(PAacEncoder config) {
     return ERR_SUCCESS;
 }
 
-EXPORT int32_t AacEncoder_GetExtraData(PAacEncoder config, uint8_t* ascBuffer, uint32_t* pSize) {
+EXPORT int32_t AacEncoder_GetExtraData(PAacEncoder config, uint8_t* ascBuffer, int32_t* pSize) {
 
     int32_t ret;
 
@@ -141,7 +141,7 @@ PVOID AacEncoder_Open(PAacEncoderOptions encoder_options) {
 
     PAacEncoder penc = NULL;
     AVCodec* codec;
-    int ret = 0;
+    int32_t ret = 0;
 
     if (!encoder_options) {
         ret = -1;

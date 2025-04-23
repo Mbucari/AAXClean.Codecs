@@ -1,4 +1,5 @@
 ﻿using AAXClean.FrameFilters;
+using Mpeg4Lib.Boxes;
 
 namespace AAXClean.Codecs.FrameFilters.Audio
 {
@@ -8,13 +9,13 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		public WaveFormat WaveFormat => AacDecoder.WaveFormat;
 
 		private readonly FfmpegAacDecoder AacDecoder;
-		public AacToWave(byte[] asc, WaveFormatEncoding waveFormat, SampleRate sampleRate, bool stereo)
+		public AacToWave(AudioSampleEntry audioSampleEntry, WaveFormatEncoding waveFormat, SampleRate sampleRate, bool stereo)
 		{
-			AacDecoder = new FfmpegAacDecoder(asc, waveFormat, sampleRate, stereo);
+			AacDecoder = new FfmpegAacDecoder(audioSampleEntry, waveFormat, sampleRate, stereo);
 		}
-		public AacToWave(byte[] asc, WaveFormatEncoding waveFormat)
+		public AacToWave(AudioSampleEntry audioSampleEntry, WaveFormatEncoding waveFormat)
 		{
-			AacDecoder = new FfmpegAacDecoder(asc, waveFormat);
+			AacDecoder = new FfmpegAacDecoder(audioSampleEntry, waveFormat);
 		}
 
 		protected override WaveEntry PerformFinalFiltering() => AacDecoder.DecodeFlush();

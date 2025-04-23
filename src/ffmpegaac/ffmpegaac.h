@@ -31,6 +31,12 @@ typedef void* PVOID;
 #pragma warning Unknown dynamic link import/export semantics.
 #endif
 
+typedef struct _OutputOptions
+{
+	int32_t out_sample_rate;
+	int32_t out_sample_fmt;
+	int32_t out_channels;
+} OutputOptions, * POutputOptions;
 
 typedef struct _AacDecoder {
     AVCodecContext* context;
@@ -38,17 +44,22 @@ typedef struct _AacDecoder {
     AVPacket* packet;
     AVFrame* frame;
     int64_t use_temp_buffer;
-    int nb_samples;
+    int32_t nb_samples;
     uint8_t* data[AV_NUM_DATA_POINTERS];
 }AacDecoder, * PAacDecoder;
 
 typedef struct _AacDecoderOptions {
+	OutputOptions output_options;
     int32_t asc_size;
-    int32_t sample_rate;
-    int32_t channels;
-    int32_t sample_fmt;
     uint8_t* ASC;
 }AacDecoderOptions, * PAacDecoderOptions;
+
+typedef struct _EC3DecoderOptions {
+    OutputOptions output_options;
+    int32_t in_sample_rate;
+    uint8_t in_subwoofer;
+    uint8_t in_audio_coding_mode;
+}EC3DecoderOptions, * PEC3DecoderOptions;
 
 typedef struct _AacEncoder {
     AVCodecContext* context;
@@ -78,6 +89,8 @@ typedef struct _AacEncoderOptions {
 #define ERR_SWR_INIT_FAIL -8
 #define ERR_AVPACKET_INIT_FAIL -9
 #define ERR_AAC_DECODE_FAIL -10
+#define ERR_SWR_OUTPUT_CHANNELS_UNSUPPORTED -11
+#define ERR_SWR_OUTPUT_FORMAT_UNSUPPORTED -12
 
 /**
 * Open an AAC-LC audio encoder instance. Only supports AV_SAMPLE_FMT_FLTP
@@ -101,7 +114,7 @@ EXPORT PVOID AacEncoder_Open(PAacEncoderOptions encoder_options);
 * @return 0 if ASC was successfully copied to the buffer. Returns the ASC size if the buffer was null or too small.
 */
 
-EXPORT int32_t AacEncoder_GetExtraData(PAacEncoder config, uint8_t* ascBuffer, uint32_t* pSize);
+EXPORT int32_t AacEncoder_GetExtraData(PAacEncoder config, uint8_t* ascBuffer, int32_t* pSize);
 
 
 
@@ -156,8 +169,18 @@ EXPORT int32_t AacEncoder_EncodeFlush(PAacEncoder config);
 *
 * @return handle to the decoder instance
 */
-EXPORT PVOID AacDecoder_Open(PAacDecoderOptions decoder_options);
-EXPORT int32_t AacDecoder_Close(PAacDecoder config);
+EXPORT PVOID Decoder_OpenAac(PAacDecoderOptions decoder_options);
+
+/**
+* Open an E-AC-3 audio decoder instance.
+*
+* @param decoder_options options for decoding the audio.
+*
+* @return handle to the decoder instance
+*/
+EXPORT PVOID Decoder_OpenEC3(PEC3DecoderOptions decoder_options);
+
+EXPORT int32_t Decoder_Close(PAacDecoder config);
 
 /**
 * Send a frame of AAC-LC audio to the decoder.
@@ -175,7 +198,7 @@ EXPORT int32_t AacDecoder_Close(PAacDecoder config);
 * @return 0 is success, otherwise a negative error code.
 * 
 */
-EXPORT int32_t AacDecoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize, uint32_t nbSamples);
+EXPORT int32_t Decoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize, int32_t nbSamples);
 /**
 * Receive a decoded audio frame. Must call first with outBuff0 null and cbOutBuff 0
 to retrieve the size of the decoded frame. Call repeatedly, first with NULL/0 then
@@ -197,7 +220,7 @@ audio samples) of the decoded frame. Otherwise the number of samples actually
 decoded if positive, or a negative error code.
 *
 */
-EXPORT int32_t AacDecoder_ReceiveDecodedFrame(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, int32_t numSamples);
+EXPORT int32_t Decoder_ReceiveDecodedFrame(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, int32_t numSamples);
 /**
 * Flush all data in the decoder buffer and signal the end of decoding. Call aacDecoder_ReceiveDecodedFrame()
 with NULL/0 to get the maximum size of the buffer needed to drain the decoder.
@@ -213,4 +236,4 @@ audio. Unused for packet audio.
 *
 * @return the number of samples decoded, otherwise a negative error code.
 */
-EXPORT int32_t AacDecoder_DecodeFlush(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, uint32_t cbOutBuff);
+EXPORT int32_t Decoder_DecodeFlush(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, uint32_t cbOutBuff);

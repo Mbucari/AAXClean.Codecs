@@ -1,10 +1,10 @@
 ﻿using AAXClean.Codecs.FrameFilters.Audio;
 using AAXClean.FrameFilters;
 using AAXClean.FrameFilters.Text;
+using Mpeg4Lib.Boxes;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace AAXClean.Codecs
@@ -18,7 +18,7 @@ namespace AAXClean.Codecs
 			if (minDuration.TotalSeconds * (int)mp4File.SampleRate < 2) throw new ArgumentOutOfRangeException(nameof(minDuration), "must be no shorter than 2 audio samples.");
 
 			FrameTransformBase<FrameEntry, FrameEntry> filter1 = mp4File.GetAudioFrameFilter();
-			AacToWave filter2 = new(mp4File.AscBlob, WaveFormatEncoding.Pcm);
+			AacToWave filter2 = new(mp4File.AudioSampleEntry, WaveFormatEncoding.Pcm);
 			SilenceDetectFilter f3 = new(
 				decibels,
 				minDuration,
@@ -44,7 +44,7 @@ namespace AAXClean.Codecs
 			if (outputStream.CanWrite is false) throw new ArgumentException("output stream is not writable", nameof(outputStream));
 
 			lameConfig ??= mp4File.GetDefaultLameConfig();
-			lameConfig.ID3 ??= mp4File.AppleTags?.ToIDTags() ?? new();
+			lameConfig.ID3 ??= mp4File.AppleTags?.ToIDTags() ?? new(nameof(AAXClean));
 
 			if (lameConfig.ID3.Chapters.Count == 0 && userChapters is not null)
 			{
@@ -58,7 +58,7 @@ namespace AAXClean.Codecs
 			FrameTransformBase<FrameEntry, FrameEntry> filter1 = mp4File.GetAudioFrameFilter();
 
 			AacToWave filter2 = new(
-				mp4File.AscBlob,
+				mp4File.AudioSampleEntry,
 				WaveFormatEncoding.Pcm,
 				sampleRate,
 				stereo);
@@ -97,11 +97,17 @@ namespace AAXClean.Codecs
 			var sampleRate = mp4File.GetMaxSampleRate(options.SampleRate);
 
 			ChapterQueue chapterQueue = new(mp4File.SampleRate, sampleRate);
+			if (userChapters is not null)
+			{
+				if (mp4File.Moov.TextTrack is null)
+					mp4File.Moov.CreateEmptyTextTrack();
+				chapterQueue.AddRange(userChapters);
+			}
 
 			FrameTransformBase<FrameEntry, FrameEntry> filter1 = mp4File.GetAudioFrameFilter();
 
 			AacToWave filter2 = new(
-				mp4File.AscBlob,
+				mp4File.AudioSampleEntry,
 				WaveFormatEncoding.Pcm,
 				sampleRate,
 				stereo);
@@ -116,9 +122,6 @@ namespace AAXClean.Codecs
 
 			filter1.LinkTo(filter2);
 			filter2.LinkTo(filter3);
-
-			if (mp4File.Moov.TextTrack is not null && userChapters is not null)
-				chapterQueue.AddRange(userChapters);
 
 			if (mp4File.Moov.TextTrack is null || userChapters is not null)
 			{
@@ -159,7 +162,7 @@ namespace AAXClean.Codecs
 			FrameTransformBase<FrameEntry, FrameEntry> filter1 = mp4File.GetAudioFrameFilter();
 
 			AacToWave filter2 = new(
-				mp4File.AscBlob,
+				mp4File.AudioSampleEntry,
 				WaveFormatEncoding.Dts,
 				sampleRate,
 				stereo);
@@ -185,7 +188,7 @@ namespace AAXClean.Codecs
 			ArgumentNullException.ThrowIfNull(newFileCallback, nameof(newFileCallback));
 
 			lameConfig ??= mp4File.GetDefaultLameConfig();
-			lameConfig.ID3 ??= mp4File.AppleTags?.ToIDTags() ?? new();
+			lameConfig.ID3 ??= mp4File.AppleTags?.ToIDTags() ?? new(nameof(AAXClean));
 
 			var stereo = lameConfig.Mode is not NAudio.Lame.MPEGMode.Mono;
 			var sampleRate = mp4File.GetMaxSampleRate((SampleRate?)lameConfig.OutputSampleRate);
@@ -193,7 +196,7 @@ namespace AAXClean.Codecs
 			FrameTransformBase<FrameEntry, FrameEntry> filter1 = mp4File.GetAudioFrameFilter();
 
 			AacToWave filter2 = new(
-				mp4File.AscBlob,
+				mp4File.AudioSampleEntry,
 				WaveFormatEncoding.IeeeFloat,
 				sampleRate,
 				stereo);
@@ -216,15 +219,19 @@ namespace AAXClean.Codecs
 		{
 			ArgumentNullException.ThrowIfNull(mp4File, nameof(mp4File));
 
-			//USAC is much more efficient than LC, so allow double the bitrate when transcoding
-			var USAC_Scaler = mp4File.AudioObjectType == 42 ? 2 : 1;
+			double USAC_Scaler = 1;
+
+			if (mp4File.AudioSampleEntry.Esds is EsdsBox esds &&
+				esds.ES_Descriptor.DecoderConfig.AudioSpecificConfig.AudioObjectType == 42)
+				//USAC is much more efficient than LC, so allow double the bitrate when transcoding;
+				USAC_Scaler = 2;
 
 			NAudio.Lame.LameConfig lameConfig = new NAudio.Lame.LameConfig
 			{
 				ABRRateKbps = (int)Math.Round(mp4File.AverageBitrate / 1024d / mp4File.AudioChannels * USAC_Scaler),
 				Mode = NAudio.Lame.MPEGMode.Mono,
 				VBR = NAudio.Lame.VBRMode.ABR,
-				ID3 = mp4File.AppleTags?.ToIDTags() ?? new()
+				ID3 = mp4File.AppleTags?.ToIDTags() ?? new(nameof(AAXClean))
 			};
 			return lameConfig;
 		}
@@ -240,7 +247,7 @@ namespace AAXClean.Codecs
 		{
 			ArgumentNullException.ThrowIfNull(appleTags, nameof(appleTags));
 
-			NAudio.Lame.ID3TagData tags = new()
+			NAudio.Lame.ID3TagData tags = new(nameof(AAXClean))
 			{
 				Album = appleTags.Album,
 				AlbumArt = appleTags.Cover,

@@ -97,7 +97,7 @@ if ! [ -f "$FFMPEG_MAIN/libavcodec/libavcodec.a" ]; then
   echo "Building $FFMPEG_NAME"
   cd $FFMPEG_MAIN
   export PKG_CONFIG_PATH=$FDK_INSTALL/lib/pkgconfig
-  ./configure --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac
+  ./configure --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac --enable-decoder=eac3
   make
   cd $THIS_DIR
 fi
