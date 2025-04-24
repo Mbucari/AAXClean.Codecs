@@ -15,21 +15,21 @@
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<dependencies>
 			<group targetFramework="net9.0">
-				<dependency id="AAXClean" version="2.0.0.5" />
+				<dependency id="AAXClean" version="2.0.0.9" />
 				<dependency id="NAudio.Core" version="2.2.1" />
 			</group>
 			<group targetFramework="net8.0">
-				<dependency id="AAXClean" version="2.0.0.5" />
+				<dependency id="AAXClean" version="2.0.0.9" />
 				<dependency id="NAudio.Core" version="2.2.1" />
 			</group>
 		</dependencies>
 	</metadata>
 	<dependencies>
 		<group targetFramework="net9.0">
-			<dependency id="NAudio.Lame" version="1.0.20" />
+			<dependency id="NAudio.Lame" version="1.0.21" />
 		</group>
 		<group targetFramework="net8.0">
-			<dependency id="NAudio.Lame" version="1.0.20" />
+			<dependency id="NAudio.Lame" version="1.0.21" />
 		</group>
 	</dependencies>
 	<files>

@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net9.0;net8.0</TargetFrameworks>
-		<Version>2.0.0.5</Version>
+		<Version>2.0.0.9</Version>
 		<Authors>MrGneissGuy</Authors>
 		<Company>Just Me, Inc.</Company>
 		<RuntimeIdentifiers>win-x64;win-x86;linux-arm64;linux-x64;osx-arm64;osx-x64</RuntimeIdentifiers>
@@ -13,6 +13,7 @@
 		<ProjectUrl>https://github.com/Mbucari/AAXClean.Codecs</ProjectUrl>
 		<PackageProjectUrl>https://github.com/Mbucari/AAXClean.Codecs</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/Mbucari/AAXClean.Codecs.git</RepositoryUrl>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<RepositoryType>Git</RepositoryType>
 		<PackageTags>Audible AAC AAXC m4b mp3 audiobook</PackageTags>
 		<NeutralLanguage>en</NeutralLanguage>
@@ -40,7 +41,7 @@
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(Configuration)'=='Release'">
-		<PackageReference Include="AAXClean" Version="2.0.0.5" />
+		<PackageReference Include="AAXClean" Version="2.0.0.9" />
 	</ItemGroup>
 	
 	<ItemGroup>

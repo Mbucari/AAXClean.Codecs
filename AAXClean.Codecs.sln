@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AAXClean.Codecs", "AAXClean.Codecs\AAXClean.Codecs.csproj", "{F5B23D7B-C2A5-40A3-B475-BFE356373DF8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AAXClean.Codecs", "src\AAXClean.Codecs\AAXClean.Codecs.csproj", "{F5B23D7B-C2A5-40A3-B475-BFE356373DF8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AAXClean.Codecs.Test", "AAXClean.Codecs.Test\AAXClean.Codecs.Test.csproj", "{18923356-9ED4-4FBA-A430-432753DE0E16}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AAXClean.Codecs.Test", "tests\AAXClean.Codecs.Test\AAXClean.Codecs.Test.csproj", "{18923356-9ED4-4FBA-A430-432753DE0E16}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B02FC7EE-FCEA-49BA-B7E0-5DECF9BDD0FE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NAudio.Lame", "NAudio.Lame\NAudio.Lame.csproj", "{CC519235-B9D4-4561-A276-D4C6DF752617}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NAudio.Lame", "src\NAudio.Lame\NAudio.Lame.csproj", "{CC519235-B9D4-4561-A276-D4C6DF752617}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

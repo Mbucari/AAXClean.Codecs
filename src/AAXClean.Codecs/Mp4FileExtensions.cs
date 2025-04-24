@@ -163,7 +163,7 @@ namespace AAXClean.Codecs
 
 			AacToWave filter2 = new(
 				mp4File.AudioSampleEntry,
-				WaveFormatEncoding.Dts,
+				WaveFormatEncoding.Pcm,
 				sampleRate,
 				stereo);
 
@@ -197,7 +197,7 @@ namespace AAXClean.Codecs
 
 			AacToWave filter2 = new(
 				mp4File.AudioSampleEntry,
-				WaveFormatEncoding.IeeeFloat,
+				WaveFormatEncoding.Pcm,
 				sampleRate,
 				stereo);
 

@@ -3,8 +3,6 @@
 	public enum WaveFormatEncoding : int
 	{
 		Pcm = 1,
-		IeeeFloat = 3,
-		Dts = 8
 	}
 
 	public class WaveFormat : NAudio.Wave.WaveFormat
