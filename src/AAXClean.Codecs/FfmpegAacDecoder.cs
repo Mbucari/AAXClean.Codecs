@@ -14,11 +14,16 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 
 	private readonly NativeDecode AudioDecoder;
 
+	private int NumberOfSamplesSkipped = 0;
+	private int MaxSamplesToSkip { get; }
+	private static TimeSpan MaxTimeToSkip { get; } = TimeSpan.FromSeconds(1);
+
 	public FfmpegAacDecoder(AudioSampleEntry audioSampleEntry, WaveFormatEncoding waveFormatEncoding)
 	{
 		if (audioSampleEntry.Esds is EsdsBox esds)
 		{
 			var asc = esds.ES_Descriptor.DecoderConfig.AudioSpecificConfig;
+			MaxSamplesToSkip = GetMaxNumberOfSamplesToSkip(esds);
 			WaveFormat = new WaveFormat((SampleRate)asc.SamplingFrequency, waveFormatEncoding, asc.ChannelConfiguration == 2);
 			AudioDecoder = new NativeAacDecode(esds, WaveFormat);
 		}
@@ -35,16 +40,41 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 	{
 		WaveFormat = new WaveFormat(sampleRate, waveFormatEncoding, stereo);
 		if (audioSampleEntry.Esds is EsdsBox esds)
+		{
+			MaxSamplesToSkip = GetMaxNumberOfSamplesToSkip(esds);
 			AudioDecoder = new NativeAacDecode(esds, WaveFormat);
+		}
 		else if (audioSampleEntry.Dec3 is Dec3Box dec3)
 			AudioDecoder = new NativeEc3Decode(dec3, WaveFormat);
 		else
 			throw new Exception($"AudioSampleEntry does not contain {nameof(EsdsBox)} or {nameof(Dec3Box)}");
 	}
 
+	private static int GetMaxNumberOfSamplesToSkip(EsdsBox esds)
+		=> esds.ES_Descriptor.DecoderConfig.AudioSpecificConfig.AudioObjectType == 42
+		? (int)(esds.ES_Descriptor.DecoderConfig.AudioSpecificConfig.SamplingFrequency * MaxTimeToSkip.TotalSeconds)
+		: 0;
+
 	public WaveEntry DecodeWave(FrameEntry input)
 	{
-		SendSamples(input.FrameData, input.SamplesInFrame);
+		if (!SendSamples(input.FrameData, input.SamplesInFrame))
+		{
+			if (NumberOfSamplesSkipped + (int)input.SamplesInFrame < MaxSamplesToSkip)
+			{
+				NumberOfSamplesSkipped += (int)input.SamplesInFrame;
+			}
+			else
+				throw new Exception($"Error decoding AAC frame even after skipping {NumberOfSamplesSkipped} samples");
+
+			//Failed to decode the frame. May need to skip to seed the decoder
+			//for some number of frames before trying to receive decoded data.
+			return new WaveEntry
+			{
+				Chunk = input.Chunk,
+				SamplesInFrame = 0,
+				FrameData = Memory<byte>.Empty,
+			};
+		}
 
 		int requiredSamples = GetMaxAvailableDecodeSize();
 
@@ -123,7 +153,7 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 		}
 	}
 
-	private void SendSamples(ReadOnlyMemory<byte> frameData, uint numSamples)
+	private bool SendSamples(ReadOnlyMemory<byte> frameData, uint numSamples)
 	{
 		int ret;
 
@@ -132,8 +162,16 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 			ret = AudioDecoder.DecodeFrame(inBuff, frameData.Length, numSamples);
 		}
 
-		if (ret < 0)
-			throw new Exception($"Error decoding AAC frame. Code {ret:X}");
+		if (ret >= 0)
+		{
+			return true;
+		}
+		else if (ret == -1313558101)
+		{
+			return false;
+		}
+		
+		throw new Exception($"Error decoding AAC frame. Code {ret:X}");
 	}
 
 	private int GetMaxAvailableDecodeSize() => AudioDecoder.ReceiveDecodedFrame(null, null, 0);
