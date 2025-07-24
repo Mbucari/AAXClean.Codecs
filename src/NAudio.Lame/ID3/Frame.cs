@@ -9,40 +9,41 @@ namespace NAudio.Lame.ID3
 	public abstract class Frame
 	{
 		public Header Header { get; }
-		public Frame? Parent { get; }
+		protected Frame Parent { get; }
 		public virtual int Size => Children.Sum(b => b.Size);
 		public List<Frame> Children { get; } = new();
+		public virtual ushort Version => Parent.Version;
 
-		public Frame(Header header, Frame? parent)
+		public Frame(Header header, Frame parent)
 		{
 			Header = header;
 			Parent = parent;
 		}
 
-		public void Save(Stream file)
+		public virtual void Save(Stream file, ushort version)
 		{
-			Header.Render(file, Size);
+			Header.Render(file, Size, version);
 
 			Render(file);
 
 			foreach (var child in Children)
-				child.Save(file);
+				child.Save(file, version);
 		}
 
 		public override string ToString() => Header.ToString();
 
-		protected void LoadChildren(Stream file)
+		protected void LoadChildren(Stream file, long endPosition)
 		{
-			long endPos = Header.OriginalPosition + Header.Size + Header.HeaderSize;
+			var origPosition = file.Position;
 
-			while (file.Position < endPos && TagFactory.CreateTag(file, this) is Frame child)
+			while (file.Position < endPosition
+				&& origPosition == file.Position
+				&& TagFactory.CreateTag(file, this, out var lengthRead) is Frame child and not EmptyFrame)
 			{
-				if (child.Header.Identifier == "\0\0\0\0")
-					break;
+				origPosition += lengthRead;
 				Children.Add(child);
-				if (child.Header.OriginalPosition + child.Header.Size + Header.HeaderSize != file.Position)
-					break;
 			}
+			Header.SeekForwardToPosition(file, endPosition);
 		}
 
 		public static string ReadSizeString(Stream file, bool unicode, int bytes)

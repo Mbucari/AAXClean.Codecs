@@ -8,16 +8,16 @@ namespace NAudio.Lame.ID3
 		public override int Size => 1 + (Text is null ? 0 : IsUnicode(Text) ? UnicodeLength(Text) : Text.Length);
 		public byte EncodingFlag { get; set; }
 		public string? Text { get; set; }
-		private TEXTFrame(Header header, Frame? parent) : base(header, parent) { }
-		public TEXTFrame(Stream file, Header header, Frame? parent) : base(header, parent)
+		private TEXTFrame(Header header, Frame parent) : base(header, parent) { }
+		public TEXTFrame(Stream file, Header header, Frame parent) : base(header, parent)
 		{
 			EncodingFlag = (byte)file.ReadByte();
 			Text = ReadSizeString(file, EncodingFlag == 1, Header.Size - 1);
 		}
 
-		public static TEXTFrame Create(Frame? parent, string frameId, string text)
+		public static TEXTFrame Create(Frame parent, string frameId, string text)
 		{
-			var tit2 = new TEXTFrame(new FrameHeader(frameId, 0), parent)
+			var tit2 = new TEXTFrame(new FrameHeader(frameId, 0, parent.Version), parent)
 			{
 				Text = text
 			};

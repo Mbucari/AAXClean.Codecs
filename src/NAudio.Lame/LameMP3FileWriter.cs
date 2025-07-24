@@ -284,13 +284,14 @@ namespace NAudio.Lame
 		}
 
 		private object lockObj = new();
+		private bool isFlushed = false;
 
 		/// <summary>Finalise compression, add final output to output stream and close encoder</summary>
 		public override void Flush()
 		{
 			lock (lockObj)
 			{
-				if (_outStream is null) return;
+				if (isFlushed || _outStream is null) return;
 
 				// write remaining data
 				if (inPosition > 0)
@@ -311,6 +312,8 @@ namespace NAudio.Lame
 				// Cannot continue after flush, so clear output stream
 				if (_disposeOutput)
 					_outStream.Dispose();
+
+				isFlushed = true;
 			}
 
 			// report progress
@@ -468,7 +471,7 @@ namespace NAudio.Lame
 			else
             {
                 using MemoryStream id3Stream = new(data);
-				if ( ID3.Id3Tag.Create(id3Stream) is not ID3.Id3Tag tag1)
+				if (ID3.Id3Tag.Create(id3Stream) is not ID3.Id3Tag tag1)
 				{
 					_lame.ID3WriteTagAutomatic = true;
 					return;
@@ -481,10 +484,10 @@ namespace NAudio.Lame
 				{
 					int i = 0;
 					List<ID3.CHAPFrame> chaps = new();
-					var toc = new ID3.CTOCFrame(ID3.ChapterFlags.TopLevel | ID3.ChapterFlags.Ordered);
+					var toc = new ID3.CTOCFrame(tag1, ID3.ChapterFlags.TopLevel | ID3.ChapterFlags.Ordered);
 					foreach (var c in tag.Chapters)
 					{
-						var chap = new ID3.CHAPFrame(c.start, c.end, i++, tag.Title);
+						var chap = new ID3.CHAPFrame(tag1, c.start, c.end, i++, c.title);
 						toc.Add(chap);
 						chaps.Add(chap);
 					}

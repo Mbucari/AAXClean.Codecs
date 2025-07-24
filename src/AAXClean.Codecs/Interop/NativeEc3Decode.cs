@@ -13,14 +13,14 @@ internal unsafe class NativeEc3Decode : NativeDecode
 	{
 		ArgumentNullException.ThrowIfNull(dec3, nameof(dec3));
 		ArgumentNullException.ThrowIfNull(waveFormat, nameof(waveFormat));
-		ArgumentOutOfRangeException.ThrowIfGreaterThan(dec3.acmod, 7, nameof(dec3.acmod));
+		var firstIndSubstream = dec3.IndependentSubstream[0];
 
 		Ec3DecoderOptions options = new()
 		{
 			output_options = GetOutputOptions(waveFormat),
 			in_sample_rate = dec3.SampleRate,
-			in_subwoofer = (byte)(dec3.lfeon ? 1 : 0),
-			in_audio_coding_mode = dec3.acmod,
+			in_subwoofer = (byte)(firstIndSubstream.lfeon ? 1 : 0),
+			in_audio_coding_mode = (byte)firstIndSubstream.acmod,
 		};
 		Handle = Decoder_OpenEC3(ref options);
 	}

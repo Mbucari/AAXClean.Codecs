@@ -4,13 +4,20 @@ namespace NAudio.Lame.ID3
 {
 	internal class TagFactory
 	{
-		public static Frame CreateTag(Stream file, Frame? parent)
+		public static Frame CreateTag(Stream file, Frame parent, out int lengthRead)
 		{
-			var header = Header.Create(file);
+			var startPos = file.Position;
+			var frameHeader = FrameHeader.Create(file, parent.Version);
+			var frame = CreateTagInternal(frameHeader, file, parent);
+			lengthRead = (int)(file.Position - startPos) + frameHeader.HeaderSize;
+			return frame;
+		}
 
-			if (header is Id3Header id3Header && header.Identifier is "ID3") return new Id3Tag(file, id3Header);
-			if (header is not FrameHeader frameHeader) throw new InvalidDataException($"Header must be a {nameof(Id3Header)} or {nameof(FrameHeader)}");
-			if (header.Identifier.StartsWith('T') && header.Identifier is not "TXXX") return new TEXTFrame(file, frameHeader, parent);
+		private static Frame CreateTagInternal(FrameHeader frameHeader, Stream file, Frame parent)
+		{
+
+			if (parent.Version >= 0x300 && frameHeader.Identifier.StartsWith('T') && frameHeader.Identifier is not "TXXX")
+				return new TEXTFrame(file, frameHeader, parent);
 
 			return frameHeader.Identifier switch
 			{
@@ -18,6 +25,7 @@ namespace NAudio.Lame.ID3
 				"APIC" => new APICFrame(file, frameHeader, parent),
 				"CHAP" => new CHAPFrame(file, frameHeader, parent),
 				"CTOC" => new CTOCFrame(file, frameHeader, parent),
+				"\0\0\0" or "\0\0\0\0" => new EmptyFrame(frameHeader, parent),
 				_ => new UnknownFrame(file, frameHeader, parent),
 			};
 		}

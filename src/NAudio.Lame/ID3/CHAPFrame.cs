@@ -21,30 +21,31 @@ namespace NAudio.Lame.ID3
 		public uint ByteStart { get; set; }
 		public uint ByteEnd { get; set; }
 
-		public CHAPFrame(TimeSpan startTime, TimeSpan endTime, int chNum, string? title = null, string? subtitle = null, string chapterIdPrefix = "CH")
-			: base(new FrameHeader("CHAP", 0), null)
+		public CHAPFrame(Frame parent, TimeSpan startTime, TimeSpan endTime, int chNum, string title, string? subtitle = null, string? subtitle2 = null)
+			: base(new FrameHeader("CHAP", 0, parent.Version), parent)
 		{
-			ChapterID = $"{chapterIdPrefix}{chNum:D3}";
+			ChapterID = title;
 			StartTime = startTime;
 			EndTime = endTime;
 			ByteStart = uint.MaxValue;
 			ByteEnd = uint.MaxValue;
 
-			if (title is not null)
-				TEXTFrame.Create(this, "TIT2", title);
-
 			if (subtitle is not null)
-				TEXTFrame.Create(this, "TIT3", subtitle);
+				TEXTFrame.Create(this, "TIT2", subtitle);
+
+			if (subtitle2 is not null)
+				TEXTFrame.Create(this, "TIT3", subtitle2);
 		}
 
-		public CHAPFrame(Stream file, Header header, Frame? parent) : base(header, parent)
+		public CHAPFrame(Stream file, Header header, Frame parent) : base(header, parent)
 		{
+			var endPosition = file.Position + Header.Size;
 			ChapterID = ReadNullTerminatedString(file, false);
 			StartTime = TimeSpan.FromMilliseconds(Header.ReadUInt32BE(file));
 			EndTime = TimeSpan.FromMilliseconds(Header.ReadUInt32BE(file));
 			ByteStart = Header.ReadUInt32BE(file);
 			ByteEnd = Header.ReadUInt32BE(file);
-			LoadChildren(file);
+			LoadChildren(file, endPosition);
 		}
 
 		public override void Render(Stream file)

@@ -12,7 +12,7 @@ namespace NAudio.Lame.ID3
 		
 		public string FieldName { get; }
 		public string FieldValue { get; }
-		public TXXXFrame(Stream file, Header header, Frame? parent) : base(header, parent)
+		public TXXXFrame(Stream file, Header header, Frame parent) : base(header, parent)
 		{
 			var startPos = file.Position;
 			bool unicode = file.ReadByte() == 1;
