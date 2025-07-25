@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net9.0;net8.0</TargetFrameworks>
-		<Version>2.0.1.3</Version>
+		<Version>2.0.2.1</Version>
 		<Authors>MrGneissGuy</Authors>
 		<Company>Just Me, Inc.</Company>
 		<RuntimeIdentifiers>win-x64;win-x86;linux-arm64;linux-x64;osx-arm64;osx-x64</RuntimeIdentifiers>
@@ -41,7 +41,7 @@
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(Configuration)'=='Release'">
-		<PackageReference Include="AAXClean" Version="2.0.1.3" />
+		<PackageReference Include="AAXClean" Version="2.0.2.1" />
 	</ItemGroup>
 	
 	<ItemGroup>

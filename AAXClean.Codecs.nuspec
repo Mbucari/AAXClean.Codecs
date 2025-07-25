@@ -2,34 +2,34 @@
 	<metadata>
 		<id>AAXClean.Codecs</id>
 		<version>0.0.0</version>
-		<description>Filter and convert aac audio from AAXClean</description>
+		<description>Filter and convert aac and e-ac-3 audio from AAXClean</description>
 		<Summary>An add-on module for AAXClean to filter aac audio. </Summary>
 		<authors>MrGneissGuy</authors>
 		<repository type="git" url="https://github.com/Mbucari/AAXClean.Codecs.git" branch="master" />
 		<RepositoryType>Git</RepositoryType>
 		<projectUrl>https://github.com/Mbucari/AAXClean.Codecs</projectUrl>
-		<Tags>Audible AAC AAXC m4b mp3 audiobook</Tags>
+		<Tags>Audible AAC e-ac-3 AAXC m4b mp3 audiobook</Tags>
 		<language>en-US</language>
 		<readme>docs\README.md</readme>
 		<license type="file">LICENSE.txt</license>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<dependencies>
 			<group targetFramework="net9.0">
-				<dependency id="AAXClean" version="2.0.1.3" />
+				<dependency id="AAXClean" version="2.0.2.1" />
 				<dependency id="NAudio.Core" version="2.2.1" />
 			</group>
 			<group targetFramework="net8.0">
-				<dependency id="AAXClean" version="2.0.1.3" />
+				<dependency id="AAXClean" version="2.0.2.1" />
 				<dependency id="NAudio.Core" version="2.2.1" />
 			</group>
 		</dependencies>
 	</metadata>
 	<dependencies>
 		<group targetFramework="net9.0">
-			<dependency id="NAudio.Lame" version="1.0.21" />
+			<dependency id="NAudio.Lame" version="1.0.22" />
 		</group>
 		<group targetFramework="net8.0">
-			<dependency id="NAudio.Lame" version="1.0.21" />
+			<dependency id="NAudio.Lame" version="1.0.22" />
 		</group>
 	</dependencies>
 	<files>
