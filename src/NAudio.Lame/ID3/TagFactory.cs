@@ -9,7 +9,7 @@ namespace NAudio.Lame.ID3
 			var startPos = file.Position;
 			var frameHeader = FrameHeader.Create(file, parent.Version);
 			var frame = CreateTagInternal(frameHeader, file, parent);
-			lengthRead = (int)(file.Position - startPos) + frameHeader.HeaderSize;
+			lengthRead = (int)(file.Position - startPos);
 			return frame;
 		}
 

@@ -14,11 +14,11 @@ public class Id3Header : Header
 	{
 		try
 		{
-			var originalPosition = file.Position;
 			Span<byte> bts = stackalloc byte[4];
 			file.ReadExactly(bts);
 
-			if (bts[0] == 'I' && bts[1] == 'D' && bts[2] == '3') //"ID3"
+			if (bts[0] == 'I' && bts[1] == 'D' && bts[2] == '3' //"ID3"
+				&& bts[3] is 2 or 3 or 4)  //ID3v2.2, ID3v2.3, or ID3v2.4
 			{
 				ushort version = (ushort)(bts[3] << 8 | file.ReadByte());
 				return new Id3Header(version, file);
