@@ -14,8 +14,8 @@
 		<license type="file">LICENSE.txt</license>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<dependencies>
-			<group targetFramework="net9.0">
-				<dependency id="AAXClean" version="2.0.3.1" />
+			<group targetFramework="net10.0">
+				<dependency id="AAXClean" version="2.1.0.1" />
 				<dependency id="NAudio.Core" version="2.2.1" />
 			</group>
 			<group targetFramework="net8.0">
@@ -25,11 +25,11 @@
 		</dependencies>
 	</metadata>
 	<dependencies>
-		<group targetFramework="net9.0">
-			<dependency id="NAudio.Lame" version="1.0.23" />
+		<group targetFramework="net10.0">
+			<dependency id="NAudio.Lame" version="1.1.0.1" />
 		</group>
 		<group targetFramework="net8.0">
-			<dependency id="NAudio.Lame" version="1.0.23" />
+			<dependency id="NAudio.Lame" version="1.1.0.1" />
 		</group>
 	</dependencies>
 	<files>
@@ -48,12 +48,13 @@
 		<file src="native/runtimes/win-x64/native/libmp3lame.dll" target="runtimes/win-x64/native/libmp3lame.dll" />
 		<file src="native/runtimes/win-x86/native/libmp3lame.dll" target="runtimes/win-x86/native/libmp3lame.dll" />
 		
-		<file src="src\AAXClean.Codecs\bin\Release\net9.0\NAudio.Lame.dll" target="runtimes/any/lib/net9.0/NAudio.Lame.dll" />
-		<file src="src\AAXClean.Codecs\bin\Release\net9.0\AAXClean.Codecs.dll" target="runtimes/any/lib/net9.0/AAXClean.Codecs.dll" />
+		<file src="src\AAXClean.Codecs\bin\Release\net10.0\NAudio.Lame.dll" target="runtimes/any/lib/net10.0/NAudio.Lame.dll" />
+		<file src="src\AAXClean.Codecs\bin\Release\net10.0\AAXClean.Codecs.dll" target="runtimes/any/lib/net10.0/AAXClean.Codecs.dll" />
 		<file src="src\AAXClean.Codecs\bin\Release\net8.0\NAudio.Lame.dll" target="runtimes/any/lib/net8.0/NAudio.Lame.dll" />
 		<file src="src\AAXClean.Codecs\bin\Release\net8.0\AAXClean.Codecs.dll" target="runtimes/any/lib/net8.0/AAXClean.Codecs.dll" />
-		<file src="src\AAXClean.Codecs\bin\Release\net9.0\NAudio.Lame.dll" target="lib\net9.0\NAudio.Lame.dll" />
-		<file src="src\AAXClean.Codecs\bin\Release\net9.0\AAXClean.Codecs.dll" target="lib\net9.0\AAXClean.Codecs.dll" />
+		
+		<file src="src\AAXClean.Codecs\bin\Release\net10.0\NAudio.Lame.dll" target="lib\net10.0\NAudio.Lame.dll" />
+		<file src="src\AAXClean.Codecs\bin\Release\net10.0\AAXClean.Codecs.dll" target="lib\net10.0\AAXClean.Codecs.dll" />
 		<file src="src\AAXClean.Codecs\bin\Release\net8.0\NAudio.Lame.dll" target="lib\net8.0\NAudio.Lame.dll" />
 		<file src="src\AAXClean.Codecs\bin\Release\net8.0\AAXClean.Codecs.dll" target="lib\net8.0\AAXClean.Codecs.dll" />
 		
