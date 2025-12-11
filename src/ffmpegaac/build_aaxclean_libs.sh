@@ -32,9 +32,9 @@ download_file() {
 echo "Installing $OS dependencies"
 if [ $OS = Linux ]; then
   if ! command -v apt-get &> /dev/null; then
-    sudo dnf install gcc make perl pkg-config yasm autoconf libtool
+    sudo dnf install gcc make perl pkg-config yasm nasm autoconf libtool
   else
-    sudo apt-get install gcc make perl pkg-config yasm autoconf libtool
+    sudo apt-get install gcc make perl pkg-config yasm nasm autoconf libtool
   fi
   LIB_EXTENSION=so
   NUM_CPUS=$(nproc)
