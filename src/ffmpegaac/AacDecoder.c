@@ -1,43 +1,18 @@
 #include "ffmpegaac.h"
 
-#include <libswresample/swresample_internal.h>
-
-static int32_t decode_audio(AVCodecContext* pAVContext, AVPacket* pavPacket, AVFrame* pDecodedFrame)
-{
-    int32_t ret;
-
-    /* send the packet with the compressed data to the decoder */
-    ret = avcodec_send_packet(pAVContext, pavPacket);
-    if (ret < 0)
-        return ret;
-
-    ret = avcodec_receive_frame(pAVContext, pDecodedFrame);
-    return ret;
-}
-
 int32_t Decoder_ReceiveDecodedFrame(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, int32_t numSamples) {
     
-    int32_t required_size = swr_get_out_samples(config->swr_ctx, config->nb_samples);
+    int32_t required_size = swr_get_out_samples(config->swr_ctx, config->frame->nb_samples);
 
     if (!outBuff0 && !numSamples)
         return required_size;
-    else if (!config->nb_samples || required_size < numSamples)
+    else if (!config->frame->nb_samples || required_size > numSamples)
         return -1;
     else {
-
         uint8_t* convertedData[2] = { outBuff0 , outBuff1 };
         int32_t decoded = swr_convert(config->swr_ctx,
-            convertedData, numSamples,
-            config->data, config->nb_samples);
-
-        if (config->use_temp_buffer) {
-			for (int32_t i = 0; i < AV_NUM_DATA_POINTERS && config->data[i]; i++) {
-				if (config->data[i]) {
-					free(config->data[i]);
-					config->data[i] = NULL;
-				}
-			}
-        }
+            (uint8_t* const*)convertedData, numSamples,
+            (const uint8_t * const *)config->frame->data, config->frame->nb_samples);
 
         if (decoded < 0)
             return -1;
@@ -58,55 +33,32 @@ int32_t Decoder_DecodeFlush(PAacDecoder config, uint8_t* outBuff0, uint8_t* outB
     return ret;
 }
 
-int32_t Decoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize, int32_t nbSamples)
+int32_t Decoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize)
 {
     if (!config || !config->context)
-        return ERR_INVALID_HANDLE; 
- 
+        return ERR_INVALID_HANDLE;
+
     int32_t ret;
 
     config->packet->size = cbInBufferSize; //input buffer size
     config->packet->data = pCompressedAudio; // the input buffer
-	config->packet->duration = nbSamples; //number of samples in the decoded frame
 
-    ret = decode_audio(config->context, config->packet, config->frame);
-	if (ret == 0) {
-        if (config->frame->nb_samples >= nbSamples) {
-            config->use_temp_buffer = 0;
-            for (int i = 0; i < AV_NUM_DATA_POINTERS && config->frame->data[i]; i++) {
-                config->data[i] = config->frame->data[i];
-            }
-        }
-        else {
-            //The frame is supposed to be longer, so pad the end with silence
-            int32_t size = av_get_bytes_per_sample(config->swr_ctx->in_sample_fmt) * config->swr_ctx->in_ch_layout.nb_channels;
-            config->use_temp_buffer = 1;
-            for (int i = 0; i < AV_NUM_DATA_POINTERS && config->frame->data[i]; i++) {
-				size_t sampleBytes = size * nbSamples;
-				config->data[i] = malloc(sampleBytes);
-				if (!config->data[i]) {
-					ret = ERR_ALLOC_FAIL;
-                }
-                else {
-                    memset(config->data[i], 0, sampleBytes);
-                    memcpy(config->data[i], config->frame->data[i], config->frame->linesize[i]);
-                }
-            }
-        }
-        config->nb_samples = nbSamples;
-	}
+    /* send the packet with the compressed data to the decoder */
+    ret = avcodec_send_packet(config->context, config->packet);
+    if (ret < 0)
+        return ret;
+
+    ret = avcodec_receive_frame(config->context, config->frame);
     return ret;
 }
 
+#include <libavcodec/mpeg4audio_sample_rates.h>
 static int32_t parse_asc(uint8_t *asc, AVChannelLayout* pIn_layout, uint32_t* pIn_sample_rate) {
 
     int32_t ret = 0;
     uint8_t sample_index;
     uint8_t channel_layout;
     const uint8_t AOT_ESCAPE = 0x1F;
-    const uint32_t sampleFreqTable[13] =
-    { 96000, 88200, 64000, 48000, 44100, 32000, 24000,
-        22050, 16000, 12000, 11025, 8000, 7350 };
 
     if (*asc >> 3 == AOT_ESCAPE) {
         sample_index = (*(asc + 1) >> 1) & 0x1F;
@@ -117,13 +69,13 @@ static int32_t parse_asc(uint8_t *asc, AVChannelLayout* pIn_layout, uint32_t* pI
         channel_layout = (*(asc + 1) >> 3) & 0xF;
     }
 
-    if (sample_index < 0 || sample_index >= sizeof(sampleFreqTable) / sizeof(uint32_t)
+    if (sample_index < 0 || sample_index >= sizeof(ff_mpeg4audio_sample_rates) / sizeof(uint32_t)
         || channel_layout > 2) {
         ret = ERR_ASC_INVALID;
         goto end;
     }
 
-    *pIn_sample_rate = sampleFreqTable[sample_index];
+    *pIn_sample_rate = ff_mpeg4audio_sample_rates[sample_index];
     *pIn_layout
         = channel_layout == 2
         ? (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO
@@ -212,7 +164,6 @@ static int32_t init_decoder_context(PAacDecoder* ppdec, enum AVCodecID id) {
     const AVCodec* codec;
     PAacDecoder pdec = NULL;
 
-
     pdec = malloc(sizeof(AacDecoder));
     if (!pdec) {
         ret = ERR_ALLOC_FAIL;
@@ -225,9 +176,6 @@ static int32_t init_decoder_context(PAacDecoder* ppdec, enum AVCodecID id) {
     pdec->swr_ctx = NULL;
     pdec->packet = NULL;
     pdec->frame = NULL;
-    for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
-        pdec->data[i] = NULL;
-    }
 
     codec = avcodec_find_decoder(id);
 
@@ -280,7 +228,7 @@ int32_t Decoder_Close(PAacDecoder pdec)
 
 PVOID Decoder_OpenAac(PAacDecoderOptions decoder_options)
 {
-    int32_t ret = 0;
+    intptr_t ret = 0;
     int32_t out_sample_fmt;
     AVChannelLayout in_layout;
     int32_t in_sample_rate;
@@ -326,11 +274,10 @@ PVOID Decoder_OpenAac(PAacDecoderOptions decoder_options)
 
 failed:
     Decoder_Close(pdec);
-    return ret;
+    return (void*)ret;
 }
 
 #include <libavcodec/ac3tab.h>
-#include <libavcodec/ac3_channel_layout_tab.h>
 
 PVOID Decoder_OpenEC3(PEC3DecoderOptions decoder_options) {
     
@@ -338,7 +285,7 @@ PVOID Decoder_OpenEC3(PEC3DecoderOptions decoder_options) {
     uint16_t channel_layout;
     AVChannelLayout in_layout;
     PAacDecoder pdec = NULL;
-    int32_t ret = 0;
+    intptr_t ret = 0;
 
     if (!decoder_options) {
         ret = ERR_AAC_CODEC_NOT_FOUND;
@@ -379,6 +326,12 @@ PVOID Decoder_OpenEC3(PEC3DecoderOptions decoder_options) {
     return pdec;
 
 failed:
+
     Decoder_Close(pdec);
-    return ret;
+    return (void*)ret;
+}
+
+void SetLogCallback(LogCallbackType callback) {
+    LogCallback = callback;
+    av_log_set_callback(LogCallback ? AvLogCallback : av_log_default_callback);
 }

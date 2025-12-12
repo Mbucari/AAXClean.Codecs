@@ -8,7 +8,7 @@ if [[ ! "$ARCH" =~ ^(x86_64|arm64|aarch64)$ ]]; then
 fi
 
 THIS_DIR=$(pwd)
-FFMPEG_VER="7.1.1"
+FFMPEG_VER="8.0.1"
 LAME_VER="3.100"
 
 download_file() {
@@ -106,7 +106,7 @@ FFMPEGAAC_MAIN=$THIS_DIR/ffmpegaac
 if [ ! -d "$FFMPEGAAC_MAIN" ]; then
   mkdir $FFMPEGAAC_MAIN
   cd $FFMPEGAAC_MAIN
-  FFMPEGAAC_BASE_URL="https://raw.githubusercontent.com/Mbucari/AAXClean.Codecs/refs/heads/master/native";
+  FFMPEGAAC_BASE_URL="https://raw.githubusercontent.com/Mbucari/AAXClean.Codecs/refs/heads/master/src/ffmpegaac";
   download_file AacDecoder.c "$FFMPEGAAC_BASE_URL/AacDecoder.c"
   download_file AacEncoder.c "$FFMPEGAAC_BASE_URL/AacEncoder.c"
   download_file ffmpegaac.h "$FFMPEGAAC_BASE_URL/ffmpegaac.h"

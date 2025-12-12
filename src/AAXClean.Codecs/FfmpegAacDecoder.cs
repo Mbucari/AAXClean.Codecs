@@ -57,7 +57,7 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 
 	public WaveEntry DecodeWave(FrameEntry input)
 	{
-		if (!SendSamples(input.FrameData, input.SamplesInFrame))
+		if (!SendSamples(input.FrameData))
 		{
 			if (NumberOfSamplesSkipped + (int)input.SamplesInFrame < MaxSamplesToSkip)
 			{
@@ -153,13 +153,13 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 		}
 	}
 
-	private bool SendSamples(ReadOnlyMemory<byte> frameData, uint numSamples)
+	private bool SendSamples(ReadOnlyMemory<byte> frameData)
 	{
 		int ret;
 
 		fixed (byte* inBuff = frameData.Span)
 		{
-			ret = AudioDecoder.DecodeFrame(inBuff, frameData.Length, numSamples);
+			ret = AudioDecoder.DecodeFrame(inBuff, frameData.Length);
 		}
 
 		if (ret >= 0)

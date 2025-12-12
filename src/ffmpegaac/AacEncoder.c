@@ -140,8 +140,8 @@ failed:
 PVOID AacEncoder_Open(PAacEncoderOptions encoder_options) {
 
     PAacEncoder penc = NULL;
-    AVCodec* codec;
-    int32_t ret = 0;
+    const AVCodec* codec;
+    intptr_t ret = 0;
 
     if (!encoder_options) {
         ret = -1;
@@ -231,5 +231,5 @@ failed:
 
     AacEncoder_Close(penc);
 
-    return ret;
+    return (void*)ret;
 }

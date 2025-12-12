@@ -10,7 +10,7 @@ internal unsafe abstract class NativeDecode : IDisposable
 	protected const string libname = "ffmpegaac";
 
 	[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
-	private static extern int Decoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize, uint nbSamples);
+	private static extern int Decoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize);
 
 	[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
 	private static extern int Decoder_ReceiveDecodedFrame(DecoderHandle self, byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInBufferSize);
@@ -18,8 +18,8 @@ internal unsafe abstract class NativeDecode : IDisposable
 	[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
 	private static extern int Decoder_DecodeFlush(DecoderHandle self, byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInBufferSize);
 
-	public int DecodeFrame(byte* pCompressedAudio, int cbInputSize, uint nbSamples)
-		=> Decoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize, nbSamples);
+	public int DecodeFrame(byte* pCompressedAudio, int cbInputSize)
+		=> Decoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize);
 	public int ReceiveDecodedFrame(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
 		=> Decoder_ReceiveDecodedFrame(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
 	public int DecodeFlush(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)

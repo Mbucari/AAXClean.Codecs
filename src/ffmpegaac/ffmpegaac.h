@@ -7,7 +7,6 @@
 #include <libavutil/mem.h>
 #include <libavutil/frame.h>
 #include <libavcodec/avcodec.h>
-
 #include <libavutil/samplefmt.h>
 #include <libswresample/swresample.h>
 
@@ -17,6 +16,10 @@ typedef void* PVOID;
 
 #if !defined(min)
 #define min(a,b) (((a) < (b)) ? (a) : (b))
+#endif
+
+#if !defined(max)
+#define max(a,b) (((a) > (b)) ? (a) : (b))
 #endif
 
 #if defined(_MSC_VER)
@@ -43,9 +46,6 @@ typedef struct _AacDecoder {
     SwrContext* swr_ctx;
     AVPacket* packet;
     AVFrame* frame;
-    int64_t use_temp_buffer;
-    int32_t nb_samples;
-    uint8_t* data[AV_NUM_DATA_POINTERS];
 }AacDecoder, * PAacDecoder;
 
 typedef struct _AacDecoderOptions {
@@ -77,20 +77,22 @@ typedef struct _AacEncoderOptions {
     int32_t sample_fmt;
 }AacEncoderOptions, * PAacEncoderOptions;
 
+typedef void (*LogCallbackType)(int32_t code, const char* message, size_t messageSize);
+static LogCallbackType LogCallback;
 
 #define ERR_SUCCESS 0
-#define ERR_INVALID_HANDLE -1
-#define ERR_BUFF_HANDLE_INVALID -2
-#define ERR_BUFF_TOO_SMALL -3
-#define ERR_ALLOC_FAIL -4
-#define ERR_ASC_INVALID -5
-#define ERR_AAC_CODEC_NOT_FOUND -6
-#define ERR_AAC_CODEC_OPEN_FAIL -7
-#define ERR_SWR_INIT_FAIL -8
-#define ERR_AVPACKET_INIT_FAIL -9
-#define ERR_AAC_DECODE_FAIL -10
-#define ERR_SWR_OUTPUT_CHANNELS_UNSUPPORTED -11
-#define ERR_SWR_OUTPUT_FORMAT_UNSUPPORTED -12
+#define ERR_INVALID_HANDLE (-1)
+#define ERR_BUFF_HANDLE_INVALID (-2)
+#define ERR_BUFF_TOO_SMALL (-3)
+#define ERR_ALLOC_FAIL (-4)
+#define ERR_ASC_INVALID (-5)
+#define ERR_AAC_CODEC_NOT_FOUND (-6)
+#define ERR_AAC_CODEC_OPEN_FAIL (-7)
+#define ERR_SWR_INIT_FAIL (-8)
+#define ERR_AVPACKET_INIT_FAIL (-9)
+#define ERR_AAC_DECODE_FAIL (-10)
+#define ERR_SWR_OUTPUT_CHANNELS_UNSUPPORTED (-11)
+#define ERR_SWR_OUTPUT_FORMAT_UNSUPPORTED (-12)
 
 /**
 * Open an AAC-LC audio encoder instance. Only supports AV_SAMPLE_FMT_FLTP
@@ -193,12 +195,10 @@ EXPORT int32_t Decoder_Close(PAacDecoder config);
 * 
 * @param cbInBufferSize The size, in bytes, of the AAC audio frame.
 * 
-* @param nbSamples The number of samples in the decoded audio frame.
-* 
 * @return 0 is success, otherwise a negative error code.
 * 
 */
-EXPORT int32_t Decoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize, int32_t nbSamples);
+EXPORT int32_t Decoder_DecodeFrame(PAacDecoder config, uint8_t* pCompressedAudio, uint32_t cbInBufferSize);
 /**
 * Receive a decoded audio frame. Must call first with outBuff0 null and cbOutBuff 0
 to retrieve the size of the decoded frame. Call repeatedly, first with NULL/0 then
@@ -237,3 +237,31 @@ audio. Unused for packet audio.
 * @return the number of samples decoded, otherwise a negative error code.
 */
 EXPORT int32_t Decoder_DecodeFlush(PAacDecoder config, uint8_t* outBuff0, uint8_t* outBuff1, uint32_t cbOutBuff);
+
+/**
+* Set the logging callback
+*
+* @param callback A logging function with a compatible signature.
+*
+* @remarks The callback must be thread safe, even if the application does not use
+* threads itself as some codecs are multithreaded.
+*/
+EXPORT void SetLogCallback(LogCallbackType callback);
+
+static void AvLogCallback(void* data, int32_t code, const char* fmt, va_list args) {
+
+    if (!LogCallback || code == AV_LOG_DEBUG)
+        return;
+
+    va_list argsCopy;
+    va_copy(argsCopy, args);
+    size_t requiredSize = vsnprintf(NULL, 0, fmt, argsCopy);
+
+    char* messageBuff = malloc(requiredSize);
+    if (!messageBuff)
+        return;
+
+    requiredSize = vsnprintf(messageBuff, requiredSize, fmt, args);
+    LogCallback(code, messageBuff, requiredSize);
+    free(messageBuff);
+}
