@@ -1,0 +1,39 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		}
+	],
+	"settings": {
+		"asperheader.enableDebug": false,
+		"asperheader.extensionIgnore": [
+			"renovate.json",
+			"*.code-workspace",
+			"settings.json"
+		],
+		"asperheader.headerLogo": [
+			"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+",
+			"|A|A|X|C|l|e|a|n|.|C|o|d|e|c|s|",
+			"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+",
+			"",
+			"name: Bubble",
+			"source https://patorjk.com/software/",
+			"taag/#p=display&f=Digital&",
+			"t=AAXClean.Codecs&x=none&v=4&h=4",
+			"&w=80&we=false"
+		],
+		"asperheader.projectCopyright": "(c) AAXClean.Codecs",
+		"asperheader.promptToCreateIfMissing": true,
+		"asperheader.useWorkspaceNameWhenAvailable": false,
+		"asperheader.projectDescription": "Converts and filters AAC audio from AAXClean. Supports multiple codecs (AAC-LC, E-AC-3, HE-AAC, etc.) and platforms (Windows, macOS, Linux). Provides NuGet integration and APIs for audio conversion, silence detection, and multipart processing.",
+		"asperheader.extensionName": "AAXClean.Codecs"
+	},
+	"extensions": {
+		"recommendations": [
+			"henryletellier.asperheader",
+			"jeff-hykin.better-dockerfile-syntax",
+			"christian-kohler.path-intellisense",
+			"stannum.stannum-dockerfile-syntax"
+		]
+	}
+}
