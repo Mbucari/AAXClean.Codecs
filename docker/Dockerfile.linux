@@ -1,0 +1,334 @@
+#
+# +==== BEGIN AAXClean.Codecs =================+
+# LOGO:
+# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+# |A|A|X|C|l|e|a|n|.|C|o|d|e|c|s|
+# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#
+# name: Bubble
+# source https://patorjk.com/software/
+# taag/#p=display&f=Digital&
+# t=AAXClean.Codecs&x=none&v=4&h=4
+# &w=80&we=false
+# /STOP
+# PROJECT: AAXClean.Codecs
+# FILE: Dockerfile
+# CREATION DATE: 13-12-2025
+# LAST Modified: 10:7:47 14-12-2025
+# DESCRIPTION:
+# Converts and filters AAC audio from AAXClean. Supports multiple codecs (AAC-LC, E-AC-3, HE-AAC, etc.) and platforms (Windows, macOS, Linux). Provides NuGet integration and APIs for audio conversion, silence detection, and multipart processing.
+# /STOP
+# COPYRIGHT: (c) AAXClean.Codecs
+# PURPOSE: This is the container that will be used to allow libation to build on ubuntu 18.04.
+# // AR
+# +==== END AAXClean.Codecs =================+
+#
+# Use the earliest ubuntu version available on docker hub
+FROM ubuntu:18.04
+
+# Some tracking so the author is known
+LABEL maintainer="henrysoftwarehouse@protonmail.com" \
+    org.opencontainers.image.authors="HenraL <henrysoftwarehouse@protonmail.com>" \
+    org.opencontainers.image.vendor="HenraL" \
+    org.opencontainers.image.title="AAXClean.Codecs Build Container" \
+    org.opencontainers.image.description="Ubuntu 18.04 container for building AAXClean.Codecs native libraries (ffmpegaac with ffmpeg/fdk-aac and libmp3lame)" \
+    org.opencontainers.image.version="1.0.0" \
+    org.opencontainers.image.created="2025-12-13" \
+    org.opencontainers.image.url="https://hub.docker.com/r/hanralatalliard/aaxclean-codecs" \
+    org.opencontainers.image.source="https://github.com/Mbucari/AAXClean.Codecs" \
+    org.opencontainers.image.licenses="GPL-3.0" \
+    org.opencontainers.image.documentation="https://github.com/Mbucari/AAXClean.Codecs#readme" \
+    project="AAXClean.Codecs" \
+    component="native-libs-builder" \
+    ffmpeg.version="8.0.1" \
+    fdk-aac.version="latest" \
+    lame.version="3.100" \
+    base.image="ubuntu:18.04" \
+    build.date="2025-12-13"
+
+# Avoid interactive prompts during package installations
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Environment variables
+ENV NON_ROOT_USERNAME="user"
+
+ENV COMPILED_RESSOURCES="/home/${NON_ROOT_USERNAME}/"
+
+# Build environement
+ARG FFMPEG_VER="8.0.1" \
+    LAME_VER="3.100" \
+    LIB_EXTENSION=so \
+    DEFAULT_BUILD_DIR="/building" \
+    USER_DIR="/home/${NON_ROOT_USERNAME}"
+
+ARG FFMPEG_NAME="ffmpeg-${FFMPEG_VER}" \
+    LAME_NAME="lame-${LAME_VER}"
+
+# sources for the dependencies
+ARG FDK_AAC_REPO="https://github.com/mstorsjo/fdk-aac.git" \
+    FFMPEG_ARCHIVE="https://ffmpeg.org/releases/${FFMPEG_NAME}.tar.xz" \
+    FFMPEGAAC_BASE_URL="https://raw.githubusercontent.com/Mbucari/AAXClean.Codecs/refs/heads/master/src/ffmpegaac" \
+    LAME_ARCHIVE="https://cfhcable.dl.sourceforge.net/project/lame/lame/${LAME_VER}/${LAME_NAME}.tar.gz"
+
+# The build directories
+ARG FDK_AAC_FOLDER="${DEFAULT_BUILD_DIR}/fdk_aac" \
+    LAME_BUILD_DIR="${DEFAULT_BUILD_DIR}/${LAME_NAME}"
+
+# The install location for fdk-aac and ffmpeg
+ARG FDK_INSTALL_DIR="${USER_DIR}/libfdk" \
+    FFMPEG_INSTALL_DIR="${USER_DIR}/${FFMPEG_NAME}" \
+    FFMPEGAAC_INSTALL_DIR="${USER_DIR}/ffmpegaac" \
+    LAME_INSTALL_DIR="${USER_DIR}/${LAME_NAME}"
+
+# The archives used
+ARG FFMPEG_FILE="${USER_DIR}/${FFMPEG_NAME}.tar.xz" \
+    LAME_FILE="${DEFAULT_BUILD_DIR}/${LAME_NAME}.tar.gz"
+
+# The config path for the different libraries used
+ARG PKG_CONFIG_PATH="${FDK_INSTALL_DIR}/lib/pkgconfig" \
+    LAME_LIB_DIR="${LAME_BUILD_DIR}/libmp3lame/.libs" \
+    LAME_HEADER_FILE="${LAME_BUILD_DIR}/include"
+
+# The FFMPEGACC files
+ARG FFMPEGAAC_AACDECODER="AacDecoder.c" \
+    FFMPEGAAC_AACENCODER="AacEncoder.c" \
+    FFMPEGAAC_FFMPEGAAC="ffmpegaac.h" \
+    FFMPEGAAC_AACDECODER_OBJECT="AacDecoder.o" \
+    FFMPEGAAC_AACENCODER_OBJECT="AacEncoder.o"
+
+# Make sure the system is up to date and that the required basic dependencies are installed
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y \
+    git \
+    tar \
+    sudo \
+    curl \
+    && echo "Installing the dependencies for the build" \
+    && apt-get install -y \
+    gcc \
+    make \
+    perl \
+    pkg-config \
+    yasm \
+    nasm \
+    autoconf \
+    libtool \
+    && echo "Cleaning cache" \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-privileged user with sudo access (no password needed)
+RUN useradd -m -s /bin/bash ${NON_ROOT_USERNAME} \
+    && echo "Granting passwordless sudo privileges" \
+    && echo "${NON_ROOT_USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/${NON_ROOT_USERNAME} \
+    && chmod 0440 /etc/sudoers.d/${NON_ROOT_USERNAME}
+
+# Create the directory that will contain the build elements that can later be discarded once the builds are over
+WORKDIR "${DEFAULT_BUILD_DIR}"
+
+# Own the build directory
+RUN chown "${NON_ROOT_USERNAME}:${NON_ROOT_USERNAME}" "${DEFAULT_BUILD_DIR}" \
+    && chmod u+rwx "${DEFAULT_BUILD_DIR}"
+
+# Switching to a non-privileged user
+USER ${NON_ROOT_USERNAME}
+
+# Build fdk-aac
+RUN echo "Creating the destination build folder" \
+    && mkdir -p ${FDK_INSTALL_DIR} \
+    && echo "Cloning the fdk-aac repository" \
+    && git clone ${FDK_AAC_REPO} ${FDK_AAC_FOLDER} \
+    && echo "Entering the repository" \
+    && cd $FDK_AAC_FOLDER \
+    && echo "Running autogen.sh" \
+    && ./autogen.sh \
+    && echo "Running ./configure" \
+    && ./configure --prefix=${FDK_INSTALL_DIR} --enable-shared=no --enable-static=yes \
+    && echo "Building FDK" \
+    && make -j$(nproc) CFLAGS="-g0 -fPIC -O2 -Werror" CXXFLAGS="-g0 -fPIC -O2 -Werror" \
+    && echo "Installing libfdk" \
+    && make install \
+    && echo "Cleaning up" \
+    && cd ../.. \
+    && rm -rf ${FDK_AAC_FOLDER}
+
+# Get ffmpeg
+RUN echo "Creating the destination folder" \
+    && mkdir -p ${FFMPEG_INSTALL_DIR} \
+    && echo "Downloading ffmpeg's version $FFMPEG_NAME" \
+    && curl -L -o ${FFMPEG_FILE} ${FFMPEG_ARCHIVE} \
+    && echo "Extracting the archive" \
+    && tar -xvf ${FFMPEG_FILE} --directory ${FFMPEG_INSTALL_DIR} --strip-components=1 \
+    && echo "Removing the downloaded archive" \
+    && rm -rvf ${FFMPEG_FILE}
+
+# Build ffmpeg
+RUN echo "building ffmpeg ${FFMPEG_NAME}" \
+    && cd ${FFMPEG_INSTALL_DIR} \
+    && echo "Configuring the file" \
+    && PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" ./configure \
+    --extra-cflags="-I${FDK_INSTALL_DIR}/include" \
+    --extra-ldflags="-L${FDK_INSTALL_DIR}/lib" \
+    --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m \
+    --disable-vaapi --disable-vdpau --disable-network --disable-libxcb \
+    --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib \
+    --disable-iconv --disable-alsa --disable-shared --enable-static \
+    --disable-symver --disable-programs --disable-debug --enable-pic \
+    --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le \
+    --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le \
+    --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le \
+    --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le \
+    --enable-filter=aresample --enable-filter=asetnsamples \
+    --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac \
+    --enable-encoder=libfdk_aac --enable-decoder=eac3 \
+    && echo "Building the content" \
+    && make -j$(nproc) \
+    && echo "Cleaning up" \
+    && rm -rvf \
+    CONTRIBUTING.md \
+    COPYING.* \
+    CREDITS \
+    Changelog \
+    FUNDING.json \
+    INSTALL.md \
+    LICENSE.md \
+    MAINTAINERS \
+    README.md \
+    RELEASE* \
+    VERSION \
+    configure \
+    Makefile \
+    config.asm \
+    ffbuild/ \
+    compat/ \
+    fftools/ \
+    doc/ \
+    tests/ \
+    presets/ \
+    tools/ \
+    && echo "Removing source code files from libav" \
+    && find libav* -type f \( -name "*.c" -o -name "*.o" -o -name "*.d" \) -exec rm -v {} + \
+    && echo "Returning home" \
+    && cd
+
+# Download ffmpegaac
+RUN echo "Creating destination folder ${FFMPEGAAC_INSTALL_DIR}" \
+    && mkdir -p ${FFMPEGAAC_INSTALL_DIR}\
+    && echo "Entering directory" \
+    && cd ${FFMPEGAAC_INSTALL_DIR} \
+    && echo "Querying required files" \
+    && echo "Downloading: ${FFMPEGAAC_AACDECODER} to ${FFMPEGAAC_INSTALL_DIR}" \
+    && curl -L -o "${FFMPEGAAC_INSTALL_DIR}/${FFMPEGAAC_AACDECODER}" "${FFMPEGAAC_BASE_URL}/${FFMPEGAAC_AACDECODER}" \
+    && echo "Downloading: ${FFMPEGAAC_AACENCODER} to ${FFMPEGAAC_INSTALL_DIR}" \
+    && curl -L -o "${FFMPEGAAC_INSTALL_DIR}/${FFMPEGAAC_AACENCODER}" "${FFMPEGAAC_BASE_URL}/${FFMPEGAAC_AACENCODER}" \
+    && echo "Downloading: ${FFMPEGAAC_FFMPEGAAC} to ${FFMPEGAAC_INSTALL_DIR}" \
+    && curl -L -o "${FFMPEGAAC_INSTALL_DIR}/${FFMPEGAAC_FFMPEGAAC}" "${FFMPEGAAC_BASE_URL}/${FFMPEGAAC_FFMPEGAAC}"
+
+# Build ffmpegaac
+RUN echo "Building ffmpegaac" \
+    && echo "Entering the ffmpegaac's directory" \
+    && cd ${FFMPEGAAC_INSTALL_DIR} \
+    && echo "Preprocessing dynamic library components" \
+    && gcc -fPIC -c ${FFMPEGAAC_AACDECODER} ${FFMPEGAAC_AACENCODER} \
+    -I${FFMPEG_INSTALL_DIR} \
+    -I${FFMPEG_INSTALL_DIR}/libavcodec \
+    -I${FFMPEG_INSTALL_DIR}/libavformat \
+    -I${FFMPEG_INSTALL_DIR}/libavutil \
+    -I${FFMPEG_INSTALL_DIR}/libavfilter \
+    -I${FFMPEG_INSTALL_DIR}/libswresample \
+    -I./ \
+    && echo "Building the final dynamic library with thread support" \
+    && gcc -pthread -shared -fPIC -Wl,-Bsymbolic -Wl,--no-undefined -Wl,-soname,ffmpegaac.so.2 -o ffmpegaac.so ${FFMPEGAAC_AACENCODER_OBJECT} ${FFMPEGAAC_AACDECODER_OBJECT} -L${FFMPEG_INSTALL_DIR}/libavutil -L${FFMPEG_INSTALL_DIR}/libswscale -L${FFMPEG_INSTALL_DIR}/libswresample -L${FFMPEG_INSTALL_DIR}/libavcodec -L${FFMPEG_INSTALL_DIR}/libavformat -L${FFMPEG_INSTALL_DIR}/libavfilter -L${FFMPEG_INSTALL_DIR}/libavdevice -L${FDK_INSTALL_DIR}/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lm -lrt \
+    && echo "Cleaning up build artifacts" \
+    && rm -v ${FFMPEGAAC_AACENCODER_OBJECT} ${FFMPEGAAC_AACDECODER_OBJECT} ${FFMPEGAAC_AACDECODER} ${FFMPEGAAC_AACENCODER}
+
+# Downloading lame
+RUN echo "Downloading Lame: ${LAME_NAME}" \
+    && echo "Creating destination folder" \
+    && mkdir -p ${LAME_BUILD_DIR} \
+    && echo "Entering directory" \
+    && cd ${LAME_BUILD_DIR} \
+    && echo "Downloading archive" \
+    && curl -L -o "${LAME_FILE}" "${LAME_ARCHIVE}" \
+    && echo "Extracting archive" \
+    && tar -xvf "${LAME_FILE}" --directory "${LAME_BUILD_DIR}" --strip-components=1 \
+    && echo "Removing the downloaded archive" \
+    && rm -vf "${LAME_ARCHIVE}"
+
+# Building lame
+RUN \
+    # Building Lame
+    echo "Building $LAME_NAME" \
+    && cd ${LAME_BUILD_DIR}\
+    && echo "Getting system architecture" \
+    && HOST_TRIPLET=$(./config.guess) \
+    && echo "Gathered architecture: $HOST_TRIPLET" \
+    && ./configure --disable-decoder --disable-frontend --host="$HOST_TRIPLET" \
+    && make CFLAGS='-fPIC -O3' CPPFLAGS="-DNDEBUG" -j$(nproc) \
+    && echo "Building dynamic library" \
+    && cd ${LAME_LIB_DIR} \
+    && gcc -shared -fPIC -Wl,-v -Wl,--whole-archive libmp3lame.a -o libmp3lame.${LIB_EXTENSION} -Wl,--no-whole-archive -lm \
+    && echo "Making sure the lame install directory exists" \
+    && mkdir -p ${LAME_INSTALL_DIR} \
+    && echo "Updating the library location" \
+    && mv "${LAME_LIB_DIR}/libmp3lame.${LIB_EXTENSION}"  "${LAME_INSTALL_DIR}" \
+    && STATIC_FILE="${LAME_LIB_DIR}/libmp3lame.a" \
+    && if [ -f "${STATIC_FILE}" ]; then mv -v "${STATIC_FILE}" "${LAME_INSTALL_DIR}"; fi \
+    && HEADER_FILE="${LAME_HEADER_FILE}/lame.h" \
+    && if [ -f "${HEADER_FILE}" ]; then mv -v "${HEADER_FILE}" "${LAME_INSTALL_DIR}"; fi \
+    && echo "Cleaning up" \
+    && rm -rvf "${LAME_BUILD_DIR}"
+
+# Package everything into an archive so that it can be used later
+RUN echo "Obtaining architecture" \
+    # Setting the OS and ARCH variables in the environement
+    && OS=$(uname -s)\
+    && ARCH=$(uname -m)\
+    && echo "OS is $OS, ARCH is $ARCH" \
+    && echo "Accessing the path where the packaged ressources will be located" \
+    && mkdir -p ${COMPILED_RESSOURCES} \
+    && cd ${COMPILED_RESSOURCES} \
+    && echo "Packaging resources" \
+    && tar -cvzf "aaxclean_native_libs_${OS}_${ARCH}.tar.gz" ${LAME_INSTALL_DIR} ${FFMPEGAAC_INSTALL_DIR}
+
+# Changing the default directory from the build to the user's home
+WORKDIR /home/${NON_ROOT_USERNAME}
+
+# Switching back to root for cleaning
+USER root
+
+# Removing the build directory as it is no longer needed
+RUN rm -rvf "${DEFAULT_BUILD_DIR}"
+
+# Removing any semblance off cache that might remain
+RUN apt-get clean \
+    && rm -rvf \
+    /tmp/* \
+    ~/.cache \
+    /var/tmp/* \
+    /var/log/* \
+    /var/cache/* \
+    /root/.cache \
+    /home/*/.cache \
+    /usr/share/zsh/* \
+    /usr/share/doc/* \
+    /usr/share/man/* \
+    /usr/share/info/* \
+    /usr/share/linda/* \
+    /usr/share/groff/* \
+    /usr/share/locale/* \
+    /var/lib/dpkg/*-old \
+    /usr/share/lintian/* \
+    /var/lib/apt/lists/* \
+    /usr/share/doc-base/* \
+    /var/cache/debconf/*-old \
+    && find /var/log -type f -delete \
+    && find /var/tmp -type f -delete \
+    && find / -type d -name __pycache__ -exec rm -rvf {} + 2>/dev/null || true \
+    && find / \( -type f -name "*.pyc" -o -name "*.pyo" \) -exec rm -rf {} + 2>/dev/null || true
+
+# Switching back to user account
+USER ${NON_ROOT_USERNAME}
+
+# Set the entrypoint
+CMD ["/bin/bash"]

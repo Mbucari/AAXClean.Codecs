@@ -1,0 +1,27 @@
+# 
+# +==== BEGIN AAXClean.Codecs =================+
+# LOGO: 
+# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+# |A|A|X|C|l|e|a|n|.|C|o|d|e|c|s|
+# +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+# 
+# name: Bubble
+# source https://patorjk.com/software/
+# taag/#p=display&f=Digital&
+# t=AAXClean.Codecs&x=none&v=4&h=4
+# &w=80&we=false
+# /STOP
+# PROJECT: AAXClean.Codecs
+# FILE: .gitignore
+# CREATION DATE: 13-12-2025
+# LAST Modified: 14:17:45 13-12-2025
+# DESCRIPTION: 
+# Converts and filters AAC audio from AAXClean. Supports multiple codecs (AAC-LC, E-AC-3, HE-AAC, etc.) and platforms (Windows, macOS, Linux). Provides NuGet integration and APIs for audio conversion, silence detection, and multipart processing.
+# /STOP
+# COPYRIGHT: (c) AAXClean.Codecs
+# PURPOSE: This is the .gitignore file for the docker folder in order to avoid submitting content that was not meant to.
+# // AR
+# +==== END AAXClean.Codecs =================+
+# 
+# The script used to build and publish
+# utils/builder.sh
