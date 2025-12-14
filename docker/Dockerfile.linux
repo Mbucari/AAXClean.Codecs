@@ -14,7 +14,7 @@
 # PROJECT: AAXClean.Codecs
 # FILE: Dockerfile
 # CREATION DATE: 13-12-2025
-# LAST Modified: 9:24:44 14-12-2025
+# LAST Modified: 10:7:47 14-12-2025
 # DESCRIPTION:
 # Converts and filters AAC audio from AAXClean. Supports multiple codecs (AAC-LC, E-AC-3, HE-AAC, etc.) and platforms (Windows, macOS, Linux). Provides NuGet integration and APIs for audio conversion, silence detection, and multipart processing.
 # /STOP
@@ -257,18 +257,13 @@ RUN echo "Downloading Lame: ${LAME_NAME}" \
 
 # Building lame
 RUN \
-    # Setting the OS and ARCH variables in the environement
-    OS=$(uname -s) && \
-    ARCH=$(uname -m) && \
-    echo "OS is $OS, ARCH is $ARCH" \
-    && if [ "$ARCH" = "arm64" ]; then LAME_ARCH=arm; \
-    elif [ "$ARCH" = "x64" ]; then LAME_ARCH="x86_64"; \
-    else LAME_ARCH=$ARCH; \
-    fi \
     # Building Lame
-    && echo "Building $LAME_NAME-$LAME_ARCH" \
+    echo "Building $LAME_NAME" \
     && cd ${LAME_BUILD_DIR}\
-    && ./configure --disable-decoder --disable-frontend --host="$LAME_ARCH" \
+    && echo "Getting system architecture" \
+    && HOST_TRIPLET=$(./config.guess) \
+    && echo "Gathered architecture: $HOST_TRIPLET" \
+    && ./configure --disable-decoder --disable-frontend --host="$HOST_TRIPLET" \
     && make CFLAGS='-fPIC -O3' CPPFLAGS="-DNDEBUG" -j$(nproc) \
     && echo "Building dynamic library" \
     && cd ${LAME_LIB_DIR} \
