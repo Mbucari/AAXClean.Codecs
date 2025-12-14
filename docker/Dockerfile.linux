@@ -1,10 +1,10 @@
-# 
+#
 # +==== BEGIN AAXClean.Codecs =================+
-# LOGO: 
+# LOGO:
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 # |A|A|X|C|l|e|a|n|.|C|o|d|e|c|s|
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-# 
+#
 # name: Bubble
 # source https://patorjk.com/software/
 # taag/#p=display&f=Digital&
@@ -14,15 +14,15 @@
 # PROJECT: AAXClean.Codecs
 # FILE: Dockerfile
 # CREATION DATE: 13-12-2025
-# LAST Modified: 15:59:46 13-12-2025
-# DESCRIPTION: 
+# LAST Modified: 9:24:44 14-12-2025
+# DESCRIPTION:
 # Converts and filters AAC audio from AAXClean. Supports multiple codecs (AAC-LC, E-AC-3, HE-AAC, etc.) and platforms (Windows, macOS, Linux). Provides NuGet integration and APIs for audio conversion, silence detection, and multipart processing.
 # /STOP
 # COPYRIGHT: (c) AAXClean.Codecs
 # PURPOSE: This is the container that will be used to allow libation to build on ubuntu 18.04.
 # // AR
 # +==== END AAXClean.Codecs =================+
-# 
+#
 # Use the earliest ubuntu version available on docker hub
 FROM ubuntu:18.04
 
@@ -57,33 +57,40 @@ ENV COMPILED_RESSOURCES="/home/${NON_ROOT_USERNAME}/"
 # Build environement
 ARG FFMPEG_VER="8.0.1" \
     LAME_VER="3.100" \
-    FFMPEG_NAME="ffmpeg-${FFMPEG_VER}" \
-    LAME_NAME="lame-${LAME_VER}" \
     LIB_EXTENSION=so \
-    # sources for the dependencies
-    FDK_AAC_REPO="https://github.com/mstorsjo/fdk-aac.git" \
+    DEFAULT_BUILD_DIR="/building" \
+    USER_DIR="/home/${NON_ROOT_USERNAME}"
+
+ARG FFMPEG_NAME="ffmpeg-${FFMPEG_VER}" \
+    LAME_NAME="lame-${LAME_VER}"
+
+# sources for the dependencies
+ARG FDK_AAC_REPO="https://github.com/mstorsjo/fdk-aac.git" \
     FFMPEG_ARCHIVE="https://ffmpeg.org/releases/${FFMPEG_NAME}.tar.xz" \
     FFMPEGAAC_BASE_URL="https://raw.githubusercontent.com/Mbucari/AAXClean.Codecs/refs/heads/master/src/ffmpegaac" \
-    LAME_ARCHIVE="https://cfhcable.dl.sourceforge.net/project/lame/lame/${LAME_VER}/${LAME_NAME}.tar.gz" \
-    # The build directories
-    DEFAULT_BUILD_DIR="/building" \
-    FDK_AAC_FOLDER="${DEFAULT_BUILD_DIR}/fdk_aac" \
-    LAME_BUILD_DIR="${DEFAULT_BUILD_DIR}/${LAME_NAME}" \
-    # The install location for fdk-aac and ffmpeg
-    USER_DIR="/home/${NON_ROOT_USERNAME}" \
-    FDK_INSTALL_DIR="${USER_DIR}/libfdk" \
+    LAME_ARCHIVE="https://cfhcable.dl.sourceforge.net/project/lame/lame/${LAME_VER}/${LAME_NAME}.tar.gz"
+
+# The build directories
+ARG FDK_AAC_FOLDER="${DEFAULT_BUILD_DIR}/fdk_aac" \
+    LAME_BUILD_DIR="${DEFAULT_BUILD_DIR}/${LAME_NAME}"
+
+# The install location for fdk-aac and ffmpeg
+ARG FDK_INSTALL_DIR="${USER_DIR}/libfdk" \
     FFMPEG_INSTALL_DIR="${USER_DIR}/${FFMPEG_NAME}" \
     FFMPEGAAC_INSTALL_DIR="${USER_DIR}/ffmpegaac" \
-    LAME_INSTALL_DIR="${USER_DIR}/${LAME_NAME}" \
-    # The archives used
-    FFMPEG_FILE="${USER_DIR}/${FFMPEG_NAME}.tar.xz" \
-    LAME_FILE="${DEFAULT_BUILD_DIR}/${LAME_NAME}.tar.gz" \
-    # The config path for the different libraries used
-    PKG_CONFIG_PATH="${FDK_INSTALL_DIR}/lib/pkgconfig" \
+    LAME_INSTALL_DIR="${USER_DIR}/${LAME_NAME}"
+
+# The archives used
+ARG FFMPEG_FILE="${USER_DIR}/${FFMPEG_NAME}.tar.xz" \
+    LAME_FILE="${DEFAULT_BUILD_DIR}/${LAME_NAME}.tar.gz"
+
+# The config path for the different libraries used
+ARG PKG_CONFIG_PATH="${FDK_INSTALL_DIR}/lib/pkgconfig" \
     LAME_LIB_DIR="${LAME_BUILD_DIR}/libmp3lame/.libs" \
-    LAME_HEADER_FILE="${LAME_BUILD_DIR}/include" \
-    # The FFMPEGACC files
-    FFMPEGAAC_AACDECODER="AacDecoder.c" \
+    LAME_HEADER_FILE="${LAME_BUILD_DIR}/include"
+
+# The FFMPEGACC files
+ARG FFMPEGAAC_AACDECODER="AacDecoder.c" \
     FFMPEGAAC_AACENCODER="AacEncoder.c" \
     FFMPEGAAC_FFMPEGAAC="ffmpegaac.h" \
     FFMPEGAAC_AACDECODER_OBJECT="AacDecoder.o" \
