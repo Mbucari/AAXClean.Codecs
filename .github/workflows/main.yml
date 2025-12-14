@@ -1,6 +1,3 @@
-# validate.yml
-# Validates that Libation will build on a pull request or push to master. 
----
 name: validate
 
 on:
@@ -10,6 +7,7 @@ on:
     branches: [master]
 
 jobs:
+        
   build:
     uses: ./.github/workflows/build.yml
     with:

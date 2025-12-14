@@ -43,7 +43,7 @@ elif [ $OS = Darwin ]; then
     echo "Installing homebrew"
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   fi
-  #xcode-select --install && brew install gcc perl pkg-config yasm
+  #xcode-select --install && brew install gcc perl pkg-config automake nasm libtool
   LIB_EXTENSION=dylib
   NUM_CPUS=$(sysctl -n hw.physicalcpu)
 elif [[ $OS =~ MINGW64.* ]]; then

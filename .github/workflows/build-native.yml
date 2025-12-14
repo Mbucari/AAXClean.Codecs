@@ -1,0 +1,47 @@
+
+name: validate
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - src/ffmpegaac/ffmpegaac.h
+      - src/ffmpegaac/AacEncoder.c
+      - src/ffmpegaac/AacDecoder.c
+
+jobs:
+  build-native-mac:
+    if: true
+    strategy:
+      matrix:
+        architecture: [x64, arm64]
+        include:
+          - architecture: x64
+            runner: macos-15-intel
+          - architecture: arm64
+            runner: macos-15
+    uses: ./.github/workflows/build-mac.yml
+    with:
+      runner: ${{ matrix.runner }}
+      architecture: ${{ matrix.architecture }}
+      
+  build-native-win:
+    if: true
+    strategy:
+      matrix:
+        architecture: [x86, x64, arm64]
+        include:
+          - architecture: x86
+            msystem: MINGW32
+            runner: windows-latest
+          - architecture: x64
+            msystem: MINGW64
+            runner: windows-latest
+          - architecture: arm64
+            msystem: CLANGARM64
+            runner: windows-11-arm
+    uses: ./.github/workflows/build-win.yml
+    with:
+      runner: ${{ matrix.runner }}
+      msystem: ${{ matrix.msystem }}
+      architecture: ${{ matrix.architecture }}
