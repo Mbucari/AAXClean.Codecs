@@ -45,8 +45,10 @@
 		
 		<file src="native/runtimes/win-x64/native/ffmpegaac.dll" target="runtimes/win-x64/native/ffmpegaac.dll" />
 		<file src="native/runtimes/win-x86/native/ffmpegaac.dll" target="runtimes/win-x86/native/ffmpegaac.dll" />
+		<file src="native/runtimes/win-arm64/native/ffmpegaac.dll" target="runtimes/win-arm64/native/ffmpegaac.dll" />
 		<file src="native/runtimes/win-x64/native/libmp3lame.dll" target="runtimes/win-x64/native/libmp3lame.dll" />
 		<file src="native/runtimes/win-x86/native/libmp3lame.dll" target="runtimes/win-x86/native/libmp3lame.dll" />
+		<file src="native/runtimes/win-arm64/native/libmp3lame.dll" target="runtimes/win-arm64/native/libmp3lame.dll" />
 		
 		<file src="src\AAXClean.Codecs\bin\Release\net10.0\NAudio.Lame.dll" target="runtimes/any/lib/net10.0/NAudio.Lame.dll" />
 		<file src="src\AAXClean.Codecs\bin\Release\net10.0\AAXClean.Codecs.dll" target="runtimes/any/lib/net10.0/AAXClean.Codecs.dll" />

@@ -73,11 +73,11 @@ jobs:
           FFMPEG_MAIN=${{ steps.ffmpeg.outputs.FFMPEG_MAIN }}
           
           gcc -fPIC -v -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN -I./
-          gcc -dynamiclib -shared -static -fPIC -Wl,-v -o libffmpegaac.dylib AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L${{ steps.fdk-aac.outputs.FDK_INSTALL }}/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices
+          gcc -dynamiclib -shared -static -fPIC -Wl,-v -o ffmpegaac.dylib AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L${{ steps.fdk-aac.outputs.FDK_INSTALL }}/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices
           
           cd ..
           mkdir -p runtimes/osx-${{ inputs.architecture }}/native
-          mv ./ffmpegaac/libffmpegaac.dylib runtimes/osx-${{ inputs.architecture }}/native/
+          mv ./ffmpegaac/ffmpegaac.dylib runtimes/osx-${{ inputs.architecture }}/native/
           
       - name: Build LAME
         id: lamemp3
