@@ -46,7 +46,7 @@ public static unsafe class NativeLogging
         }
     }
     
-    private const string libname = "ffmpegaac";
+    private const string libname = "aaxcleannative";
     [DllImport(libname, CallingConvention = CallingConvention.StdCall)]
     private static extern void SetLogCallback(delegate* unmanaged<int,byte*,int,void> messageDelegate);
 }

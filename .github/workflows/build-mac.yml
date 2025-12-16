@@ -44,7 +44,7 @@ jobs:
           rm $LAME_NAME.tar.gz
           cd $LAME_NAME
           ./configure --disable-decoder --disable-frontend --host="$LAME_ARCH" --prefix=$HOME/local
-          make CFLAGS='-fPIC -O3' CPPFLAGS="-DNDEBUG"
+          make -j$(sysctl -n hw.physicalcpu) CFLAGS='-fPIC -O3' CPPFLAGS="-DNDEBUG"
           make install
           
       - name: Build LibFDK
@@ -59,8 +59,7 @@ jobs:
           cd $FDK_NAME
           ./autogen.sh
           ./configure --enable-shared=no --enable-static=yes --prefix=$HOME/local
-          NUM_CPUS=$(sysctl -n hw.physicalcpu)
-          make -j$NUM_CPUS CFLAGS="-g0 -fPIC -O2 -Werror -Wno-deprecated-declarations" CXXFLAGS="-g0 -fPIC -O2 -Werror -Wno-deprecated-declarations"
+          make -j$(sysctl -n hw.physicalcpu) CFLAGS="-g0 -fPIC -O2 -Werror -Wno-deprecated-declarations" CXXFLAGS="-g0 -fPIC -O2 -Werror -Wno-deprecated-declarations"
           make install
           
       - name: Build FFMpeg
@@ -77,10 +76,10 @@ jobs:
           cd $FFMPEG_MAIN
           export PKG_CONFIG_PATH=$HOME/local/lib/pkgconfig
           ./configure --extra-ldflags="-L$HOME/local/lib" --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac --enable-decoder=eac3 --enable-libmp3lame --enable-encoder=libmp3lame --disable-pthreads
-          make
+          make -j$(sysctl -n hw.physicalcpu)
           echo "FFMPEG_MAIN=${FFMPEG_MAIN}" >> "${GITHUB_OUTPUT}"
 
-      - name: Build libaaxclean
+      - name: Build libAAXCleanNative
         working-directory: ./src
         run: |
           DEST_DIR=runtimes/osx-${{ inputs.architecture }}/native
@@ -89,9 +88,9 @@ jobs:
           cd ffmpegaac
           
           gcc -fPIC -v -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN -I./
-          gcc -dynamiclib -shared -static -fPIC -Wl,-v -o libaaxclean.dylib AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$HOME/local/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lmp3lame -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices
+          gcc -dynamiclib -shared -static -fPIC -Wl,-v -o libaaxcleannative.dylib AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$HOME/local/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lmp3lame -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices
           
-          mv libaaxclean.dylib ../$DEST_DIR/
+          mv libaaxcleannative.dylib ../$DEST_DIR/
       
       - name: Bundle Artifacts
         id: bundle

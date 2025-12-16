@@ -51,7 +51,7 @@ namespace LameDLLWrap
 
 	internal static class NativeMethods
 	{
-		const string libname = @"libmp3lame";
+		const string libname = @"aaxcleannative";
 
 #pragma warning disable IDE1006 // Naming Styles
 

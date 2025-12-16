@@ -6,7 +6,7 @@ namespace AAXClean.Codecs.Interop;
 
 internal unsafe class NativeAacEncode : IDisposable
 {
-	protected const string libname = "ffmpegaac";
+	protected const string libname = "aaxcleannative";
 	//Factor for converting quality to global_quality
 	private const int FF_QP2LAMBDA = 118;
 	private EncoderHandle Handle { get; }

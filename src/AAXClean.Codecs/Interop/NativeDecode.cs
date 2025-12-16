@@ -7,7 +7,7 @@ namespace AAXClean.Codecs.Interop;
 internal unsafe abstract class NativeDecode : IDisposable
 {
 	protected abstract DecoderHandle Handle { get; }
-	protected const string libname = "ffmpegaac";
+	protected const string libname = "aaxcleannative";
 
 	[DllImport(libname, CallingConvention = CallingConvention.StdCall)]
 	private static extern int Decoder_DecodeFrame(DecoderHandle self, byte* pCompressedAudio, int cbInBufferSize);
