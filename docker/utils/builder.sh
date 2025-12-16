@@ -26,7 +26,7 @@
 # 
 
 # Define image name
-DOCKER_HUB_IMAGE="hanralatalliard/aaxclean-codecs"
+DOCKER_HUB_IMAGE="mbucari1/aaxclean"
 
 # Check if Docker can be run without sudo
 if ! docker info &>/dev/null; then
@@ -46,7 +46,7 @@ CURRENT_DATE=$(date +%Y-%m-%d)
 
 # Build and push multi-architecture images with multiple tags
 $DOCKER_CMD buildx build \
-  --platform linux/amd64,linux/arm64,linux/arm/v7 \
+  --platform linux/amd64,linux/arm64 \
   -t $DOCKER_HUB_IMAGE:latest \
   -t $DOCKER_HUB_IMAGE:ubuntu_18.04 \
   -t $DOCKER_HUB_IMAGE:ubuntu_18.04-$CURRENT_DATE \

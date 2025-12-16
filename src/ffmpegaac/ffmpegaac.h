@@ -1,13 +1,10 @@
 #pragma once
-#include "config.h"
 
 #include <stdlib.h>
 #include <stdint.h>
 
-#include <libavutil/mem.h>
 #include <libavutil/frame.h>
 #include <libavcodec/avcodec.h>
-#include <libavutil/samplefmt.h>
 #include <libswresample/swresample.h>
 
 #define AAC_FRAME_SIZE 1024

@@ -24,17 +24,17 @@
 # +==== END AAXClean.Codecs =================+
 #
 # Use the earliest ubuntu version available on docker hub
-FROM ubuntu:18.04 AS builder
+FROM ubuntu:18.04
 
 # Some tracking so the author is known
-LABEL maintainer="mbucari1@gmail.com" \
-    org.opencontainers.image.authors="HenraL <henrysoftwarehouse@protonmail.com>, MBucari <mbucari1@gmail.com>" \
+LABEL maintainer="henrysoftwarehouse@protonmail.com" \
+    org.opencontainers.image.authors="HenraL <henrysoftwarehouse@protonmail.com>" \
     org.opencontainers.image.vendor="HenraL" \
     org.opencontainers.image.title="AAXClean.Codecs Build Container" \
     org.opencontainers.image.description="Ubuntu 18.04 container for building AAXClean.Codecs native libraries (stripped-down FFmpeg with ffmpeg/fdk-aac and libmp3lame)" \
     org.opencontainers.image.version="1.0.0" \
     org.opencontainers.image.created="2025-12-13" \
-    org.opencontainers.image.url="https://hub.docker.com/r/mbucari1/aaxclean" \
+    org.opencontainers.image.url="https://hub.docker.com/r/hanralatalliard/aaxclean-codecs" \
     org.opencontainers.image.source="https://github.com/Mbucari/AAXClean.Codecs" \
     org.opencontainers.image.licenses="GPL-3.0" \
     org.opencontainers.image.documentation="https://github.com/Mbucari/AAXClean.Codecs#readme" \
@@ -59,7 +59,6 @@ ARG FFMPEG_VER="8.0.1" \
     LAME_VER="3.100" \
     LIB_EXTENSION=so \
     DEFAULT_BUILD_DIR="/building" \
-    SHARED_INSTALL="/build" \
     USER_DIR="/home/${NON_ROOT_USERNAME}"
 
 ARG FFMPEG_NAME="ffmpeg-${FFMPEG_VER}" \
@@ -109,13 +108,28 @@ RUN useradd -m -s /bin/bash ${NON_ROOT_USERNAME} \
 WORKDIR "${DEFAULT_BUILD_DIR}"
 
 # Own the build directory
-RUN mkdir ${SHARED_INSTALL} \
-    && chown "${NON_ROOT_USERNAME}:${NON_ROOT_USERNAME}" "${SHARED_INSTALL}" \
-    && chown "${NON_ROOT_USERNAME}:${NON_ROOT_USERNAME}" "${DEFAULT_BUILD_DIR}" \
+RUN chown "${NON_ROOT_USERNAME}:${NON_ROOT_USERNAME}" "${DEFAULT_BUILD_DIR}" \
     && chmod u+rwx "${DEFAULT_BUILD_DIR}"
 
 # Switching to a non-privileged user
 USER ${NON_ROOT_USERNAME}
+
+# Build fdk-aac
+RUN echo "Cloning the fdk-aac repository" \
+    && git clone ${FDK_AAC_REPO} ${FDK_AAC_FOLDER} \
+    && echo "Entering the repository" \
+    && cd $FDK_AAC_FOLDER \
+    && echo "Running autogen.sh" \
+    && ./autogen.sh \
+    && echo "Running ./configure" \
+    && ./configure --enable-shared=no --enable-static=yes \
+    && echo "Building FDK" \
+    && make -j$(nproc) CFLAGS="-g0 -fPIC -O2 -Werror" CXXFLAGS="-g0 -fPIC -O2 -Werror" \
+    && echo "Installing libfdk" \
+    && sudo make install \
+    && echo "Cleaning up" \
+    && cd ../.. \
+    && rm -rf ${FDK_AAC_FOLDER}
 
 # Download & Build lame
 RUN \
@@ -135,30 +149,14 @@ RUN \
     && echo "Getting system architecture" \
     && HOST_TRIPLET=$(./config.guess) \
     && echo "Gathered architecture: $HOST_TRIPLET" \
-    && ./configure --disable-decoder --disable-frontend --host="$HOST_TRIPLET" --prefix="${SHARED_INSTALL}" \
+    && ./configure --disable-decoder --disable-frontend --host="$HOST_TRIPLET" \
     && make CFLAGS='-fPIC -O3' CPPFLAGS="-DNDEBUG" -j$(nproc) \
     && echo "Installing libmp3lame" \
-    && make install \
+    && sudo make install \
     && echo "Building dynamic library" \
     && echo "Cleaning up" \
     && cd ../.. \
     && rm -rvf "${LAME_BUILD_DIR}"
-# Build fdk-aac
-RUN echo "Cloning the fdk-aac repository" \
-    && git clone ${FDK_AAC_REPO} ${FDK_AAC_FOLDER} \
-    && echo "Entering the repository" \
-    && cd $FDK_AAC_FOLDER \
-    && echo "Running autogen.sh" \
-    && ./autogen.sh \
-    && echo "Running ./configure" \
-    && ./configure --enable-shared=no --enable-static=yes --prefix="${SHARED_INSTALL}" \
-    && echo "Building FDK" \
-    && make -j$(nproc) CFLAGS="-g0 -fPIC -O2 -Werror" CXXFLAGS="-g0 -fPIC -O2 -Werror" \
-    && echo "Installing libfdk" \
-    && make install \
-    && echo "Cleaning up" \
-    && cd ../.. \
-    && rm -rf ${FDK_AAC_FOLDER}
 
 # Get and Build ffmpeg. Don't install it so that we have access to "private" headers
 RUN echo "building ffmpeg ${FFMPEG_NAME}" \
@@ -171,10 +169,7 @@ RUN echo "building ffmpeg ${FFMPEG_NAME}" \
     && rm -rvf ${FFMPEG_FILE} \
     && cd ${FFMPEG_INSTALL_DIR} \
     && echo "Configuring the file" \
-    && PKG_CONFIG_PATH="${SHARED_INSTALL}/lib/pkgconfig" ./configure \
-    --prefix="${SHARED_INSTALL}" \
-    --extra-cflags="-I${SHARED_INSTALL}/include" \
-    --extra-ldflags="-L${SHARED_INSTALL}/lib" \
+    && ./configure \
     --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m \
     --disable-vaapi --disable-vdpau --disable-network --disable-libxcb \
     --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib \
@@ -190,9 +185,9 @@ RUN echo "building ffmpeg ${FFMPEG_NAME}" \
     --enable-encoder=libmp3lame --disable-pthreads \
     && echo "Building the content" \
     && make -j$(nproc) \
-    && make install \
-    && echo "Copying all headers (including private)" \
-    && find . -type f -name '*.h' -exec cp --parents {} "${SHARED_INSTALL}/include/" \; \
+    && sudo make install \
+    && echo "Copying all headers" \
+    && sudo find . -type f -name '*.h' -exec cp --parents {} /usr/local/include/ \; \
     && echo "Cleaning up" \
     && cd "${FFMPEG_INSTALL_DIR}/.." \
     && rm -rf "${FFMPEG_INSTALL_DIR}" \
@@ -244,23 +239,6 @@ RUN rm -rvf "${DEFAULT_BUILD_DIR}" \
 
 # Switching back to user account
 USER ${NON_ROOT_USERNAME}
-
-# Second stage build
-FROM ubuntu:18.04
-
-COPY --from=builder /build /build
-
-# Install GCC (only dependency to build libaaxcleannative)
-RUN apt-get update \
-    && apt-get install -y \
-    gcc \
-    && echo "Cleaning cache " \
-    && rm -rf /var/lib/apt/lists/*
-
-ARG SHARED_INSTALL="/build"
-    
-ENV CPATH="${SHARED_INSTALL}/include" \
-    LIBRARY_PATH="${SHARED_INSTALL}/lib"
 
 # Set the entrypoint
 CMD ["/bin/bash"]

@@ -1,5 +1,4 @@
-
-name: validate
+name: build-native
 
 on:
   push:
@@ -8,13 +7,29 @@ on:
       - src/ffmpegaac/ffmpegaac.h
       - src/ffmpegaac/AacEncoder.c
       - src/ffmpegaac/AacDecoder.c
+      - .github/workflows/build-linux.yml
       - .github/workflows/build-mac.yml
       - .github/workflows/build-win.yml
       - .github/workflows/build-native.yml
  
 jobs:
-  build-native-mac:
+  build-native-linux:
     if: true
+    strategy:
+      matrix:
+        architecture: [x64, arm64]
+        include:
+          - architecture: x64
+            runner: ubuntu-latest
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+    uses: ./.github/workflows/build-linux.yml
+    with:
+      runner: ${{ matrix.runner }}
+      architecture: ${{ matrix.architecture }}
+      
+  build-native-mac:
+    if: false
     strategy:
       matrix:
         architecture: [x64, arm64]
@@ -30,7 +45,7 @@ jobs:
       ffmpeg-version: 8.0.1
       
   build-native-win:
-    if: true
+    if: false
     strategy:
       matrix:
         architecture: [x64, arm64]

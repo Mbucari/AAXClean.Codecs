@@ -1,0 +1,54 @@
+on:
+  workflow_call:
+    inputs:
+      architecture:
+        type: string
+        description: "CPU architecture targeted by the build."
+        required: true
+      runner:
+        type: string
+        required: true
+env:
+  DOCKER_IMAGE: "mbucari1/aaxclean:latest"
+jobs:
+  build:
+    name: "Linux Docker Build (${{ inputs.architecture }})"
+    runs-on: ${{ inputs.runner }}
+    steps:
+        
+      - uses: actions/checkout@v6
+      
+      - name: Build libNativeAaxClean
+        working-directory: ./src
+        run: |
+          
+          DEST_DIR=runtimes/linux-${{ inputs.architecture }}/native
+          mkdir -p $DEST_DIR
+          
+          SRC_DIR="$(pwd)/ffmpegaac"
+          MOUNT_DIR="/mnt/aaxclean"
+          
+          docker pull ${{ env.DOCKER_IMAGE }}
+          
+          DOCKER_CMD="docker run --rm --volume ${SRC_DIR}:${MOUNT_DIR} -w ${MOUNT_DIR} ${{ env.DOCKER_IMAGE }} bash -c"
+          
+          $DOCKER_CMD "gcc -fPIC -c AacDecoder.c -c AacEncoder.c"
+          $DOCKER_CMD "gcc -v -shared -fPIC -Wl,-v -Wl,-Bsymbolic -Wl,--no-undefined -Wl,-soname,libnativeaaxclean.so.1 -o libnativeaaxclean.so AacEncoder.o AacDecoder.o -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lmp3lame -lm -lrt"
+          
+          mv "$SRC_DIR/libnativeaaxclean.so" $DEST_DIR
+      
+      - name: Bundle Artifacts
+        id: bundle
+        working-directory: ./src
+        run: |
+          ARTIFACT=native_linux-${{ inputs.architecture }}.tar.gz
+          tar -cz -f $ARTIFACT runtimes
+          echo "artifact=${ARTIFACT}" >> "${GITHUB_OUTPUT}"
+          
+      - name: Upload library
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ steps.bundle.outputs.artifact }}
+          path: ./src/${{ steps.bundle.outputs.artifact }}
+          if-no-files-found: error
+          retention-days: 7
