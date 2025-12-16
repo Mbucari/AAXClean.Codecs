@@ -8,12 +8,12 @@ on:
       runner:
         type: string
         required: true
+      ffmpeg-version:
+        type: string
+        required: true
       msystem:
         type: string
         required: true
-env:
-  FFMPEG_VER: "8.0.1"
-  LAME_VER: "3.100"
   
 jobs:
   build:
@@ -34,96 +34,40 @@ jobs:
             gcc:p
             nasm:p
             autotools:p
+            lame:p
+            fdk-aac:p
         
-      - name: Test
-        run: gcc --version
-        
-      - uses: actions/checkout@v6       
+      - uses: actions/checkout@v6
       
-      - name: Build LibFDK
-        id: fdk-aac
-        working-directory: ./src
-        run: |
-          THIS_DIR=$(pwd)
-          FDK_NAME=fdk-aac-master
-          FDK_MAIN=$THIS_DIR/$FDK_NAME
-          FDK_INSTALL=$THIS_DIR/libfdk
-          curl -k -o $FDK_NAME.zip -L0 $URL "https://github.com/mstorsjo/fdk-aac/archive/refs/heads/master.zip"
-          echo "Extracting $FDK_NAME.zip"
-          unzip -q -o ./$FDK_NAME.zip
-          rm $FDK_NAME.zip
-          echo "Building $FDK_NAME"
-          cd $FDK_MAIN
-          ./autogen.sh
-          ./configure --prefix=$FDK_INSTALL --enable-shared=no --enable-static=yes
-          NUM_CPUS=$(nproc)
-          make -j$NUM_CPUS CFLAGS="-g0 -fPIC -O2 -Werror -Wno-deprecated-declarations" CXXFLAGS="-g0 -fPIC -O2 -Werror -Wno-deprecated-declarations"
-          make install
-          cd $THIS_DIR
-          echo "FDK_INSTALL=${FDK_INSTALL}" >> "${GITHUB_OUTPUT}"
-          
       - name: Build FFMpeg
         id: ffmpeg
         working-directory: ./src
         run: |
-          THIS_DIR=$(pwd)
-          FFMPEG_NAME="ffmpeg-${{ env.FFMPEG_VER }}"
-          FFMPEG_MAIN=$THIS_DIR/$FFMPEG_NAME
+          FFMPEG_NAME="ffmpeg-${{ inputs.ffmpeg-version }}"
+          FFMPEG_MAIN=$(pwd)/$FFMPEG_NAME
           curl -k -o $FFMPEG_NAME.tar.xz -L0 $URL "https://ffmpeg.org/releases/$FFMPEG_NAME.tar.xz"
           echo "Extracting $FFMPEG_NAME.tar.xz"
           tar -xf ./$FFMPEG_NAME.tar.xz
           rm $FFMPEG_NAME.tar.xz
           echo "Building $FFMPEG_NAME"
           cd $FFMPEG_MAIN
-          export PKG_CONFIG_PATH=${{ steps.fdk-aac.outputs.FDK_INSTALL }}/lib/pkgconfig
-          ./configure --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac --enable-decoder=eac3
+          ./configure --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac --enable-decoder=eac3 --enable-libmp3lame --enable-encoder=libmp3lame --disable-pthreads --disable-w32threads
           make
           echo "FFMPEG_MAIN=${FFMPEG_MAIN}" >> "${GITHUB_OUTPUT}"
 
-      - name: Build FFmpegAAC
-        id: ffmpegaac
-        working-directory: ./src/ffmpegaac
-        run: |
-          FFMPEG_MAIN=${{ steps.ffmpeg.outputs.FFMPEG_MAIN }}
-          
-          gcc -static -fPIC -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN -I./
-          gcc -shared -static -fPIC -o ffmpegaac.dll AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L${{ steps.fdk-aac.outputs.FDK_INSTALL }}/lib -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lbcrypt
-          
-          cd ..
-          mkdir -p runtimes/win-${{ inputs.architecture }}/native
-          mv ./ffmpegaac/ffmpegaac.dll runtimes/win-${{ inputs.architecture }}/native/
-          
-      - name: Build LAME
-        id: lamemp3
+      - name: Build libaaxclean
         working-directory: ./src
         run: |
-          ARCH=${{ inputs.architecture }}
-          if [ $ARCH = "arm64" ]; then
-            LAME_ARCH=arm
-          elif [ $ARCH = "x64" ]; then  
-            LAME_ARCH="x86_64"
-          else
-            LAME_ARCH=$ARCH
-          fi
-          THIS_DIR=$(pwd)
-          LAME_NAME="lame-${{ env.LAME_VER }}"
-          LAME_MAIN="$THIS_DIR/$LAME_NAME"
-          LAME_LIB_DIR=$LAME_MAIN/libmp3lame/.libs
-          curl -k -o $LAME_NAME.tar.gz -L0 $URL "https://cfhcable.dl.sourceforge.net/project/lame/lame/${{ env.LAME_VER }}/$LAME_NAME.tar.gz"
-          echo "Extracting $LAME_NAME.tar.gz"
-          tar -xf ./$LAME_NAME.tar.gz
-          rm $LAME_NAME.tar.gz
-          cd $LAME_MAIN
-          ./configure --disable-decoder --disable-frontend --host="$LAME_ARCH"
-          make CFLAGS='-fPIC -O3' CPPFLAGS="-DNDEBUG"
+          DEST_DIR=runtimes/win-${{ inputs.architecture }}/native
+          mkdir -p $DEST_DIR
+          FFMPEG_MAIN=${{ steps.ffmpeg.outputs.FFMPEG_MAIN }}
+          cd ffmpegaac
           
-          cd $LAME_LIB_DIR
-          gcc -shared -fPIC -Wl,-v -Wl,--whole-archive libmp3lame.a -o libmp3lame.dll -Wl,--no-whole-archive -lm
+          gcc -static -fPIC -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN -I./
+          gcc -shared -static -fPIC -o libaaxclean.dll AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lmp3lame -lbcrypt
           
-          cd "$THIS_DIR"
-          mkdir -p runtimes/win-${{ inputs.architecture }}/native
-          mv $LAME_LIB_DIR/libmp3lame.dll runtimes/win-${{ inputs.architecture }}/native/
-      
+          mv libaaxclean.dll ../$DEST_DIR/
+
       - name: Bundle Artifacts
         id: bundle
         working-directory: ./src

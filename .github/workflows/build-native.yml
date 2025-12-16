@@ -8,7 +8,10 @@ on:
       - src/ffmpegaac/ffmpegaac.h
       - src/ffmpegaac/AacEncoder.c
       - src/ffmpegaac/AacDecoder.c
-
+      - .github/workflows/build-mac.yml
+      - .github/workflows/build-win.yml
+      - .github/workflows/build-native.yml
+ 
 jobs:
   build-native-mac:
     if: true
@@ -24,16 +27,14 @@ jobs:
     with:
       runner: ${{ matrix.runner }}
       architecture: ${{ matrix.architecture }}
+      ffmpeg-version: 8.0.1
       
   build-native-win:
     if: true
     strategy:
       matrix:
-        architecture: [x86, x64, arm64]
+        architecture: [x64, arm64]
         include:
-          - architecture: x86
-            msystem: MINGW32
-            runner: windows-latest
           - architecture: x64
             msystem: MINGW64
             runner: windows-latest
@@ -45,3 +46,4 @@ jobs:
       runner: ${{ matrix.runner }}
       msystem: ${{ matrix.msystem }}
       architecture: ${{ matrix.architecture }}
+      ffmpeg-version: 8.0.1
