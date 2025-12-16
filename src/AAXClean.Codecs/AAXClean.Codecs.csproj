@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net10.0;net8.0</TargetFrameworks>
-		<Version>2.1.1.1-alpha</Version>
+		<Version>2.1.1.1-alpha2</Version>
 		<Authors>MrGneissGuy</Authors>
 		<Company>Just Me, Inc.</Company>
 		<RuntimeIdentifiers>win-x64;win-x86;linux-arm64;linux-x64;osx-arm64;osx-x64</RuntimeIdentifiers>
