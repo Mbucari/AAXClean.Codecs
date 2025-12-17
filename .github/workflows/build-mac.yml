@@ -36,7 +36,6 @@ jobs:
           else
             LAME_ARCH=$ARCH
           fi
-          
           LAME_NAME="lame-${{ env.LAME_VER }}"
           curl -k -o $LAME_NAME.tar.gz -L0 $URL "https://cfhcable.dl.sourceforge.net/project/lame/lame/${{ env.LAME_VER }}/$LAME_NAME.tar.gz"
           echo "Extracting $LAME_NAME.tar.gz"
@@ -75,8 +74,9 @@ jobs:
           echo "Building $FFMPEG_NAME"
           cd $FFMPEG_MAIN
           export PKG_CONFIG_PATH=$HOME/local/lib/pkgconfig
-          ./configure --extra-ldflags="-L$HOME/local/lib" --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac --enable-decoder=eac3 --enable-libmp3lame --enable-encoder=libmp3lame --disable-pthreads
+          ./configure --extra-ldflags="-L$HOME/local/lib" --prefix=$HOME/local --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac --enable-decoder=eac3 --enable-libmp3lame --enable-encoder=libmp3lame --disable-pthreads
           make -j$(sysctl -n hw.physicalcpu)
+          make install
           echo "FFMPEG_MAIN=${FFMPEG_MAIN}" >> "${GITHUB_OUTPUT}"
 
       - name: Build libAAXCleanNative
@@ -85,10 +85,12 @@ jobs:
           DEST_DIR=runtimes/osx-${{ inputs.architecture }}/native
           mkdir -p $DEST_DIR
           FFMPEG_MAIN=${{ steps.ffmpeg.outputs.FFMPEG_MAIN }}
-          cd ffmpegaac
+          cd AAXCleanNative
+          export CPATH="${CPATH}:$FFMPEG_MAIN:$HOME/local/include"
+          export LIBRARY_PATH="${LIBRARY_PATH}:$HOME/local/lib"
           
-          gcc -fPIC -v -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN -I./
-          gcc -dynamiclib -shared -static -fPIC -Wl,-v -o libaaxcleannative.dylib AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -L$HOME/local/lib -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lmp3lame -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices
+          gcc -fPIC -v -c AacDecoder.c -c AacEncoder.c
+          gcc -dynamiclib -shared -static -fPIC -Wl,-v -o libaaxcleannative.dylib AacEncoder.o AacDecoder.o -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lmp3lame -lm -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices
           
           mv libaaxcleannative.dylib ../$DEST_DIR/
       

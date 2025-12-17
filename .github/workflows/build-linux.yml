@@ -25,7 +25,7 @@ jobs:
           DEST_DIR=runtimes/linux-${{ inputs.architecture }}/native
           mkdir -p $DEST_DIR
           
-          SRC_DIR="$(pwd)/ffmpegaac"
+          SRC_DIR="$(pwd)/AAXCleanNative"
           MOUNT_DIR="/mnt/aaxclean"
           
           docker pull ${{ env.DOCKER_IMAGE }}
