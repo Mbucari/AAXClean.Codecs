@@ -13,11 +13,11 @@ Converts and filters aac audio from [AAXClean](https://github.com/Mbucari/AAXCle
 |MP3||:heavy_check_mark:|
 
 **Supported Platforms**
-| |x86|x64|Arm 64|
+| |x64|Arm 64|
 |-|-|-|-|
-|Windows|:heavy_check_mark:|:heavy_check_mark:||
-|macOS||:heavy_check_mark:|:heavy_check_mark:|
-|Linux||:heavy_check_mark:|:heavy_check_mark:|
+|Windows|:heavy_check_mark:|:heavy_check_mark:|
+|macOS|:heavy_check_mark:|:heavy_check_mark:|
+|Linux|:heavy_check_mark:|:heavy_check_mark:|
 
 ## Nuget
 Include the [AAXClean.Codecs](https://www.nuget.org/packages/AAXClean.Codecs/) NuGet package to your project.
