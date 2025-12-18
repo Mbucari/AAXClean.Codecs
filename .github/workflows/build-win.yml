@@ -43,26 +43,26 @@ jobs:
         id: ffmpeg
         working-directory: ./src
         run: |
-          FFMPEG_NAME="ffmpeg-${{ inputs.ffmpeg-version }}"
-          FFMPEG_MAIN=$(pwd)/$FFMPEG_NAME
-          echo $FFMPEG_MAIN
+          LIBREMPEG_MAIN="$(pwd)/librempeg"
+          echo $LIBREMPEG_MAIN
           echo 
-          curl -k -o $FFMPEG_NAME.tar.xz -L0 $URL "https://ffmpeg.org/releases/$FFMPEG_NAME.tar.xz"
-          echo "Extracting $FFMPEG_NAME.tar.xz"
-          tar -xf ./$FFMPEG_NAME.tar.xz
-          rm $FFMPEG_NAME.tar.xz
-          echo "Building $FFMPEG_NAME"
-          cd $FFMPEG_MAIN
-          ./configure --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac --enable-decoder=eac3 --enable-libmp3lame --enable-encoder=libmp3lame --disable-pthreads --disable-w32threads
+          curl -k -o librempeg.tar.gz -L0 "https://github.com/librempeg/librempeg/archive/refs/heads/master.tar.gz"
+          echo "Extracting librempeg.tar.xz"
+          mkdir librempeg
+          tar -xf librempeg.tar.gz --directory librempeg --strip-components=1
+          rm librempeg.tar.gz
+          echo "Building librempeg"
+          cd $LIBREMPEG_MAIN
+          ./configure --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac --enable-decoder=eac3 --enable-libmp3lame --enable-encoder=libmp3lame --disable-pthreads --disable-w32threads --enable-decoder=ac4
           make -j $(nproc)
-          echo "FFMPEG_MAIN=${FFMPEG_MAIN}" >> "${GITHUB_OUTPUT}"
+          echo "LIBREMPEG_MAIN=${LIBREMPEG_MAIN}" >> "${GITHUB_OUTPUT}"
 
       - name: Build libAAXCleanNative
         working-directory: ./src
         run: |
           DEST_DIR=runtimes/win-${{ inputs.architecture }}/native
           mkdir -p $DEST_DIR
-          FFMPEG_MAIN=${{ steps.ffmpeg.outputs.FFMPEG_MAIN }}
+          FFMPEG_MAIN=${{ steps.ffmpeg.outputs.LIBREMPEG_MAIN }}
           cd AAXCleanNative
           
           gcc -v -static -fPIC -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN
