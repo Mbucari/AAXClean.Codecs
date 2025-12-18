@@ -14,7 +14,7 @@ Converts and filters aac audio from [AAXClean](https://github.com/Mbucari/AAXCle
 
 **Supported Platforms**
 | |x64|Arm 64|
-|-|-|-|-|
+|-|-|-|
 |Windows|:heavy_check_mark:|:heavy_check_mark:|
 |macOS|:heavy_check_mark:|:heavy_check_mark:|
 |Linux|:heavy_check_mark:|:heavy_check_mark:|
