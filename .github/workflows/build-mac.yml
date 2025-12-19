@@ -61,32 +61,33 @@ jobs:
           make -j$(sysctl -n hw.physicalcpu) CFLAGS="-g0 -fPIC -O2 -Werror -Wno-deprecated-declarations" CXXFLAGS="-g0 -fPIC -O2 -Werror -Wno-deprecated-declarations"
           make install
           
-      - name: Build FFMpeg
-        id: ffmpeg
+      - name: Build Librempeg
+        id: librempeg
         working-directory: ./src
         run: |
-          FFMPEG_NAME="ffmpeg-${{ inputs.ffmpeg-version }}"
-          FFMPEG_MAIN=$(pwd)/$FFMPEG_NAME
-          curl -k -o $FFMPEG_NAME.tar.xz -L0 $URL "https://ffmpeg.org/releases/$FFMPEG_NAME.tar.xz"
-          echo "Extracting $FFMPEG_NAME.tar.xz"
-          tar -xf ./$FFMPEG_NAME.tar.xz
-          rm $FFMPEG_NAME.tar.xz
-          echo "Building $FFMPEG_NAME"
-          cd $FFMPEG_MAIN
+          LIBREMPEG_MAIN="$(pwd)/librempeg"
+          echo $LIBREMPEG_MAIN
+          curl -k -o librempeg.tar.gz -L0 "https://github.com/librempeg/librempeg/archive/refs/heads/master.tar.gz"
+          echo "Extracting librempeg.tar.gz"
+          mkdir librempeg
+          tar -xf librempeg.tar.gz --directory librempeg --strip-components=1
+          rm librempeg.tar.gz
+          echo "Building librempeg"
+          cd $LIBREMPEG_MAIN
           export PKG_CONFIG_PATH=$HOME/local/lib/pkgconfig
-          ./configure --extra-ldflags="-L$HOME/local/lib" --prefix=$HOME/local --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac --enable-decoder=eac3 --enable-libmp3lame --enable-encoder=libmp3lame --disable-pthreads
+          ./configure --extra-ldflags="-L$HOME/local/lib" --prefix=$HOME/local --disable-swscale --disable-avdevice --disable-doc --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-network --disable-libxcb --disable-libxcb-xfixes --disable-libxcb-shape --disable-zlib --disable-iconv --disable-alsa --disable-shared --enable-static --disable-doc --disable-symver --disable-programs --disable-debug --enable-pic --disable-everything --enable-decoder=pcm_f32le --enable-decoder=pcm_s16le --enable-encoder=pcm_f32le --enable-encoder=pcm_s16le --enable-demuxer=pcm_f32le --enable-demuxer=pcm_s16le --enable-muxer=pcm_f32le --enable-muxer=pcm_s16le --enable-filter=aresample --enable-filter=asetnsamples --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac --enable-encoder=libfdk_aac --enable-decoder=eac3 --enable-libmp3lame --enable-encoder=libmp3lame --disable-pthreads --enable-decoder=ac4
           make -j$(sysctl -n hw.physicalcpu)
           make install
-          echo "FFMPEG_MAIN=${FFMPEG_MAIN}" >> "${GITHUB_OUTPUT}"
+          echo "LIBREMPEG_MAIN=${LIBREMPEG_MAIN}" >> "${GITHUB_OUTPUT}"
 
       - name: Build libAAXCleanNative
         working-directory: ./src
         run: |
           DEST_DIR=runtimes/osx-${{ inputs.architecture }}/native
           mkdir -p $DEST_DIR
-          FFMPEG_MAIN=${{ steps.ffmpeg.outputs.FFMPEG_MAIN }}
+          LIBREMPEG_MAIN=${{ steps.librempeg.outputs.LIBREMPEG_MAIN }}
           cd AAXCleanNative
-          export CPATH="${CPATH}:$FFMPEG_MAIN:$HOME/local/include"
+          export CPATH="${CPATH}:$LIBREMPEG_MAIN:$HOME/local/include"
           export LIBRARY_PATH="${LIBRARY_PATH}:$HOME/local/lib"
           
           gcc -fPIC -v -c AacDecoder.c -c AacEncoder.c

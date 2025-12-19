@@ -39,15 +39,14 @@ jobs:
         
       - uses: actions/checkout@v6
       
-      - name: Build FFMpeg
-        id: ffmpeg
+      - name: Build Librempeg 
+        id: librempeg 
         working-directory: ./src
         run: |
           LIBREMPEG_MAIN="$(pwd)/librempeg"
           echo $LIBREMPEG_MAIN
-          echo 
           curl -k -o librempeg.tar.gz -L0 "https://github.com/librempeg/librempeg/archive/refs/heads/master.tar.gz"
-          echo "Extracting librempeg.tar.xz"
+          echo "Extracting librempeg.tar.gz"
           mkdir librempeg
           tar -xf librempeg.tar.gz --directory librempeg --strip-components=1
           rm librempeg.tar.gz
@@ -62,11 +61,11 @@ jobs:
         run: |
           DEST_DIR=runtimes/win-${{ inputs.architecture }}/native
           mkdir -p $DEST_DIR
-          FFMPEG_MAIN=${{ steps.ffmpeg.outputs.LIBREMPEG_MAIN }}
+          LIBREMPEG_MAIN=${{ steps.librempeg.outputs.LIBREMPEG_MAIN }}
           cd AAXCleanNative
           
-          gcc -v -static -fPIC -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -c AacDecoder.c -c AacEncoder.c -I$FFMPEG_MAIN
-          gcc -shared -static -fPIC -o aaxcleannative.dll AacEncoder.o AacDecoder.o -L$FFMPEG_MAIN/libavutil -L$FFMPEG_MAIN/libswscale -L$FFMPEG_MAIN/libswresample -L$FFMPEG_MAIN/libavcodec -L$FFMPEG_MAIN/libavformat -L$FFMPEG_MAIN/libavfilter -L$FFMPEG_MAIN/libavdevice -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lmp3lame -lbcrypt
+          gcc -v -static -fPIC -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -c AacDecoder.c -c AacEncoder.c -I$LIBREMPEG_MAIN
+          gcc -shared -static -fPIC -o aaxcleannative.dll AacEncoder.o AacDecoder.o -L$LIBREMPEG_MAIN/libavutil -L$LIBREMPEG_MAIN/libswscale -L$LIBREMPEG_MAIN/libswresample -L$LIBREMPEG_MAIN/libavcodec -L$LIBREMPEG_MAIN/libavformat -L$LIBREMPEG_MAIN/libavfilter -L$LIBREMPEG_MAIN/libavdevice -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lmp3lame -lbcrypt
           
           mv aaxcleannative.dll ../$DEST_DIR/
 

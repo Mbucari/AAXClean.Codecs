@@ -4,9 +4,9 @@ on:
   push:
     branches: [master]
     paths:
-      - src/ffmpegaac/ffmpegaac.h
-      - src/ffmpegaac/AacEncoder.c
-      - src/ffmpegaac/AacDecoder.c
+      - src/AAXCleanNative/AAXCleanNative.h
+      - src/AAXCleanNative/AacEncoder.c
+      - src/AAXCleanNative/AacDecoder.c
       - .github/workflows/build-linux.yml
       - .github/workflows/build-mac.yml
       - .github/workflows/build-win.yml

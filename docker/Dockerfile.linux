@@ -67,16 +67,16 @@ ARG FFMPEG_NAME="ffmpeg-${FFMPEG_VER}" \
 
 # sources for the dependencies
 ARG FDK_AAC_REPO="https://github.com/mstorsjo/fdk-aac.git" \
-    FFMPEG_ARCHIVE="https://ffmpeg.org/releases/${FFMPEG_NAME}.tar.xz" \
+    LIBREMPEG_ARCHIVE="https://github.com/librempeg/librempeg/archive/refs/heads/master.tar.gz" \
     LAME_ARCHIVE="https://cfhcable.dl.sourceforge.net/project/lame/lame/${LAME_VER}/${LAME_NAME}.tar.gz"
 
 # The build directories
 ARG FDK_AAC_FOLDER="${DEFAULT_BUILD_DIR}/fdk_aac" \
     LAME_BUILD_DIR="${DEFAULT_BUILD_DIR}/${LAME_NAME}" \
-    FFMPEG_INSTALL_DIR="${USER_DIR}/${FFMPEG_NAME}"
+    LIBREMPEG_INSTALL_DIR="${USER_DIR}/librempeg"
 
 # The archives used
-ARG FFMPEG_FILE="${USER_DIR}/${FFMPEG_NAME}.tar.xz" \
+ARG LIBREMPEG_FILE="${USER_DIR}/librempeg.tar.gz" \
     LAME_FILE="${DEFAULT_BUILD_DIR}/${LAME_NAME}.tar.gz"
 
 # Make sure the system is up to date and that the required basic dependencies are installed
@@ -161,15 +161,17 @@ RUN echo "Cloning the fdk-aac repository" \
     && rm -rf ${FDK_AAC_FOLDER}
 
 # Get and Build ffmpeg. Don't install it so that we have access to "private" headers
-RUN echo "building ffmpeg ${FFMPEG_NAME}" \
-    && mkdir -p ${FFMPEG_INSTALL_DIR} \
-    && echo "Downloading ffmpeg's version $FFMPEG_NAME" \
-    && curl -L -o ${FFMPEG_FILE} ${FFMPEG_ARCHIVE} \
+RUN echo "building librempeg master" \
+    && mkdir -p ${LIBREMPEG_INSTALL_DIR} \
+    && echo "Downloading librempeg's version $FFMPEG_NAME" \
+	&& echo ${LIBREMPEG_FILE} \
+	&& echo ${LIBREMPEG_ARCHIVE} \
+    && curl -L -o ${LIBREMPEG_FILE} ${LIBREMPEG_ARCHIVE} \
     && echo "Extracting the archive" \
-    && tar -xvf ${FFMPEG_FILE} --directory ${FFMPEG_INSTALL_DIR} --strip-components=1 \
+    && tar -xvf ${LIBREMPEG_FILE} --directory ${LIBREMPEG_INSTALL_DIR} --strip-components=1 \
     && echo "Removing the downloaded archive" \
-    && rm -rvf ${FFMPEG_FILE} \
-    && cd ${FFMPEG_INSTALL_DIR} \
+    && rm -rvf ${LIBREMPEG_FILE} \
+    && cd ${LIBREMPEG_INSTALL_DIR} \
     && echo "Configuring the file" \
     && PKG_CONFIG_PATH="${SHARED_INSTALL}/lib/pkgconfig" ./configure \
     --prefix="${SHARED_INSTALL}" \
@@ -187,15 +189,15 @@ RUN echo "building ffmpeg ${FFMPEG_NAME}" \
     --enable-filter=aresample --enable-filter=asetnsamples \
     --enable-libfdk_aac --enable-nonfree --enable-decoder=libfdk_aac \
     --enable-encoder=libfdk_aac --enable-decoder=eac3 --enable-libmp3lame \
-    --enable-encoder=libmp3lame --disable-pthreads \
+    --enable-encoder=libmp3lame --disable-pthreads --enable-decoder=ac4\
     && echo "Building the content" \
     && make -j$(nproc) \
     && make install \
     && echo "Copying all headers (including private)" \
     && find . -type f -name '*.h' -exec cp --parents {} "${SHARED_INSTALL}/include/" \; \
     && echo "Cleaning up" \
-    && cd "${FFMPEG_INSTALL_DIR}/.." \
-    && rm -rf "${FFMPEG_INSTALL_DIR}" \
+    && cd "${LIBREMPEG_INSTALL_DIR}/.." \
+    && rm -rf "${LIBREMPEG_INSTALL_DIR}" \
     && echo "Returning home" \
     && cd
 

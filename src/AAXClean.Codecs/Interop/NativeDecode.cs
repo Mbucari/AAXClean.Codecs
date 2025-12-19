@@ -1,5 +1,6 @@
 ﻿using AAXClean.Codecs.FrameFilters.Audio;
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace AAXClean.Codecs.Interop;
@@ -21,9 +22,21 @@ internal unsafe abstract class NativeDecode : IDisposable
 	public int DecodeFrame(byte* pCompressedAudio, int cbInputSize)
 		=> Decoder_DecodeFrame(Handle, pCompressedAudio, cbInputSize);
 	public int ReceiveDecodedFrame(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
-		=> Decoder_ReceiveDecodedFrame(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
+	{
+		int receivedSamples = Decoder_ReceiveDecodedFrame(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
+		Debug.Assert(receivedSamples <= cbInputSize);
+		return receivedSamples >= 0 ? receivedSamples
+			: throw new Exception($"Error receiving decoded frame. Code {GetFFmpegErrorString(receivedSamples)}");
+	}
 	public int DecodeFlush(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
-		=> Decoder_DecodeFlush(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
+	{
+		int receivedSamples = Decoder_DecodeFlush(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
+		Debug.Assert(receivedSamples <= cbInputSize);
+		return receivedSamples >= 0 ? receivedSamples
+			: throw new Exception($"Error receiving decoded frame. Code {GetFFmpegErrorString(receivedSamples)}");
+	}
+	public static string GetFFmpegErrorString(int errorCode)
+		=> System.Text.Encoding.UTF8.GetString(BitConverter.GetBytes(-errorCode));
 
 	public void Dispose()
 	{

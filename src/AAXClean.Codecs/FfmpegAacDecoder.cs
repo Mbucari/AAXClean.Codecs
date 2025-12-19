@@ -9,7 +9,7 @@ namespace AAXClean.Codecs;
 
 internal unsafe sealed class FfmpegAacDecoder : IDisposable
 {
-	internal const string libname = "ffmpegaac";
+	internal const string libname = "aaxcleannative";
 	public WaveFormat WaveFormat { get; }
 
 	private readonly NativeDecode AudioDecoder;
@@ -32,6 +32,11 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 			WaveFormat = new WaveFormat((SampleRate)dec3.SampleRate, waveFormatEncoding, stereo: true);
 			AudioDecoder = new NativeEc3Decode(dec3, WaveFormat);
 		}
+		else if (audioSampleEntry.Dac4 is Dac4Box dac4)
+		{
+			WaveFormat = new WaveFormat((SampleRate?)dac4.SampleRate ?? SampleRate.Hz_44100, waveFormatEncoding, stereo: true);
+			AudioDecoder = new NativeAc4Decode(dac4, WaveFormat);
+		}
 		else
 			throw new Exception($"AudioSampleEntry does not contain {nameof(EsdsBox)} or {nameof(Dec3Box)}");
 	}
@@ -46,8 +51,12 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 		}
 		else if (audioSampleEntry.Dec3 is Dec3Box dec3)
 			AudioDecoder = new NativeEc3Decode(dec3, WaveFormat);
+		else if (audioSampleEntry.Dac4 is Dac4Box dac4)
+			AudioDecoder = new NativeAc4Decode(dac4, WaveFormat);
 		else
 			throw new Exception($"AudioSampleEntry does not contain {nameof(EsdsBox)} or {nameof(Dec3Box)}");
+
+		Console.WriteLine("Opened Decoder");
 	}
 
 	private static int GetMaxNumberOfSamplesToSkip(EsdsBox esds)
@@ -77,6 +86,15 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 		}
 
 		int requiredSamples = GetMaxAvailableDecodeSize();
+		if (requiredSamples == 0)
+		{
+			return new WaveEntry
+			{
+				Chunk = input.Chunk,
+				SamplesInFrame = 0,
+				FrameData = Memory<byte>.Empty,
+			};
+		}
 
 		Memory<byte> decoded = new byte[requiredSamples * WaveFormat.BlockAlign];
 
@@ -87,6 +105,7 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 			{
 				receivedSamples = AudioDecoder.ReceiveDecodedFrame(decodeBuff, decodeBuff + decoded.Length / 2, requiredSamples);
 			}
+
 			return new WaveEntry
 			{
 				Chunk = input.Chunk,
@@ -102,8 +121,6 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 			{
 				receivedSamples = AudioDecoder.ReceiveDecodedFrame(decodeBuff, null, requiredSamples);
 			}
-
-			Debug.Assert(receivedSamples <= requiredSamples);
 
 			return new WaveEntry
 			{
@@ -143,8 +160,6 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 				receivedSamples = AudioDecoder.DecodeFlush(decodeBuff, null, requiredSamples);
 			}
 
-			Debug.Assert(receivedSamples <= requiredSamples);
-
 			return new WaveEntry
 			{
 				SamplesInFrame = (uint)receivedSamples,
@@ -171,7 +186,7 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 			return false;
 		}
 		
-		throw new Exception($"Error decoding AAC frame. Code {ret:X}");
+		throw new Exception($"Error decoding AAC frame. Code {NativeDecode.GetFFmpegErrorString(ret)}");
 	}
 
 	private int GetMaxAvailableDecodeSize() => AudioDecoder.ReceiveDecodedFrame(null, null, 0);

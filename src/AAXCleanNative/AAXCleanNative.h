@@ -31,34 +31,28 @@ typedef void* PVOID;
 #pragma warning Unknown dynamic link import/export semantics.
 #endif
 
-typedef struct _OutputOptions
+typedef struct OutputOptions
 {
 	int32_t out_sample_rate;
 	int32_t out_sample_fmt;
 	int32_t out_channels;
 } OutputOptions, * POutputOptions;
 
-typedef struct _AacDecoder {
+typedef struct AacDecoder {
     AVCodecContext* context;
     SwrContext* swr_ctx;
     AVPacket* packet;
     AVFrame* frame;
+	OutputOptions output_options;
 }AacDecoder, * PAacDecoder;
 
-typedef struct _AacDecoderOptions {
+typedef struct AacDecoderOptions {
 	OutputOptions output_options;
     int32_t asc_size;
     uint8_t* ASC;
 }AacDecoderOptions, * PAacDecoderOptions;
 
-typedef struct _EC3DecoderOptions {
-    OutputOptions output_options;
-    int32_t in_sample_rate;
-    uint8_t in_subwoofer;
-    uint8_t in_audio_coding_mode;
-}EC3DecoderOptions, * PEC3DecoderOptions;
-
-typedef struct _AacEncoder {
+typedef struct AacEncoder {
     AVCodecContext* context;
     AVPacket* packet;
     AVFrame* frame;
@@ -66,7 +60,7 @@ typedef struct _AacEncoder {
     int32_t sample_size;
 }AacEncoder, * PAacEncoder;
 
-typedef struct _AacEncoderOptions {
+typedef struct AacEncoderOptions {
     int64_t bit_rate;
     int32_t global_quality;
     int32_t sample_rate;
@@ -173,11 +167,20 @@ EXPORT PVOID Decoder_OpenAac(PAacDecoderOptions decoder_options);
 /**
 * Open an E-AC-3 audio decoder instance.
 *
-* @param decoder_options options for decoding the audio.
+* @param output_options options for decoding the audio.
 *
 * @return handle to the decoder instance
 */
-EXPORT PVOID Decoder_OpenEC3(PEC3DecoderOptions decoder_options);
+EXPORT PVOID Decoder_OpenEC3(POutputOptions output_options);
+
+/**
+* Open an AC-4 audio decoder instance.
+*
+* @param output_options options for decoding the audio.
+*
+* @return handle to the decoder instance
+*/
+EXPORT PVOID Decoder_OpenAC4(POutputOptions output_options);
 
 EXPORT int32_t Decoder_Close(PAacDecoder config);
 
