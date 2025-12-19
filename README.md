@@ -5,6 +5,7 @@ Converts and filters aac audio from [AAXClean](https://github.com/Mbucari/AAXCle
 | |Decode|Encode|
 |-|-|-|
 |AAC-LC|:heavy_check_mark:|:heavy_check_mark:|
+|AC-4|:heavy_check_mark:||
 |E-AC-3|:heavy_check_mark:||
 |HE-AAC|:heavy_check_mark:||
 |USAC|:heavy_check_mark:||
