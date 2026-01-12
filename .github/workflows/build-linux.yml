@@ -33,7 +33,7 @@ jobs:
           DOCKER_CMD="docker run --rm --volume ${SRC_DIR}:${MOUNT_DIR} -w ${MOUNT_DIR} ${{ env.DOCKER_IMAGE }} bash -c"
           
           $DOCKER_CMD "gcc -fPIC -c AacDecoder.c -c AacEncoder.c"
-          $DOCKER_CMD "gcc -v -shared -fPIC -Wl,-v -Wl,-Bsymbolic -Wl,--no-undefined -Wl,-soname,libaaxcleannative.so.1 -o libaaxcleannative.so AacEncoder.o AacDecoder.o -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -lmp3lame -lm -lrt"
+          $DOCKER_CMD "gcc -v -shared -fPIC -Wl,-v -Wl,-Bsymbolic -Wl,--no-undefined -Wl,-soname,libaaxcleannative.so.1 -o libaaxcleannative.so AacEncoder.o AacDecoder.o -lc -lavfilter -lswresample -lavformat -lavcodec -lavutil -lfdk-aac -l:libmp3lame.a -lm -lrt"
           
           mv "$SRC_DIR/libaaxcleannative.so" $DEST_DIR
       
