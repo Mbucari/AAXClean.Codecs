@@ -1,4 +1,5 @@
 ﻿using AAXClean.FrameFilters.Audio;
+using Mpeg4Lib;
 using Mpeg4Lib.Boxes;
 using System;
 
@@ -72,9 +73,9 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 
 			if (mp4writer.Moov.ILst is not null)
 			{
-				var tags = new AppleTags(mp4writer.Moov.ILst);
+				var tags = new MetadataItems(mp4writer.Moov.ILst);
 				if (callback.TrackNumber.HasValue && callback.TrackCount.HasValue)
-					tags.Tracks = (callback.TrackNumber.Value, callback.TrackCount.Value);
+					tags.TrackNumber = (callback.TrackNumber.Value, callback.TrackCount.Value);
 				tags.Title = callback.TrackTitle ?? tags.Title;
 			}
 		}

@@ -1,6 +1,7 @@
 ﻿using AAXClean.Codecs.FrameFilters.Audio;
 using AAXClean.FrameFilters;
 using AAXClean.FrameFilters.Text;
+using Mpeg4Lib;
 using Mpeg4Lib.Boxes;
 using System;
 using System.Collections.Generic;
@@ -44,7 +45,7 @@ namespace AAXClean.Codecs
 			if (outputStream.CanWrite is false) throw new ArgumentException("output stream is not writable", nameof(outputStream));
 
 			lameConfig ??= mp4File.GetDefaultLameConfig();
-			lameConfig.ID3 ??= mp4File.AppleTags?.ToIDTags() ?? new(nameof(AAXClean));
+			lameConfig.ID3 ??= mp4File.MetadataItems?.ToIDTags() ?? new(nameof(AAXClean));
 
 			if (lameConfig.ID3.Chapters.Count == 0 && userChapters is not null)
 			{
@@ -188,7 +189,7 @@ namespace AAXClean.Codecs
 			ArgumentNullException.ThrowIfNull(newFileCallback, nameof(newFileCallback));
 
 			lameConfig ??= mp4File.GetDefaultLameConfig();
-			lameConfig.ID3 ??= mp4File.AppleTags?.ToIDTags() ?? new(nameof(AAXClean));
+			lameConfig.ID3 ??= mp4File.MetadataItems?.ToIDTags() ?? new(nameof(AAXClean));
 
 			var stereo = lameConfig.Mode is not NAudio.Lame.MPEGMode.Mono;
 			var sampleRate = mp4File.GetMaxSampleRate((SampleRate?)lameConfig.OutputSampleRate);
@@ -231,7 +232,7 @@ namespace AAXClean.Codecs
 				ABRRateKbps = (int)Math.Round(mp4File.AverageBitrate / 1024d / mp4File.AudioChannels * USAC_Scaler),
 				Mode = NAudio.Lame.MPEGMode.Mono,
 				VBR = NAudio.Lame.VBRMode.ABR,
-				ID3 = mp4File.AppleTags?.ToIDTags() ?? new(nameof(AAXClean))
+				ID3 = mp4File.MetadataItems.ToIDTags() ?? new(nameof(AAXClean))
 			};
 			return lameConfig;
 		}
@@ -243,7 +244,7 @@ namespace AAXClean.Codecs
 			return (SampleRate)Math.Min((int)mp4File.SampleRate, (int)(sampleRate ?? SampleRate.Hz_96000));
 		}
 
-		public static NAudio.Lame.ID3TagData ToIDTags(this AppleTags appleTags)
+		public static NAudio.Lame.ID3TagData ToIDTags(this MetadataItems appleTags)
 		{
 			ArgumentNullException.ThrowIfNull(appleTags, nameof(appleTags));
 
