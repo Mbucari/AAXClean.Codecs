@@ -2,7 +2,7 @@
 	<metadata>
 		<id>AAXClean.Codecs</id>
 		<version>0.0.0</version>
-		<description>Filter and convert aac and e-ac-3 audio from AAXClean</description>
+		<description>Filter and convert aac, e-ac-3, and ac-4 audio from AAXClean</description>
 		<Summary>An add-on module for AAXClean to filter aac audio. </Summary>
 		<authors>MrGneissGuy</authors>
 		<repository type="git" url="https://github.com/Mbucari/AAXClean.Codecs.git" branch="master" />
@@ -15,21 +15,21 @@
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<dependencies>
 			<group targetFramework="net10.0">
-				<dependency id="AAXClean" version="2.1.1.1" />
+				<dependency id="AAXClean" version="3.0.2" />
 				<dependency id="NAudio.Core" version="2.2.1" />
 			</group>
 			<group targetFramework="net8.0">
-				<dependency id="AAXClean" version="2.1.1.1" />
+				<dependency id="AAXClean" version="3.0.2" />
 				<dependency id="NAudio.Core" version="2.2.1" />
 			</group>
 		</dependencies>
 	</metadata>
 	<dependencies>
 		<group targetFramework="net10.0">
-			<dependency id="NAudio.Lame" version="1.1.0.1" />
+			<dependency id="NAudio.Lame" version="1.2.0" />
 		</group>
 		<group targetFramework="net8.0">
-			<dependency id="NAudio.Lame" version="1.1.0.1" />
+			<dependency id="NAudio.Lame" version="1.2.0" />
 		</group>
 	</dependencies>
 	<files>

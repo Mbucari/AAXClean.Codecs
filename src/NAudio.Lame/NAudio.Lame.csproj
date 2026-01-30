@@ -2,7 +2,7 @@
   <PropertyGroup>
 	<TargetFrameworks>net10.0;net8.0</TargetFrameworks>
 	<Platforms>AnyCPU</Platforms>
-	<Version>1.1.0.1</Version>
+	<Version>1.2.0</Version>
 	<Description>Uses libmp3lame from the Lame project to provide MP3 encoding support to NAudio.  Both 64-bit and 32-bit versions of libmp3lame.dll are provided, as well as the 64-bit version of libmp3lame.so for linux, with platform detection to determine which to use.</Description>
 	<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -17,5 +17,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NAudio.Core" Version="2.2.1" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="AAXClean" Version="3.0.2" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+	<ProjectReference Include="..\..\..\AAXClean\src\AAXClean\AAXClean.csproj" />
   </ItemGroup>
 </Project>

@@ -16,7 +16,7 @@ namespace AAXClean.Codecs.FrameFilters.Audio
 		private LameConfig LameConfig;
 		private Stream? OutputStream;
 
-		public WaveToMp3MultipartFilter(ChapterInfo splitChapters, WaveFormat waveFormat, LameConfig lameConfig, Action<NewMP3SplitCallback> newFileCallback)
+		public WaveToMp3MultipartFilter(Mpeg4Lib.ChapterInfo splitChapters, WaveFormat waveFormat, LameConfig lameConfig, Action<NewMP3SplitCallback> newFileCallback)
 			: base(splitChapters, waveFormat.SampleRateEnum, waveFormat.Channels == 2)
 		{
 			WaveFormat = waveFormat;

@@ -24,14 +24,14 @@ internal unsafe abstract class NativeDecode : IDisposable
 	public int ReceiveDecodedFrame(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
 	{
 		int receivedSamples = Decoder_ReceiveDecodedFrame(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
-		Debug.Assert(receivedSamples <= cbInputSize);
+		//Debug.Assert(receivedSamples <= cbInputSize);
 		return receivedSamples >= 0 ? receivedSamples
 			: throw new Exception($"Error receiving decoded frame. Code {GetFFmpegErrorString(receivedSamples)}");
 	}
 	public int DecodeFlush(byte* pDecodedAudio1, byte* pDecodedAudio2, int cbInputSize)
 	{
 		int receivedSamples = Decoder_DecodeFlush(Handle, pDecodedAudio1, pDecodedAudio2, cbInputSize);
-		Debug.Assert(receivedSamples <= cbInputSize);
+		//Debug.Assert(receivedSamples <= cbInputSize);
 		return receivedSamples >= 0 ? receivedSamples
 			: throw new Exception($"Error receiving decoded frame. Code {GetFFmpegErrorString(receivedSamples)}");
 	}

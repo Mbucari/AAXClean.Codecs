@@ -255,7 +255,7 @@ namespace AAXClean.Codecs
 				Artist = appleTags.Artist,
 				AlbumArtist = appleTags.AlbumArtists,
 				Comment = appleTags.Comment,
-				Genre = appleTags.Generes,
+				Genre = appleTags.Genres,
 				Composer = appleTags.Narrator,
 				Title = appleTags.Title,
 				AdditionalTags =

@@ -43,7 +43,7 @@ namespace AAXClean.Codecs.Test
 #endif
 					silEndex++;
 				}
-				List<SilenceEntry> silecnes = (await Aax.DetectSilenceAsync(SilenceThreshold, SilenceDuration, SilenceDetected)).ToList();
+				List<SilenceEntry> silecnes = await Aax.DetectSilenceAsync(SilenceThreshold, SilenceDuration, SilenceDetected);
 
 #if !DEBUG
 				Assert.AreEqual(SilenceTimes.Count, silecnes.Count);
@@ -131,7 +131,7 @@ namespace AAXClean.Codecs.Test
 				}
 
 				await Aax.ConvertToMultiMp3Async(Aax.GetChaptersFromMetadata(), NewSplit, new NAudio.Lame.LameConfig { Preset = NAudio.Lame.LAMEPreset.STANDARD_FAST, Mode = NAudio.Lame.MPEGMode.Mono });
-				Assert.AreEqual(ChapterCount, tempFiles.Count);
+				Assert.HasCount(ChapterCount, tempFiles);
 			}
 			finally
 			{
@@ -174,7 +174,7 @@ namespace AAXClean.Codecs.Test
 				}
 
 				await Aax.ConvertToMultiMp4aAsync(Aax.GetChaptersFromMetadata(), NewSplit, new AacEncodingOptions { BitRate = 30000, EncoderQuality = 0.6, Stereo = false, SampleRate = SampleRate.Hz_16000 });
-				Assert.AreEqual(ChapterCount, tempFiles.Count);
+				Assert.HasCount(ChapterCount, tempFiles);
 			}
 			finally
 			{

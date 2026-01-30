@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using NAudio.Wave;
 using LameDLLWrap;
+using Mpeg4Lib.ID3;
 using System.Collections.Generic;
 
 namespace NAudio.Lame
@@ -471,7 +472,7 @@ namespace NAudio.Lame
 			else
             {
                 using MemoryStream id3Stream = new(data);
-				if (ID3.Id3Tag.Create(id3Stream) is not ID3.Id3Tag tag1)
+				if (Id3Tag.Create(id3Stream) is not Id3Tag tag1)
 				{
 					_lame.ID3WriteTagAutomatic = true;
 					return;
@@ -483,11 +484,11 @@ namespace NAudio.Lame
 				if (tag.Chapters.Count > 0)
 				{
 					int i = 0;
-					List<ID3.CHAPFrame> chaps = new();
-					var toc = new ID3.CTOCFrame(tag1, ID3.ChapterFlags.TopLevel | ID3.ChapterFlags.Ordered);
+					List<CHAPFrame> chaps = new();
+					var toc = new CTOCFrame(tag1, ChapterFlags.TopLevel | ChapterFlags.Ordered);
 					foreach (var c in tag.Chapters)
 					{
-						var chap = new ID3.CHAPFrame(tag1, c.start, c.end, i++, c.title);
+						var chap = new CHAPFrame(tag1, c.start, c.end, i++, c.title);
 						toc.Add(chap);
 						chaps.Add(chap);
 					}
