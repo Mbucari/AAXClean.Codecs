@@ -78,7 +78,7 @@ jobs:
           echo "artifact=${ARTIFACT}" >> "${GITHUB_OUTPUT}"
         
       - name: Upload library
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.bundle.outputs.artifact }}
           path: ./src/${{ steps.bundle.outputs.artifact }}

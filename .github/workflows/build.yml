@@ -64,7 +64,7 @@ jobs:
           echo "nupkg=${nupkg}" >> "${GITHUB_OUTPUT}"
           
       - name: Upload Artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: '${{ steps.build_pack.outputs.nupkg }}'
           path: ./${{ steps.build_pack.outputs.nupkg }}
