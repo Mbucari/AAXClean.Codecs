@@ -33,9 +33,8 @@
 #endregion
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Runtime.InteropServices;
-
+using System.Text;
 using size_t = System.IntPtr;
 
 namespace LameDLLWrap
@@ -513,7 +512,7 @@ namespace LameDLLWrap
 
 		/// <summary>Utility to obtain a list of genre names with numbers</summary>
 		/// <returns>Dictionary containing genres</returns>
-		public static  Dictionary<int, string> ID3GenreList()
+		public static Dictionary<int, string> ID3GenreList()
 		{
 			Dictionary<int, string> res = new Dictionary<int, string>();
 			GenreCallback? cbsave = id3GenreCallback;

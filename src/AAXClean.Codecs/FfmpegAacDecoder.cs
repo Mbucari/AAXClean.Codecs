@@ -3,7 +3,6 @@ using AAXClean.Codecs.Interop;
 using AAXClean.FrameFilters;
 using Mpeg4Lib.Boxes;
 using System;
-using System.Diagnostics;
 
 namespace AAXClean.Codecs;
 
@@ -185,7 +184,7 @@ internal unsafe sealed class FfmpegAacDecoder : IDisposable
 		{
 			return false;
 		}
-		
+
 		throw new Exception($"Error decoding AAC frame. Code {NativeDecode.GetFFmpegErrorString(ret)}");
 	}
 

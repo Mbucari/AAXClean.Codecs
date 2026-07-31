@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace NAudio.Lame
+﻿namespace NAudio.Lame
 {
 	public enum EncoderQuality : int
 	{

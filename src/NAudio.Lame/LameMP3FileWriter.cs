@@ -1,10 +1,10 @@
-﻿using System;
+﻿using LameDLLWrap;
+using Mpeg4Lib.ID3;
+using NAudio.Wave;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using NAudio.Wave;
-using LameDLLWrap;
-using Mpeg4Lib.ID3;
-using System.Collections.Generic;
 
 namespace NAudio.Lame
 {
@@ -26,7 +26,7 @@ namespace NAudio.Lame
 	{
 		#region State
 		// LAME library context 
-		private LibMp3Lame _lame;
+		private readonly LibMp3Lame _lame;
 
 		/// <summary>
 		/// Retrieve the last captured result from calling a LAME dll method
@@ -37,7 +37,7 @@ namespace NAudio.Lame
 		private readonly WaveFormat _inputFormat;
 
 		// Output stream to write encoded data to
-		private Stream _outStream;
+		private readonly Stream _outStream;
 
 		// Flag to control whether we should dispose of output stream 
 		private readonly bool _disposeOutput = false;
@@ -195,7 +195,7 @@ namespace NAudio.Lame
 				Flush();
 
 			_lame?.Dispose();
-			
+
 			if (_disposeOutput)
 			{
 				_outStream?.Dispose();
@@ -249,13 +249,13 @@ namespace NAudio.Lame
 		/// <summary>Non-seekable stream.  Always false.</summary>
 		public override bool CanSeek => false;
 		/// <summary>True when encoder can accept more data</summary>
-		public override bool CanWrite => _outStream != null && _lame != null; 
+		public override bool CanWrite => _outStream != null && _lame != null;
 
 		/// <summary>Dummy Position.  Always 0.</summary>
 		public override long Position
 		{
 			get => 0;
-			set => throw new NotSupportedException(); 
+			set => throw new NotSupportedException();
 		}
 
 		/// <summary>Dummy Length.  Always 0.</summary>
@@ -284,7 +284,7 @@ namespace NAudio.Lame
 			}
 		}
 
-		private object lockObj = new();
+		private readonly object lockObj = new();
 		private bool isFlushed = false;
 
 		/// <summary>Finalise compression, add final output to output stream and close encoder</summary>
@@ -372,10 +372,10 @@ namespace NAudio.Lame
 			{
 				id3v2TagSize =
 					(
-						(((int)buffer[6] & 0x7f) << 21) |
-						(((int)buffer[7] & 0x7f) << 14) |
-						(((int)buffer[8] & 0x7f) << 7) |
-						((int)buffer[9] & 0x7f)
+						((buffer[6] & 0x7f) << 21) |
+						((buffer[7] & 0x7f) << 14) |
+						((buffer[8] & 0x7f) << 7) |
+						(buffer[9] & 0x7f)
 					) + 10;
 			}
 			_outStream.Position = id3v2TagSize;
@@ -396,23 +396,23 @@ namespace NAudio.Lame
 			return 0;
 		}
 
-        /// <summary>Reading not supported.  Throws NotSupportedException.</summary>
-        /// <param name="buffer"></param>
-        /// <param name="offset"></param>
-        /// <param name="count"></param>
-        /// <returns></returns>
-        public override int Read(byte[] buffer, int offset, int count)
+		/// <summary>Reading not supported.  Throws NotSupportedException.</summary>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
+		/// <param name="count"></param>
+		/// <returns></returns>
+		public override int Read(byte[] buffer, int offset, int count)
 			=> throw new NotSupportedException();
 
-        /// <summary>Setting length not supported.  Throws NotSupportedException.</summary>
-        /// <param name="value">Length value</param>
-        public override void SetLength(long value)
+		/// <summary>Setting length not supported.  Throws NotSupportedException.</summary>
+		/// <param name="value">Length value</param>
+		public override void SetLength(long value)
 			=> throw new NotSupportedException();
 
-        /// <summary>Seeking not supported.  Throws NotSupportedException.</summary>
-        /// <param name="offset">Seek offset</param>
-        /// <param name="origin">Seek origin</param>
-        public override long Seek(long offset, SeekOrigin origin)
+		/// <summary>Seeking not supported.  Throws NotSupportedException.</summary>
+		/// <param name="offset">Seek offset</param>
+		/// <param name="origin">Seek origin</param>
+		public override long Seek(long offset, SeekOrigin origin)
 			=> throw new NotSupportedException();
 		#endregion
 
@@ -470,8 +470,8 @@ namespace NAudio.Lame
 			if (data is null)
 				_lame.ID3WriteTagAutomatic = true;
 			else
-            {
-                using MemoryStream id3Stream = new(data);
+			{
+				using MemoryStream id3Stream = new(data);
 				if (Id3Tag.Create(id3Stream) is not Id3Tag tag1)
 				{
 					_lame.ID3WriteTagAutomatic = true;

@@ -116,18 +116,18 @@ namespace NAudio.Lame
 						res.AlbumArtist = frame.ParseString();
 						break;
 					case "TXXX":
-					{
-						var udt = frame.ParseUserDefinedText();
+						{
+							var udt = frame.ParseUserDefinedText();
 							if (udt.HasValue)
 								res.UserDefinedText[udt.Value.Key] = udt.Value.Value;
-						break;
-					}
+							break;
+						}
 					case "APIC":
-					{
-						var pic = frame.ParseAPIC();
-						res.AlbumArt = pic?.ImageBytes;
-						break;
-					}
+						{
+							var pic = frame.ParseAPIC();
+							res.AlbumArt = pic?.ImageBytes;
+							break;
+						}
 					default:
 						break;
 				}

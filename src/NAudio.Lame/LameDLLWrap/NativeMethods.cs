@@ -32,9 +32,8 @@
 // Source lines and comments included where useful/possible.
 #endregion
 using System;
-using System.Text;
 using System.Runtime.InteropServices;
-
+using System.Text;
 using size_t = System.IntPtr;
 
 namespace LameDLLWrap
@@ -137,7 +136,7 @@ namespace LameDLLWrap
 
 		// void CDECL get_lame_version_numerical(lame_version_t *);
 		[DllImport(libname, CallingConvention = CallingConvention.Cdecl)]
-		internal static extern void get_lame_version_numerical([Out]LAMEVersion ver);
+		internal static extern void get_lame_version_numerical([Out] LAMEVersion ver);
 		#endregion
 
 		#region Input Stream Description
@@ -1229,7 +1228,7 @@ namespace LameDLLWrap
 		internal static extern int id3tag_set_comment(IntPtr context, string comment);
 
 		[DllImport(libname, CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int id3tag_set_comment_utf16(IntPtr context, [MarshalAs(UnmanagedType.LPStr)]string lang, byte[] description, byte[] text);
+		internal static extern int id3tag_set_comment_utf16(IntPtr context, [MarshalAs(UnmanagedType.LPStr)] string lang, byte[] description, byte[] text);
 
 		// return -1 result if track number is out of ID3v1 range and ignored for ID3v1
 		[DllImport(libname, CallingConvention = CallingConvention.Cdecl)]
@@ -1253,7 +1252,7 @@ namespace LameDLLWrap
 
 		// return non-zero result if image type is invalid
 		[DllImport(libname, CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int id3tag_set_albumart(IntPtr context, [In]byte[] image, int size);
+		internal static extern int id3tag_set_albumart(IntPtr context, [In] byte[] image, int size);
 
 		// lame_get_id3v1_tag copies ID3v1 tag into buffer.
 		// Function returns number of bytes copied into buffer, or number
@@ -1262,7 +1261,7 @@ namespace LameDLLWrap
 		// NOTE:
 		// This function does nothing, if user/LAME disabled ID3v1 tag
 		[DllImport(libname, CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int lame_get_id3v1_tag(IntPtr context, [In, Out]byte[] buffer, int size);
+		internal static extern int lame_get_id3v1_tag(IntPtr context, [In, Out] byte[] buffer, int size);
 
 		// lame_get_id3v2_tag copies ID3v2 tag into buffer.
 		// Function returns number of bytes copied into buffer, or number
@@ -1271,7 +1270,7 @@ namespace LameDLLWrap
 		// NOTE:
 		// This function does nothing, if user/LAME disabled ID3v2 tag
 		[DllImport(libname, CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int lame_get_id3v2_tag(IntPtr context, [In, Out]byte[] buffer, int size);
+		internal static extern int lame_get_id3v2_tag(IntPtr context, [In, Out] byte[] buffer, int size);
 
 		// normally lame_init_param writes ID3v2 tags into the audio stream
 		// Call lame_set_write_id3tag_automatic(gfp, 0) before lame_init_param 

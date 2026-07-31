@@ -1,6 +1,5 @@
 ﻿using AAXClean.Codecs.FrameFilters.Audio;
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace AAXClean.Codecs.Interop;

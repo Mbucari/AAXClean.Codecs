@@ -37,7 +37,7 @@ namespace NAudio.Lame
 					_preset = null;
 			}
 		}
-		
+
 		/// <summary>Select output sampling frequency. If not specified, LAME will automatically resample the input when using high compression ratios.</summary>
 		public int? OutputSampleRate { get; set; }
 		#endregion
@@ -193,7 +193,7 @@ namespace NAudio.Lame
 			if (Mode != null) result.Mode = (LameDLLWrap.MPEGMode)Mode.Value;
 			if (ForceMS != null) result.ForceMS = ForceMS.Value;
 			if (UseFreeFormat != null) result.UseFreeFormat = UseFreeFormat.Value;
-			
+
 			// Frame Parameters
 			if (Copyright != null) result.Copyright = Copyright.Value;
 			if (Original != null) result.Original = Original.Value;
