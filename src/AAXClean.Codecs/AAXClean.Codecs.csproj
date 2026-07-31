@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net10.0;net8.0</TargetFrameworks>
-		<Version>3.0.2</Version>
+		<Version>3.1.0</Version>
 		<Authors>MrGneissGuy</Authors>
 		<Company>Just Me, Inc.</Company>
 		<RuntimeIdentifiers>win-x64;win-arm64;linux-arm64;linux-x64;osx-arm64;osx-x64</RuntimeIdentifiers>
@@ -38,7 +38,7 @@
 	</ItemGroup>
 	
 	<ItemGroup>
-	  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.102">
+	  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.301">
 	    <PrivateAssets>all</PrivateAssets>
 	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	  </PackageReference>
