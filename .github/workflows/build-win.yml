@@ -37,7 +37,7 @@ jobs:
             lame:p
             fdk-aac:p
         
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       
       - name: Build Librempeg 
         id: librempeg 

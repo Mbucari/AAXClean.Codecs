@@ -23,7 +23,7 @@ jobs:
       - name: Install Dependencies
         run: brew install automake yasm nasm libtool
         
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       
       - name: Build LAME
         working-directory: ./src
